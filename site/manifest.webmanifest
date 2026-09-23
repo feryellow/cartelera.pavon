@@ -1,0 +1,17 @@
+{
+  "name": "Pavón Cartelería",
+  "short_name": "Pavón",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#171310",
+  "theme_color": "#171310",
+  "icons": [
+    {
+      "src": "/pavon-app-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
