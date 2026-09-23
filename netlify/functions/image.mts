@@ -9,6 +9,8 @@ function getPavonStore() {
 }
 
 function isAuthorized(req: Request) {
+  const publicEdit = Netlify.env.get("PAVON_PUBLIC_EDIT") === "true";
+  if (publicEdit) return true;
   const expected = Netlify.env.get("PAVON_EDIT_KEY");
   const provided = req.headers.get("x-edit-key");
   return Boolean(expected && provided && expected === provided);
