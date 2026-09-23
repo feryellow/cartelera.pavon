@@ -48,7 +48,7 @@
       text-transform: uppercase;
       font-size: 12px;
     }
-    .top-actions { display:flex; gap:8px; }
+    .top-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
     .top-btn {
       min-height: 42px;
       display: inline-flex;
@@ -65,6 +65,10 @@
       text-decoration: none;
       text-transform: uppercase;
       box-shadow: 0 4px 12px rgba(0,0,0,.22);
+    }
+    .top-btn.active {
+      background: linear-gradient(180deg,#ffe58b,#d7af45);
+      box-shadow: 0 5px 18px rgba(232,197,90,.32);
     }
     .cartelera-container {
       max-width: 1200px;
@@ -251,7 +255,7 @@
       .app-top { padding:9px 10px; }
       .app-top-inner { align-items:stretch; flex-direction:column; }
       .top-label { text-align:center; font-size:11px; }
-      .top-actions { display:grid; grid-template-columns:1fr 1fr; }
+      .top-actions { display:grid; grid-template-columns:1fr 1fr; width:100%; }
       .top-btn {
         border-radius:7px;
         min-height:46px;
@@ -280,9 +284,11 @@
   <div class="app-top">
     <div class="app-top-inner">
       <div class="top-label">Gran Teatro Pavón · Calendario</div>
-      <div class="top-actions">
-        <a class="top-btn" href="/">Plantilla interactiva</a>
-        <a class="top-btn" href="https://www.granteatropavon.com/" target="_blank" rel="noopener noreferrer">Web del teatro</a>
+      <div class="top-actions top-nav">
+        <a class="top-btn" href="/?vista=taquilla">Taquilla cerrada</a>
+        <a class="top-btn" href="/?vista=lona">Lona + secundarios</a>
+        <a class="top-btn" href="/?vista=abierta">Taquilla abierta</a>
+        <a class="top-btn active" href="/calendario.html">Calendario</a>
       </div>
     </div>
   </div>
