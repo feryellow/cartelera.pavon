@@ -27,6 +27,137 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
 .cloud-status{font-size:10px;color:var(--muted);text-align:right}.cloud-status.ok{color:#d9c875}.cloud-status.dirty{color:#f0c95d}.cloud-status.error{color:#e9a18f}
 .cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cloud-actions button{appearance:none;border:1px solid var(--line);background:#28221d;color:var(--cream);border-radius:10px;padding:9px 10px;cursor:pointer;font:800 11px/1 Inter,Arial,sans-serif}.cloud-actions button.primary{background:var(--gold);color:#171310;border-color:var(--gold)}
 .cloud-updated{margin-top:8px;color:var(--muted);font-size:10px;line-height:1.35}
+
+/* PAVON MOBILE EXPERIENCE */
+.calendar-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+@media(max-width:760px){
+  html,body{background:#171310!important;overflow-x:hidden}
+  body{font-size:15px!important}
+  .topbar{padding:10px 4px 6px!important;gap:10px!important}
+  .eyebrow{font-size:12px!important;letter-spacing:.16em!important;margin-bottom:8px!important}
+  .brand{min-height:44px!important;padding:9px 12px!important}
+  .brand span{font-size:12px!important}
+  .tabs{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    margin:10px 0 14px!important;
+  }
+  .tab,.calendar-nav{
+    width:100%!important;
+    min-height:48px!important;
+    box-sizing:border-box!important;
+    border-radius:8px!important;
+    border:1px solid #EACB68!important;
+    background:linear-gradient(180deg,#F5D66C 0%,#C8A140 100%)!important;
+    color:#171310!important;
+    padding:12px 10px!important;
+    font:900 13px/1.1 Inter,Arial,sans-serif!important;
+    letter-spacing:.01em!important;
+    box-shadow:0 4px 12px rgba(0,0,0,.24),0 0 0 1px rgba(255,229,139,.22) inset!important;
+    text-align:center!important;
+    text-decoration:none!important;
+  }
+  .tab.active{
+    background:linear-gradient(180deg,#FFE58B 0%,#D7AF45 100%)!important;
+    box-shadow:0 5px 18px rgba(232,197,90,.32),0 0 0 1px rgba(255,244,193,.42) inset!important;
+  }
+  .tab:active,.calendar-nav:active{transform:scale(.985)!important}
+  .shell{display:block!important;max-width:none!important;width:100%!important}
+  .main{padding:8px 10px 16px!important}
+  .stage-card{
+    padding:7px!important;
+    border-radius:16px!important;
+    background:#0f0d0b!important;
+    border:1px solid rgba(232,197,90,.22)!important;
+    box-shadow:0 8px 26px rgba(0,0,0,.30)!important;
+  }
+  .view{padding:0!important;background:none!important}
+  .view[data-view="abierta"]{padding:0!important;background:none!important}
+  .canvas-shell,.view[data-view="abierta"] .canvas-shell{
+    width:100%!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    border-radius:13px!important;
+  }
+  .canvas-shell:hover{
+    transform:none!important;
+    box-shadow:none!important;
+    filter:none!important;
+  }
+  .stage{
+    width:100%!important;
+    border-radius:12px!important;
+    overflow:hidden!important;
+    box-shadow:none!important;
+    touch-action:manipulation!important;
+  }
+  .lightbox-trigger{
+    top:10px!important;
+    right:10px!important;
+    width:auto!important;
+    height:42px!important;
+    padding:0 14px!important;
+    border-radius:8px!important;
+    background:linear-gradient(180deg,#F6D96F,#C9A241)!important;
+    color:#171310!important;
+    border:1px solid #FFE28A!important;
+    font:900 11px/1 Inter,Arial,sans-serif!important;
+    letter-spacing:.06em!important;
+    box-shadow:0 4px 14px rgba(0,0,0,.35)!important;
+  }
+  .side{
+    border-left:0!important;
+    border-top:1px solid rgba(232,197,90,.22)!important;
+    padding:16px 12px 30px!important;
+  }
+  .side h2{font-size:20px!important;margin-bottom:4px!important}
+  .tiny{font-size:12px!important;line-height:1.45!important}
+  .zoom-box,.selected-box,.cloud-box,.calendar-box{
+    border-radius:12px!important;
+    padding:13px!important;
+  }
+  .actions{grid-template-columns:1fr!important;gap:9px!important}
+  .actions button,.cloud-actions button,#exportBtn,#clearBtn{
+    min-height:46px!important;
+    font-size:13px!important;
+    border-radius:8px!important;
+  }
+  .cloud-actions{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .cloud-actions button.primary{
+    background:linear-gradient(180deg,#F6D96F,#C9A241)!important;
+    color:#171310!important;
+    border-color:#F2D46C!important;
+  }
+  .slot-list{gap:8px!important}
+  .slot-row{padding:11px!important;border-radius:10px!important}
+  .calendar-fields{grid-template-columns:1fr!important}
+  .calendar-fields input{min-height:42px!important;font-size:13px!important}
+  .lightbox{padding:8px!important}
+  .lightbox-frame{
+    width:calc(100vw - 16px)!important;
+    max-width:calc(100vw - 16px)!important;
+    max-height:96vh!important;
+    padding:6px!important;
+    border-radius:12px!important;
+  }
+  .lightbox-frame img{
+    max-width:100%!important;
+    max-height:calc(96vh - 12px)!important;
+    width:100%!important;
+    height:auto!important;
+    object-fit:contain!important;
+  }
+  .lightbox-close{
+    top:8px!important;
+    right:8px!important;
+    width:42px!important;
+    height:42px!important;
+    z-index:5!important;
+  }
+  .lightbox-help{display:none!important}
+  .footer{font-size:10px!important;line-height:1.4!important}
+}
 `;
 
   html=html.replace(
@@ -141,6 +272,31 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
     'renderList();\n  renderCalendar();\n})();',
     'renderList();\n  renderCalendar();\n  loadCloudState();\n})();'
   );
+  // Correct official theatre URL.
+  html=html.replaceAll("https://elgranteatropavon.com","https://www.granteatropavon.com/");
+  html=html.replaceAll("https://elgranteatropavon.com/","https://www.granteatropavon.com/");
+
+  // Add mobile-friendly Calendar as a fourth navigation page without interfering with the editor tabs.
+  const mobileEnhanceScript=`
+<script>
+window.addEventListener("DOMContentLoaded",()=>{
+  const tabs=[...document.querySelectorAll(".tab")];
+  if(tabs.length && !document.querySelector(".calendar-nav")){
+    const a=document.createElement("a");
+    a.href="/calendario.html";
+    a.className="tab calendar-nav";
+    a.textContent="Calendario";
+    a.setAttribute("aria-label","Abrir calendario de programación");
+    tabs[0].parentElement.appendChild(a);
+  }
+  document.querySelectorAll(".lightbox-trigger").forEach(btn=>{
+    btn.textContent="VER GRANDE";
+    btn.setAttribute("aria-label","Ver imagen en grande");
+  });
+});
+<\/script>`;
+  html=html.replace("</body>",mobileEnhanceScript+"</body>");
+
 
   document.open();
   document.write(html);
