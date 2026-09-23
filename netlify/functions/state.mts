@@ -28,7 +28,11 @@ export default async (req: Request, _context: Context) => {
 
   if (req.method === "GET") {
     const saved = await store.get("state", { type: "json" });
-    return json({ state: saved ?? { slots: {}, schedule: {}, updatedAt: null } });
+    return json({
+      state: saved ?? { slots: {}, schedule: {}, updatedAt: null },
+      publicEdit: Netlify.env.get("PAVON_PUBLIC_EDIT") === "true",
+      requireKey: Boolean(Netlify.env.get("PAVON_EDIT_KEY")),
+    });
   }
 
   if (req.method === "PUT") {
