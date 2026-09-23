@@ -289,6 +289,19 @@ window.addEventListener("DOMContentLoaded",()=>{
     a.setAttribute("aria-label","Abrir calendario de programación");
     tabs[0].parentElement.appendChild(a);
   }
+
+  const requested=new URLSearchParams(location.search).get("vista");
+  const labels={
+    taquilla:"taquilla cerrada",
+    lona:"lona + secundarios",
+    abierta:"taquilla abierta"
+  };
+  if(requested && labels[requested]){
+    const target=[...document.querySelectorAll(".tab")]
+      .find(el=>el.textContent.trim().toLowerCase()===labels[requested]);
+    if(target) setTimeout(()=>target.click(),0);
+  }
+
   document.querySelectorAll(".lightbox-trigger").forEach(btn=>{
     btn.textContent="VER GRANDE";
     btn.setAttribute("aria-label","Ver imagen en grande");
