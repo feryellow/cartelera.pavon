@@ -24,3 +24,9 @@ El repositorio es la fuente del código. Los datos que cambian día a día (cart
 - Para **Guardar cambios**, solicita `PAVON_EDIT_KEY`.
 - **Recargar nube** recupera la última versión publicada.
 - Las imágenes se reducen en el navegador antes de subirse.
+
+## Estado actual
+
+- Despliegue público en Netlify.
+- Edición compartida temporalmente activada para el equipo mediante `PAVON_PUBLIC_EDIT=true`.
+- La protección por clave se activará más adelante.
