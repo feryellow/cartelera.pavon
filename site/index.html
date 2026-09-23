@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartelería · Gran Teatro Pavón</title>
+<style>
+html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:Arial,sans-serif}
+.boot{min-height:100vh;display:grid;place-items:center;text-align:center;padding:30px}
+.boot strong{display:block;font-size:20px;margin-bottom:8px}
+.boot span{font-size:12px;color:#c9b98f}
+</style>
+</head>
+<body>
+<div class="boot"><div><strong>Gran Teatro Pavón</strong><span>Cargando plantilla interactiva…</span></div></div>
+<script>
+(async()=>{
+  const parts=Array.from({length:13},(_,i)=>"/bundle/part-"+String(i).padStart(2,"0")+".txt");
+  const responses=await Promise.all(parts.map(p=>fetch(p,{cache:"force-cache"})));
+  if(responses.some(r=>!r.ok)) throw new Error("No se ha podido cargar la plantilla.");
+  let html=(await Promise.all(responses.map(r=>r.text()))).join("");
+
+  const cloudCss=`
+.cloud-box{margin:0 0 14px;border:1px solid var(--line);border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.02)}
+.cloud-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.cloud-title{color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.16em;font-weight:900}
+.cloud-status{font-size:10px;color:var(--muted);text-align:right}.cloud-status.ok{color:#d9c875}.cloud-status.dirty{color:#f0c95d}.cloud-status.error{color:#e9a18f}
+.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cloud-actions button{appearance:none;border:1px solid var(--line);background:#28221d;color:var(--cream);border-radius:10px;padding:9px 10px;cursor:pointer;font:800 11px/1 Inter,Arial,sans-serif}.cloud-actions button.primary{background:var(--gold);color:#171310;border-color:var(--gold)}
+.cloud-updated{margin-top:8px;color:var(--muted);font-size:10px;line-height:1.35}
+`;
+
+  html=html.replace(
+    "input[type=file] { display:none; }",
+    cloudCss+"\ninput[type=file] { display:none; }"
+  );
+
+  html=html.replace(
+    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cuatro soportes.</p>\n\n    <div class="zoom-box">',
+    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cuatro soportes.</p>\n\n    <div class="cloud-box">\n      <div class="cloud-top"><div class="cloud-title">Estado online</div><div id="cloudStatus" class="cloud-status">Conectando…</div></div>\n      <div class="cloud-actions"><button id="reloadCloudBtn">Recargar nube</button><button id="saveCloudBtn" class="primary">Guardar cambios</button></div>\n      <div id="cloudUpdated" class="cloud-updated">Cargando la última actualización…</div>\n    </div>\n\n    <div class="zoom-box">'
+  );
+
+  html=html.replace(
+    'const calendarGrid = document.getElementById("calendarGrid");',
+    'const calendarGrid = document.getElementById("calendarGrid");\n  const cloudStatus=document.getElementById("cloudStatus");\n  const cloudUpdated=document.getElementById("cloudUpdated");\n  const saveCloudBtn=document.getElementById("saveCloudBtn");\n  const reloadCloudBtn=document.getElementById("reloadCloudBtn");'
+  );
+
+  const cloudJs=`
+  function slotCloudKey(slot){return slot.dataset.page+"__"+slot.dataset.id;}
+  function setCloudStatus(text,kind=""){cloudStatus.textContent=text;cloudStatus.className="cloud-status"+(kind?" "+kind:"");}
+  function markCloudDirty(){setCloudStatus("Cambios sin guardar","dirty");}
+  function getEditKey(){
+    let k="";
+    try{k=sessionStorage.getItem("pavon_edit_key")||"";}catch(e){}
+    if(!k){k=prompt("Clave de edición del panel Pavón:")||"";if(k){try{sessionStorage.setItem("pavon_edit_key",k);}catch(e){}}}
+    return k||null;
+  }
+  async function compressDataUrl(dataUrl,maxSide=1800,quality=.88){
+    if(!dataUrl||!dataUrl.startsWith("data:image/")) return dataUrl;
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=dataUrl;});
+    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+    if(scale===1 && dataUrl.length<1800000) return dataUrl;
+    const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",quality);
+  }
+  async function fetchCloudImage(slot){
+    const r=await fetch("/api/image?key="+encodeURIComponent(slotCloudKey(slot)),{cache:"no-store"});
+    if(r.status===404)return null;if(!r.ok)throw new Error("No se pudo cargar "+slot.dataset.name);return await r.text();
+  }
+  async function loadCloudState(){
+    setCloudStatus("Cargando…");reloadCloudBtn.disabled=true;
+    try{
+      const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw new Error("No se pudo leer el estado online.");
+      const payload=await r.json(),remote=payload.state||{},slots=remote.slots||{},schedule=remote.schedule||{};
+      for(const slot of allSlots){
+        const meta=slots[slotCloudKey(slot)]||{};
+        state[key(slot)].mode=meta.mode||"contain";
+        const old=slot.querySelector("img");if(old)old.remove();state[key(slot)].dataUrl=null;
+        if(meta.hasImage){
+          const data=await fetchCloudImage(slot);
+          if(data){const media=slot.querySelector(".media"),img=document.createElement("img");img.src=data;img.style.objectFit=state[key(slot)].mode;media.appendChild(img);state[key(slot)].dataUrl=data;}
+        }
+        const sch=schedule[slotCloudKey(slot)]||{};
+        try{localStorage.setItem(scheduleKey(slot,"date"),sch.date||"");localStorage.setItem(scheduleKey(slot,"next"),sch.next||"");}catch(e){}
+      }
+      renderList();renderCalendar();selectSlot(null);
+      if(remote.updatedAt){cloudUpdated.textContent="Última actualización: "+new Date(remote.updatedAt).toLocaleString("es-ES");}
+      else cloudUpdated.textContent="Todavía no hay una versión guardada en la nube.";
+      setCloudStatus("Sincronizado","ok");
+    }catch(e){console.error(e);setCloudStatus("Modo local","error");cloudUpdated.textContent="No se ha podido conectar con Netlify.";}
+    finally{reloadCloudBtn.disabled=false;}
+  }
+  async function saveCloudState(){
+    const editKey=getEditKey();if(!editKey)return;
+    saveCloudBtn.disabled=true;reloadCloudBtn.disabled=true;setCloudStatus("Guardando…");
+    try{
+      const slotMeta={},schedule={};
+      for(const slot of allSlots){
+        const sk=slotCloudKey(slot),s=state[key(slot)];
+        if(s.dataUrl){
+          const normalized=await compressDataUrl(s.dataUrl);
+          const r=await fetch("/api/image?key="+encodeURIComponent(sk),{method:"PUT",headers:{"content-type":"text/plain;charset=utf-8","x-edit-key":editKey},body:normalized});
+          if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+          if(!r.ok)throw new Error("No se pudo guardar "+slot.dataset.name);
+          s.dataUrl=normalized;const img=slot.querySelector("img");if(img)img.src=normalized;
+        }else{
+          const r=await fetch("/api/image?key="+encodeURIComponent(sk),{method:"DELETE",headers:{"x-edit-key":editKey}});
+          if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+          if(!r.ok&&r.status!==404)throw new Error("No se pudo borrar "+slot.dataset.name);
+        }
+        slotMeta[sk]={mode:s.mode||"contain",hasImage:!!s.dataUrl};
+        let date="",next="";try{date=localStorage.getItem(scheduleKey(slot,"date"))||"";next=localStorage.getItem(scheduleKey(slot,"next"))||"";}catch(e){}
+        schedule[sk]={date,next};
+      }
+      const updatedAt=new Date().toISOString();
+      const r=await fetch("/api/state",{method:"PUT",headers:{"content-type":"application/json","x-edit-key":editKey},body:JSON.stringify({slots:slotMeta,schedule,updatedAt})});
+      if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+      if(!r.ok)throw new Error("No se pudo guardar el estado general.");
+      cloudUpdated.textContent="Última actualización: "+new Date(updatedAt).toLocaleString("es-ES");setCloudStatus("Guardado","ok");
+    }catch(e){console.error(e);setCloudStatus("Error al guardar","error");alert(e.message||"No se han podido guardar los cambios.");}
+    finally{saveCloudBtn.disabled=false;reloadCloudBtn.disabled=false;}
+  }
+  saveCloudBtn.addEventListener("click",saveCloudState);
+  reloadCloudBtn.addEventListener("click",loadCloudState);
+  calendarGrid.addEventListener("input",markCloudDirty);
+  fileInput.addEventListener("change",markCloudDirty);
+  fitBtn.addEventListener("click",markCloudDirty);
+  removeBtn.addEventListener("click",markCloudDirty);
+  clearBtn.addEventListener("click",markCloudDirty);
+`;
+
+  html=html.replace(
+    'exportBtn.addEventListener("click", async () => {',
+    cloudJs+'\n  exportBtn.addEventListener("click", async () => {'
+  );
+
+  html=html.replace(
+    'renderList();\n  renderCalendar();\n})();',
+    'renderList();\n  renderCalendar();\n  loadCloudState();\n})();'
+  );
+
+  document.open();
+  document.write(html);
+  document.close();
+})().catch(err=>{
+  console.error(err);
+  document.body.innerHTML='<div class="boot"><div><strong>No se ha podido cargar la plantilla</strong><span>'+String(err.message||err)+'</span></div></div>';
+});
+</script>
+</body>
+</html>
