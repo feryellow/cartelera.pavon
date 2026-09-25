@@ -1,11 +1,11 @@
 {
-  "name": "Pavón Control",
-  "short_name": "Pavón",
+  "name": "Yellow Control",
+  "short_name": "Yellow",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#171310",
-  "theme_color": "#171310",
+  "background_color": "#131313",
+  "theme_color": "#131313",
   "icons": [
     {
       "src": "/pavon-app-icon.png",
