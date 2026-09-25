@@ -34,12 +34,10 @@
     </div>
   </div>
 
-  <header class="topbar">
-    <a class="brand-lockup" href="#dashboard"><img src="/yellow-app-icon-180.png" alt=""><div><strong>YELLOW CONTROL</strong><span>Yellow Media</span></div></a>
-    <div class="account"><span id="accountName">—</span><button id="logoutBtn" class="ghost">Salir</button></div>
-  </header>
+  <aside class="sidebar-shell">
+    <a class="brand-lockup sidebar-brand" href="#dashboard"><img src="/yellow-app-icon-180.png" alt=""><div><strong>YELLOW CONTROL</strong><span>YELLOW MEDIA · OPERACIONES</span></div></a>
 
-  <nav id="mainNav" class="main-nav" aria-label="Módulos">
+    <nav id="mainNav" class="main-nav" aria-label="Módulos">
     <a href="#dashboard" data-route="dashboard"><small>Resumen</small><b>Inicio</b></a>
     <a href="#calendario" data-route="calendario"><small>Fechas</small><b>Calendario</b></a>
     <a href="/carteleria.html" data-route="carteleria"><small>Soportes</small><b>Cartelería</b></a>
@@ -48,9 +46,27 @@
     <a href="#taxis" data-route="taxis"><small>Campañas</small><b>Taxis</b></a>
     <a href="#intercambiadores" data-route="intercambiadores"><small>CLECE</small><b>Intercambiadores</b></a>
     <a href="#revistas" data-route="revistas"><small>Mensual</small><b>Revistas de Teatros</b></a>
-    <a href="#archivo" data-route="archivo"><small>Histórico</small><b>Archivo</b></a>
-    <a href="#admin" data-route="admin"><small>Accesos</small><b>Usuarios</b></a>
-  </nav>
+    <a href="#archivo" data-route="archivo"><small>Histórico</small><b>Archivo / Histórico</b></a>
+    <a href="#admin" data-route="admin"><small>Accesos</small><b>Usuarios y Permisos</b></a>
+    </nav>
+
+    <div class="sidebar-account">
+      <img src="/yellow-app-icon-180.png" alt="" class="account-avatar">
+      <div><strong id="accountName">—</strong><span>Yellow Media</span></div>
+      <button id="logoutBtn" class="ghost icon-logout" aria-label="Salir">↗</button>
+    </div>
+  </aside>
+
+  <header class="workspace-topbar">
+    <div class="workspace-context">
+      <span class="workspace-dot"></span>
+      <div><small>YELLOW MEDIA</small><strong>Operaciones</strong></div>
+    </div>
+    <div class="workspace-meta">
+      <span><small>VISTA</small><b>Todos los espacios</b></span>
+      <span><small>APLICACIÓN</small><b>YELLOW CONTROL</b></span>
+    </div>
+  </header>
 
   <main id="app" class="app-shell">
     <div class="loading">Cargando Yellow Control…</div>
