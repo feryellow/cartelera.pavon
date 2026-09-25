@@ -21,19 +21,26 @@ export default async (req: Request) => {
       const schedule = state.schedule || {};
       const today = new Date().toISOString().slice(0,10);
       const carteleria = Object.entries(schedule).map(([key,v]: any)=>({ key, date:v?.date||"", next:v?.next||"" }));
-      const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest:await listAudit(8) };
-      if (can(auth.actor,"radio",false)) {
-        const rows=await listRecords("radio"); payload.radio={ total:rows.length, active:rows.filter(isActive).length, endingSoon:rows.filter(r=>r.endDate && r.endDate>=today).slice(0,8) };
-      }
-      if (can(auth.actor,"taxis",false)) {
-        const rows=await listRecords("taxis"); payload.taxis={ total:rows.length, active:rows.filter(isActive).length };
-      }
-      if (can(auth.actor,"intercambiadores",false)) {
-        const rows=await listRecords("intercambiadores"); payload.intercambiadores={ total:rows.length, active:rows.filter(isActive).length };
-      }
-      if (can(auth.actor,"hometicket",false)) {
-        const rows=await listRecords("hometicket"); payload.hometicket={ total:rows.length, active:rows.filter(isActive).length };
-      }
+      const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest:await listAudit(8), attention:[], currentMaterial:[] };
+      const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket",label:string)=>{
+        if(!can(auth.actor,moduleName,false))return;
+        const rows=await listRecords(moduleName);
+        payload[moduleName]={total:rows.length,active:rows.filter(isActive).length};
+        for(const r of rows){
+          const title=r.spectacle||r.campaignName||r.position||"Registro";
+          const place=r.venue||r.station||r.location||r.support||"";
+          if(isActive(r)) payload.currentMaterial.push({module:label,title,place,materialStatus:r.materialStatus||"sin indicar",endDate:r.endDate||""});
+          if(r.deliveryDate && !["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())){
+            payload.attention.push({module:label,title,place,deliveryDate:r.deliveryDate,materialStatus:r.materialStatus||"pendiente",overdue:r.deliveryDate<today});
+          }
+        }
+      };
+      await addModule("radio","Radio");
+      await addModule("taxis","Taxis");
+      await addModule("intercambiadores","Intercambiadores");
+      await addModule("hometicket","Home Ticket");
+      payload.attention.sort((a:any,b:any)=>String(a.deliveryDate).localeCompare(String(b.deliveryDate)));
+      payload.currentMaterial.sort((a:any,b:any)=>String(a.module).localeCompare(String(b.module))||String(a.title).localeCompare(String(b.title)));
       return json(payload);
     }
     if (!validModule(moduleName)) return json({error:"Unknown module"},400);
