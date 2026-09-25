@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 :root{
   --bg:#171310;--panel:#211c17;--panel2:#2a231d;--gold:#e8c55a;--gold2:#c9a241;
   --cream:#f5efe0;--muted:#b7aa91;--line:rgba(232,197,90,.22);--danger:#cc7066;--ok:#9fbd7c;
@@ -5,7 +6,7 @@
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
-body{margin:0;background:linear-gradient(180deg,#171310,#120f0d);color:var(--cream);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;min-height:100vh}
+body{margin:0;background:linear-gradient(180deg,#171310,#120f0d);color:var(--cream);font:14px/1.45 "Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;min-height:100vh}
 button,input,select,textarea{font:inherit}
 button,a{touch-action:manipulation}
 .hidden{display:none!important}
@@ -17,7 +18,7 @@ button,a{touch-action:manipulation}
 .account{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px}
 .ghost{background:transparent;color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer}
 .main-nav{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:#14110f;position:sticky;top:65px;z-index:30}
-.main-nav a{display:flex;min-height:44px;align-items:center;justify-content:center;padding:8px;text-decoration:none;text-align:center;color:#171310;background:linear-gradient(180deg,#f3d66f,#caa442);border:1px solid #f0d16a;border-radius:8px;font-weight:900;font-size:11px}
+.main-nav a{display:flex;min-height:44px;align-items:center;justify-content:center;padding:8px;text-decoration:none;text-align:center;color:#171310;background:linear-gradient(180deg,#f3d66f,#caa442);border:1px solid #f0d16a;border-radius:14px;font-weight:700;font-size:11px}
 .main-nav a.active{background:#fff0aa;box-shadow:0 0 0 2px rgba(255,240,170,.18)}
 .main-nav a.locked{display:none}
 .app-shell{max-width:1440px;margin:0 auto;padding:18px max(18px,env(safe-area-inset-right)) calc(34px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
