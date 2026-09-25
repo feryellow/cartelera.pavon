@@ -86,9 +86,11 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
 }
 
 .pavon-meta-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(232,197,90,.12)}
-.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{width:100%;background:#15120f;color:var(--cream);border:1px solid var(--line);border-radius:7px;padding:7px;font:600 10px/1.3 Inter,Arial,sans-serif}
+.pavon-meta-fields label{display:grid;gap:4px;min-width:0;color:var(--muted);font:700 9px/1 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{box-sizing:border-box;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;width:100%;background:#15120f;color:var(--cream);border:1px solid var(--line);border-radius:7px;padding:7px;font:600 10px/1.3 Inter,Arial,sans-serif}
 .pavon-meta-fields textarea{grid-column:1/-1;min-height:52px;resize:vertical}
-@media(max-width:760px){.pavon-meta-fields{grid-template-columns:1fr}.pavon-meta-fields textarea{grid-column:auto}.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{min-height:40px;font-size:12px}}
+@media(max-width:760px){.pavon-meta-fields{grid-template-columns:1fr}.pavon-meta-fields textarea{grid-column:auto}.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{min-height:40px;font-size:16px}}
+@media (hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}
 
 /* PAVON MOBILE EXPERIENCE */
 .calendar-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
@@ -282,7 +284,8 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
         if(v)el.value=v;
         el.addEventListener("input",()=>{try{localStorage.setItem(slotMetaKey(slot,el.dataset.meta),el.value);}catch(e){}markCloudDirty();});
       }
-      box.append(title,install,remove,status,notes); row.appendChild(box);
+      const wrap=(el,txt)=>{const l=document.createElement("label");l.append(txt,el);return l};
+      box.append(title,wrap(install,"Instalación"),wrap(remove,"Retirada"),status,notes); row.appendChild(box);
     });
   }
   function setCloudStatus(text,kind=""){cloudStatus.textContent=text;cloudStatus.className="cloud-status"+(kind?" "+kind:"");}

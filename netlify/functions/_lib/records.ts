@@ -29,10 +29,10 @@ export async function putRecord(moduleName: RecordModule, id: string, value: unk
 const allowed: Record<RecordModule,string[]> = {
   radio: ["venue","spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status","materialStatus","deliveryDate"],
   publicidad: ["spectacle","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","category","location"],
-  taxis: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
-  intercambiadores: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  taxis: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  intercambiadores: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
   hometicket: ["venue","position","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate"],
-  revistas: ["magazine","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],
+  revistas: ["venue","magazine","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],
 };
 
 export function cleanInput(moduleName: RecordModule, input: any) {

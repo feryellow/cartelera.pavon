@@ -198,3 +198,8 @@ body[data-route="dashboard"] .app-shell{margin-left:auto}
  .mag-cell>small{display:block}
  .mag-cell.empty{flex-direction:row;align-items:center;justify-content:space-between}
 }
+.mag-venue{font-size:11px;color:var(--muted)}
+/* iPhone/Android: con letra de 16px el navegador no hace zoom al tocar un campo */
+@media (hover:none) and (pointer:coarse){
+ input,select,textarea{font-size:16px}
+}
