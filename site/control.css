@@ -363,3 +363,24 @@ body[data-route="dashboard"] .app-shell{margin-left:var(--sidebar-w)}
  .home-metrics{width:100%;overflow-x:auto}
  .home-metrics>span{flex:1;min-width:112px}
 }
+
+/* Yellow Control · filtros de espacios */
+.venue-pills{display:flex;gap:6px;overflow-x:auto;margin:0 0 14px;padding:2px 0 4px;scrollbar-width:none}
+.venue-pills::-webkit-scrollbar{display:none}
+.venue-pills button{flex:none;min-height:38px;padding:8px 14px;border-radius:8px;background:#1c1b1b;border:1px solid #282828;color:#d0c6ab;font-size:12px;font-weight:700}
+.venue-pills button:hover{border-color:#4d4632;color:#fff3d6}
+.venue-pills button.active{background:#ffd400;border-color:#ffd400;color:#111}
+.module-kpi{display:flex;gap:6px;margin:0 0 14px}
+.module-kpi span{min-width:150px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;background:#1c1b1b;border:1px solid #282828}
+.module-kpi b{font-family:"Anton",sans-serif;font-size:23px;font-weight:400;color:#ffd400}
+.module-kpi em{font-style:normal;font-size:9px;font-weight:800;line-height:1.15;letter-spacing:.08em;text-transform:uppercase;color:#d0c6ab}
+.module-workspace{align-items:start}
+.module-workspace>.card{padding:18px}
+.section-kicker{display:block;margin-bottom:3px;color:#ffd400;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.space-panel.filtered-out{display:none}
+.space-panel+.space-panel{margin-top:26px}
+@media(max-width:700px){
+ .module-kpi{overflow-x:auto}
+ .module-kpi span{min-width:128px}
+ .venue-pills{margin-left:-2px;margin-right:-2px}
+}
