@@ -85,6 +85,11 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
   .columna1-shell{width:100%;border-radius:10px}
 }
 
+.pavon-meta-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(232,197,90,.12)}
+.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{width:100%;background:#15120f;color:var(--cream);border:1px solid var(--line);border-radius:7px;padding:7px;font:600 10px/1.3 Inter,Arial,sans-serif}
+.pavon-meta-fields textarea{grid-column:1/-1;min-height:52px;resize:vertical}
+@media(max-width:760px){.pavon-meta-fields{grid-template-columns:1fr}.pavon-meta-fields textarea{grid-column:auto}.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{min-height:40px;font-size:12px}}
+
 /* PAVON MOBILE EXPERIENCE */
 .calendar-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 @media(max-width:760px){
@@ -252,6 +257,26 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
 
   const cloudJs=`
   function slotCloudKey(slot){return slot.dataset.page+"__"+slot.dataset.id;}
+  function slotMetaKey(slot,field){return "pavon_meta_"+slot.dataset.page+"_"+slot.dataset.id+"_"+field;}
+  function enhanceScheduleFields(){
+    const rows=[...calendarGrid.querySelectorAll(".calendar-row")],slots=activeSlots();
+    rows.forEach((row,i)=>{
+      const slot=slots[i]; if(!slot||row.querySelector(".pavon-meta-fields"))return;
+      const box=document.createElement("div"); box.className="pavon-meta-fields";
+      const title=document.createElement("input"); title.placeholder="Espectáculo / pieza"; title.dataset.meta="title";
+      const install=document.createElement("input"); install.type="date"; install.dataset.meta="installDate"; install.title="Fecha de instalación";
+      const remove=document.createElement("input"); remove.type="date"; remove.dataset.meta="removeDate"; remove.title="Fecha de retirada";
+      const status=document.createElement("select"); status.dataset.meta="status";
+      ["pendiente","aprobado","en producción","instalado"].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;status.appendChild(o);});
+      const notes=document.createElement("textarea"); notes.placeholder="Observaciones"; notes.dataset.meta="notes";
+      for(const el of [title,install,remove,status,notes]){
+        let v="";try{v=localStorage.getItem(slotMetaKey(slot,el.dataset.meta))||"";}catch(e){}
+        if(v)el.value=v;
+        el.addEventListener("input",()=>{try{localStorage.setItem(slotMetaKey(slot,el.dataset.meta),el.value);}catch(e){}markCloudDirty();});
+      }
+      box.append(title,install,remove,status,notes); row.appendChild(box);
+    });
+  }
   function setCloudStatus(text,kind=""){cloudStatus.textContent=text;cloudStatus.className="cloud-status"+(kind?" "+kind:"");}
   function markCloudDirty(){setCloudStatus("Cambios sin guardar","dirty");}
   function getEditKey(){
@@ -289,9 +314,13 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
           if(data){const media=slot.querySelector(".media"),img=document.createElement("img");img.src=data;img.style.objectFit=state[key(slot)].mode;media.appendChild(img);state[key(slot)].dataUrl=data;}
         }
         const sch=schedule[slotCloudKey(slot)]||{};
-        try{localStorage.setItem(scheduleKey(slot,"date"),sch.date||"");localStorage.setItem(scheduleKey(slot,"next"),sch.next||"");}catch(e){}
+        try{
+          localStorage.setItem(scheduleKey(slot,"date"),sch.date||"");
+          localStorage.setItem(scheduleKey(slot,"next"),sch.next||"");
+          for(const field of ["title","installDate","removeDate","status","notes"]){localStorage.setItem(slotMetaKey(slot,field),sch[field]||"");}
+        }catch(e){}
       }
-      renderList();renderCalendar();selectSlot(null);
+      renderList();renderCalendar();enhanceScheduleFields();selectSlot(null);
       if(remote.updatedAt){cloudUpdated.textContent="Última actualización: "+new Date(remote.updatedAt).toLocaleString("es-ES");}
       else cloudUpdated.textContent="Todavía no hay una versión guardada en la nube.";
       if(window.pavonPublicEdit){cloudUpdated.textContent += " · Edición compartida activa";}
@@ -318,8 +347,17 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
           if(!r.ok&&r.status!==404)throw new Error("No se pudo borrar "+slot.dataset.name);
         }
         slotMeta[sk]={mode:s.mode||"contain",hasImage:!!s.dataUrl};
-        let date="",next="";try{date=localStorage.getItem(scheduleKey(slot,"date"))||"";next=localStorage.getItem(scheduleKey(slot,"next"))||"";}catch(e){}
-        schedule[sk]={date,next};
+        let date="",next="",title="",installDate="",removeDate="",status="",notes="";
+        try{
+          date=localStorage.getItem(scheduleKey(slot,"date"))||"";
+          next=localStorage.getItem(scheduleKey(slot,"next"))||"";
+          title=localStorage.getItem(slotMetaKey(slot,"title"))||"";
+          installDate=localStorage.getItem(slotMetaKey(slot,"installDate"))||"";
+          removeDate=localStorage.getItem(slotMetaKey(slot,"removeDate"))||"";
+          status=localStorage.getItem(slotMetaKey(slot,"status"))||"";
+          notes=localStorage.getItem(slotMetaKey(slot,"notes"))||"";
+        }catch(e){}
+        schedule[sk]={date,next,title,installDate,removeDate,status,notes};
       }
       const updatedAt=new Date().toISOString();
       const r=await fetch("/api/state",{method:"PUT",headers:{"content-type":"application/json",...(editKey?{"x-edit-key":editKey}:{})},body:JSON.stringify({slots:slotMeta,schedule,updatedAt})});
@@ -339,6 +377,8 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
   saveCloudBtn.addEventListener("click",saveCloudState);
   reloadCloudBtn.addEventListener("click",loadCloudState);
   calendarGrid.addEventListener("input",markCloudDirty);
+  const originalRenderCalendar=renderCalendar;
+  renderCalendar=function(){originalRenderCalendar();setTimeout(enhanceScheduleFields,0);};
   fileInput.addEventListener("change",markCloudDirty);
   fitBtn.addEventListener("click",markCloudDirty);
   removeBtn.addEventListener("click",markCloudDirty);
