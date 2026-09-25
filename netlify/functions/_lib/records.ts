@@ -1,6 +1,6 @@
 import { controlStore } from "./store.ts";
 
-export const MODULES = ["radio", "publicidad"] as const;
+export const MODULES = ["radio", "publicidad", "taxis", "intercambiadores", "hometicket"] as const;
 export type RecordModule = typeof MODULES[number];
 
 export function validModule(v: string | null): v is RecordModule {
@@ -27,8 +27,11 @@ export async function putRecord(moduleName: RecordModule, id: string, value: unk
 }
 
 const allowed: Record<RecordModule,string[]> = {
-  radio: ["spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status"],
+  radio: ["venue","spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status"],
   publicidad: ["spectacle","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","category","location"],
+  taxis: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location"],
+  intercambiadores: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location"],
+  hometicket: ["venue","position","spectacle","startDate","endDate","assetKey","assetName","notes","status"],
 };
 
 export function cleanInput(moduleName: RecordModule, input: any) {
