@@ -49,7 +49,7 @@ async function dashboard(){
    const label=x.days<0?"Vencido "+Math.abs(x.days)+" d":x.days===0?"HOY":"D-"+x.days;
    return '<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span class="badge '+(x.days<0?"warn":"")+'">'+label+'</span><span>'+fdate(x.next)+'</span></div></div></div>';
  }).join(""):'<div class="notice">No hay avisos de cartelería en los próximos 7 días.</div>';
- app.innerHTML=homeHeader(alerts)+homeTiles(d,alerts)+
+ app.innerHTML=homeHeader(alerts,d)+homeTiles(d,alerts)+
  '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Material que requiere atención</h2><span class="badge warn">'+(d.attention||[]).length+'</span></div><div class="list attention-list">'+((d.attention||[]).length?(d.attention||[]).map(x=>'<div class="item '+(x.overdue?"overdue":"")+'"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"pendiente")+'</span><span>Entrega: '+fdate(x.deliveryDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material pendiente con fecha límite registrada.</div>')+'</div></section><section class="card"><div class="section-title"><h2>Material activo ahora</h2><span class="badge ok">'+(d.currentMaterial||[]).length+'</span></div><div class="list">'+((d.currentMaterial||[]).length?(d.currentMaterial||[]).map(x=>'<div class="item"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"sin indicar")+'</span><span>Fin: '+fdate(x.endDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material activo registrado.</div>')+'</div></section></div>'+
  '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Avisos y vencimientos</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+alertHtml+'</div>'+
  '<div class="section-title" style="margin-top:20px"><h2>Próximos cambios</h2></div><div class="list">'+
@@ -59,7 +59,17 @@ async function dashboard(){
  '</div></section></div>';
 }
 
-function homeHeader(alerts){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];const aviso=first?'<a class="home-alert" href="/carteleria.html"><i></i><span><b>Cartelería:</b> '+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+' · '+(first.days<0?"vencido hace "+Math.abs(first.days)+" días":first.days===0?"cambio hoy":"cambio en "+first.days+(first.days===1?" día":" días"))+'</span></a>':"";return '<div class="home-hello"><h1>'+greet+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+'</p></div>'+aviso}
+function homeHeader(alerts,d){
+ const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";
+ const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+ const first=alerts[0];
+ const active=[d.radio?.active,d.taxis?.active,d.intercambiadores?.active,d.hometicket?.active,d.revistas?.active].filter(Number.isFinite).reduce((a,b)=>a+b,0);
+ const spaces=new Set((d.currentMaterial||[]).map(x=>x.place).filter(Boolean)).size;
+ const urgent=(d.attention||[]).filter(x=>x.overdue).length;
+ const metrics='<div class="home-metrics"><span><b>'+String(spaces).padStart(2,"0")+'</b><em>Espacios<br>activos</em></span><span><b>'+String(active).padStart(2,"0")+'</b><em>Campañas<br>en emisión</em></span><span class="'+(urgent?"critical":"")+'"><b>'+String(urgent).padStart(2,"0")+'</b><em>Incidencias<br>críticas</em></span></div>';
+ const aviso=first?'<a class="home-alert" href="/carteleria.html"><i></i><span><b>Cartelería:</b> '+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+' · '+(first.days<0?"vencido hace "+Math.abs(first.days)+" días":first.days===0?"cambio hoy":"cambio en "+first.days+(first.days===1?" día":" días"))+'</span></a>':"";
+ return '<div class="home-hero"><div class="home-hello"><h1>'+greet+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+' · Yellow Media</p></div>'+metrics+'</div>'+aviso;
+}
 function homeTiles(d,alerts){const count=(n,one,many)=>n==null?"":n+" "+(n===1?one:many);const badges={carteleria:alerts.length?count(alerts.length,"aviso","avisos")+" ≤ 7 días":"",radio:d.radio?count(d.radio.active,"cuña activa","cuñas activas"):"",taxis:d.taxis?count(d.taxis.active,"campaña activa","campañas activas"):"",intercambiadores:d.intercambiadores?count(d.intercambiadores.active,"campaña activa","campañas activas"):"",hometicket:d.hometicket?count(d.hometicket.active,"activo","activos"):"",revistas:d.revistas?d.revistas.active+" de "+MAGAZINES.length+" este mes":""};
  const routes=["calendario","carteleria","hometicket","radio","taxis","intercambiadores","revistas","archivo","admin"].filter(canRoute);
  return '<nav class="home-tiles" aria-label="Secciones">'+routes.map(r=>{const m=navMeta(r);if(!m)return"";const photo=ROUTE_PHOTOS[r],b=badges[r];return '<a class="home-tile'+(photo?' has-photo':'')+'" href="'+esc(m.href)+'"'+(photo?' style="--photo:url('+photo+')"':'')+'>'+icon(r,"tile-ico")+(b?'<span class="tile-badge">'+esc(b)+'</span>':'')+'<span class="tile-txt"><small>'+esc(m.small)+'</small><b>'+(r==="intercambiadores"?"Intercam&shy;biadores":esc(m.name))+'</b></span></a>'}).join("")+'</nav>'}
