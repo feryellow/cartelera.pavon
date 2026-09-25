@@ -123,3 +123,11 @@ td{font-size:12px;color:#e9dfcc}
  .event{font-size:12px;padding:10px}
  .event strong{font-size:14px}
 }
+
+.radio-space{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
+.radio-space:first-of-type{margin-top:22px}
+.radio-space + .list{margin-bottom:24px}
+.attention-list .item{border-left:3px solid var(--gold)}
+.attention-list .item.overdue{border-left-color:var(--danger)}
+.ht-space{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+.ht-space:first-child{margin-top:0;padding-top:0;border-top:0}
