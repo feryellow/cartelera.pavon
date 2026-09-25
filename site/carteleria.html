@@ -300,7 +300,7 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
     finally{reloadCloudBtn.disabled=false;}
   }
   async function saveCloudState(){
-    const editKey=window.pavonPublicEdit ? "" : getEditKey();if(!window.pavonPublicEdit && !editKey)return;
+    const editKey=(window.pavonPublicEdit||window.pavonAuthenticated) ? "" : getEditKey();if(!window.pavonPublicEdit && !window.pavonAuthenticated && !editKey)return;
     saveCloudBtn.disabled=true;reloadCloudBtn.disabled=true;setCloudStatus("Guardando…");
     try{
       const slotMeta={},schedule={};
@@ -326,6 +326,13 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
       if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
       if(!r.ok)throw new Error("No se pudo guardar el estado general.");
       cloudUpdated.textContent="Última actualización: "+new Date(updatedAt).toLocaleString("es-ES");setCloudStatus("Guardado","ok");
+      try{
+        const pngDataUrl=await makeCompositeDataUrl(activePage);
+        const mail=await fetch("/api/email-update",{method:"POST",headers:{"content-type":"application/json",...(editKey?{"x-edit-key":editKey}:{})},body:JSON.stringify({page:activePage,pngDataUrl,updatedAt})});
+        if(mail.status===202) cloudUpdated.textContent += " · correo pendiente de configurar";
+        else if(!mail.ok) cloudUpdated.textContent += " · error de correo";
+        else cloudUpdated.textContent += " · correo enviado";
+      }catch(mailErr){console.error(mailErr);cloudUpdated.textContent += " · error de correo";}
     }catch(e){console.error(e);setCloudStatus("Error al guardar","error");alert(e.message||"No se han podido guardar los cambios.");}
     finally{saveCloudBtn.disabled=false;reloadCloudBtn.disabled=false;}
   }
@@ -423,7 +430,7 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
     '<link rel="apple-touch-icon" sizes="180x180" href="/pavon-app-icon.png">' +
     '<meta name="apple-mobile-web-app-capable" content="yes">' +
     '<meta name="mobile-web-app-capable" content="yes">' +
-    '<meta name="apple-mobile-web-app-title" content="Pavón Cartelería">' +
+    '<meta name="apple-mobile-web-app-title" content="Pavón Control">' +
     '<meta name="theme-color" content="#171310">';
   html = html.replace("</head>", appHead + "</head>");
 
