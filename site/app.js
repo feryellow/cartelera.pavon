@@ -71,7 +71,7 @@ function stat(value,label){return '<div class="card stat"><strong>'+esc(value)+'
 
 async function radio(){
  const d=await api("/api/control?module=radio");
- const rows=d.rows||[], active=rows.filter(r=>activeNow(r));
+ const rows=d.rows||[];loadSpectacles();learnSpectacles(rows), active=rows.filter(r=>activeNow(r));
  const venues=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío"];
  const extras=[...new Set(rows.map(r=>r.venue).filter(Boolean).filter(v=>!venues.includes(v)))];
  const groups=[...venues,...extras];
@@ -88,7 +88,7 @@ function radioForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar 
  input("timeSlot","Franja horaria",r.timeSlot)+input("contact","Contacto",r.contact)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+selectStatus(r.status)+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'}
-function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"></label>'}
+function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' list="spectacleList" autocomplete="off"':"")+'></label>'}
 const VENUES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro","Soho City Madrid"];
 function venueSelect(v=""){const values=VENUES;return '<label>Espacio<select name="venue"><option value="">Seleccionar…</option>'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'}
 function materialStatusSelect(v="pendiente"){const values=["pendiente","solicitado","en producción","recibido","entregado","listo"];return '<label>Estado del material<select name="materialStatus">'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
@@ -111,8 +111,8 @@ const CAMPAIGN_CONFIG={
  intercambiadores:{title:"Intercambiadores",subtitle:"CLECE · campañas y soportes en intercambiadores",provider:"Proveedor",location:"Intercambiador / ubicación"}
 };
 async function campaigns(moduleName){
- const cfg=CAMPAIGN_CONFIG[moduleName],d=await api("/api/control?module="+moduleName),rows=d.rows||[];
- const filters='<div class="form-grid" style="margin-bottom:12px"><label>Buscar<input id="campaignFilterQ" placeholder="Espectáculo, soporte, proveedor…"></label><label>Estado<select id="campaignFilterStatus"><option value="">Todas</option><option value="active">Activas ahora</option><option value="finalizado">Finalizadas</option></select></label><label class="wide">Espacio<select id="campaignFilterVenue"><option value="">Todos los espacios</option>'+VENUES.map(v=>'<option>'+esc(v)+'</option>').join("")+'</select></label></div>';
+ const cfg=CAMPAIGN_CONFIG[moduleName],d=await api("/api/control?module="+moduleName),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
+ const filters='<div class="form-grid" style="margin-bottom:12px"><label class="wide">Buscar<input id="campaignFilterQ" placeholder="Espectáculo, soporte, proveedor…"></label><label>Estado<select id="campaignFilterStatus"><option value="">Todas</option><option value="active">Activas ahora</option><option value="finalizado">Finalizadas</option></select></label><label class="wide">Espacio<select id="campaignFilterVenue"><option value="">Todos los espacios</option>'+VENUES.map(v=>'<option>'+esc(v)+'</option>').join("")+'</select></label></div>';
  app.innerHTML=pageHead(cfg.title,cfg.subtitle,'<button id="newCampaign" class="primary">+ Nueva campaña</button>')+moduleKpis(rows,"Activas ahora")+'<div class="grid two-col"><section class="card"><div class="section-title"><h2>Registros</h2><span id="campaignCount" class="badge ok">'+rows.filter(activeNow).length+' activas</span></div>'+filters+'<div id="campaignList" class="list">'+campaignItems(rows,moduleName)+'</div></section><section class="card" id="campaignFormCard">'+campaignForm(moduleName)+'</section></div>';
  const refresh=()=>{const q=($("#campaignFilterQ").value||"").toLowerCase().trim(),status=$("#campaignFilterStatus").value,venue=$("#campaignFilterVenue").value;const filtered=rows.filter(r=>{if(venue&&r.venue!==venue)return false;if(q&&!JSON.stringify(r).toLowerCase().includes(q))return false;if(status==="active"&&!activeNow(r))return false;if(status==="finalizado"&&(r.status||"").toLowerCase()!=="finalizado"&&!r.deletedAt)return false;return true});$("#campaignList").innerHTML=campaignItems(filtered,moduleName);$("#campaignCount").textContent=filtered.length+" visibles";bindCampaignRows(filtered,moduleName);hydrateMedia(moduleName)};
  $("#campaignFilterQ").addEventListener("input",refresh);$("#campaignFilterStatus").addEventListener("input",refresh);$("#campaignFilterVenue").addEventListener("input",refresh);chipify($("#campaignFilterStatus"),"Estado");chipify($("#campaignFilterVenue"),"Espacio",venueShort);
@@ -126,7 +126,7 @@ function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)
 
 const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro"];
 async function homeTicket(){
- const d=await api("/api/control?module=hometicket"),rows=d.rows||[];
+ const d=await api("/api/control?module=hometicket"),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
  const htSpaces=[...HOME_TICKET_SPACES,...new Set(rows.map(r=>r.venue).filter(v=>v&&!HOME_TICKET_SPACES.includes(v)))];
  const grouped=htSpaces.map((v,i)=>'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">'+String(i+1).padStart(2,"0")+' · Home Ticket</small><h2>'+esc(v)+'</h2></div><span class="badge">'+rows.filter(r=>r.venue===v).length+'</span></div><div class="list">'+htItems(rows.filter(r=>r.venue===v))+'</div></div>').join("");
  app.innerHTML=pageHead("Home Ticket",HOME_TICKET_SPACES.length+" Home Ticket diferenciados por espacio",'<button id="newHT" class="primary">+ Nueva pieza</button>')+moduleKpis(rows,"Piezas activas")+'<div class="grid two-col"><section class="card">'+grouped+'</section><section class="card" id="htFormCard">'+htForm()+'</section></div>';
@@ -143,7 +143,7 @@ function monthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(
 function monthLabel(m){const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});return t.charAt(0).toUpperCase()+t.slice(1)}
 function monthRange(m){const [y,mo]=m.split("-").map(Number);const last=new Date(y,mo,0).getDate();return {startDate:m+"-01",endDate:m+"-"+String(last).padStart(2,"0")}}
 async function revistas(){
- const d=await api("/api/control?module=revistas"),rows=d.rows||[];
+ const d=await api("/api/control?module=revistas"),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
  const now=new Date(),cur=monthKey(now),months=[];
  for(let i=-1;i<=10;i++)months.push(monthKey(new Date(now.getFullYear(),now.getMonth()+i,1)));
  // meses con registros fuera del rango visible también se muestran
@@ -151,7 +151,7 @@ async function revistas(){
  const find=(mag,m)=>rows.find(r=>r.magazine===mag&&r.month===m);
  const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<div class="mag-cell empty"><small>'+esc(mag)+'</small><button type="button" data-add-revista="'+esc(mag)+'|'+m+'">+ Añadir</button></div>';
   return '<div class="mag-cell"><small>'+esc(mag)+'</small><div class="mag-thumb media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></div><b>'+esc(r.spectacle||"Sin espectáculo")+'</b>'+(r.venue?'<span class="mag-venue">'+esc(r.venue)+'</span>':'')+'<div class="item-meta"><span class="badge '+(["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+'</div><div class="item-actions"><button type="button" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-del-revista="'+r.id+'">Archivar</button></div></div>'};
- const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(m)+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+(m===cur?'<em>Este mes</em>':'')+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
+ const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(m)+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
  app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">+ Nueva página</button>')+moduleKpis(rows,"Páginas este mes")+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
  magChips(months,cur);const openForm=r=>{$("#revistasFormCard").innerHTML=revistaForm(r);bindRevistaForm(r&&r.id?r:null,rows)};
  $("#newRevista").onclick=()=>openForm({month:cur});
@@ -217,6 +217,14 @@ function radioChips(rows){const first=$(".space-panel");if(!first)return;const p
  row.innerHTML='<span class="chip-label">Espacio</span><button type="button" class="chip on" data-v="*">Todos ('+rows.length+')</button>'+panels.map(p=>{const v=p.dataset.venue;return '<button type="button" class="chip" data-v="'+esc(v)+'">'+esc(v?venueShort(v):"Sin espacio")+' ('+rows.filter(r=>(r.venue||"")===v).length+')</button>'}).join("");
  row.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;row.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===c));panels.forEach(p=>p.style.display=c.dataset.v==="*"||p.dataset.venue===c.dataset.v?"":"none")});
  first.parentElement.insertBefore(row,first)}
+
+// ===== Autocompletado de espectáculos =====
+// Lista base en /data/espectaculos.json (se genera a partir del Excel) + nombres ya usados en registros.
+const SPECTACLES=new Set();
+let spectaclesLoaded=false;
+async function loadSpectacles(){if(spectaclesLoaded)return;spectaclesLoaded=true;try{const r=await fetch("/data/espectaculos.json",{cache:"no-cache"});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.espectaculos||[]).forEach(x=>{const n=typeof x==="string"?x:x?.nombre;if(n&&n.trim())SPECTACLES.add(n.trim())})}}catch{}renderSpectacleList()}
+function learnSpectacles(rows){(rows||[]).forEach(r=>{if(r.spectacle&&r.spectacle.trim())SPECTACLES.add(r.spectacle.trim())});renderSpectacleList()}
+function renderSpectacleList(){let dl=$("#spectacleList");if(!dl){dl=document.createElement("datalist");dl.id="spectacleList";document.body.appendChild(dl)}dl.innerHTML=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es")).map(n=>'<option value="'+esc(n)+'">').join("")}
 
 async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 

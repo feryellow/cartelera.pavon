@@ -345,3 +345,10 @@ label{color:var(--muted);letter-spacing:.02em}
  .nav-logout{padding:6px 10px;font-size:12px}
  .topbar .account{display:none}
 }
+
+/* Filtros en botones: en ordenador saltan de línea en vez de quedar cortados */
+@media (hover:hover) and (pointer:fine){
+ .chip-row{flex-wrap:wrap;overflow:visible}
+}
+.form-grid .chip-row{grid-column:1/-1}
+.mag-label{padding-bottom:4px}
