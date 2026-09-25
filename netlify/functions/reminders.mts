@@ -13,7 +13,7 @@ const MODULES=[
   ["taxis","Taxis"],
   ["intercambiadores","Intercambiadores"],
   ["hometicket","Home Ticket"],
-  ["revistas","Revistas"],
+  ["revistas","Revistas de Teatros"],
 ] as const;
 
 function esc(v:string){return String(v||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m] as string));}

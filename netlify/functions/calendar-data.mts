@@ -31,7 +31,7 @@ export default async(req:Request)=>{
   for(const moduleName of ["taxis","intercambiadores","hometicket","revistas"] as const){
     if(!can(auth.actor,moduleName,false)) continue;
     for(const r of await listRecords(moduleName)){
-      const mod=moduleName==="taxis"?"Taxis":moduleName==="intercambiadores"?"Intercambiadores":moduleName==="revistas"?"Revistas":"Home Ticket";
+      const mod=moduleName==="taxis"?"Taxis":moduleName==="intercambiadores"?"Intercambiadores":moduleName==="revistas"?"Revistas de Teatros":"Home Ticket";
       const location=moduleName==="hometicket"?[r.venue,r.position].filter(Boolean).join(" · "):moduleName==="revistas"?[r.magazine,r.venue].filter(Boolean).join(" · "):[r.venue,r.location||r.support].filter(Boolean).join(" · ");
       const title=r.spectacle||r.campaignName||(moduleName==="hometicket"?"Home Ticket":"Campaña");
       if(r.startDate)events.push({id:`${moduleName}-i-${r.id}`,date:r.startDate,module:mod,title,location,action:moduleName==="revistas"?"Página del mes":"Inicio",status:r.status||"activo",recordId:r.id});

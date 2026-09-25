@@ -45,7 +45,7 @@ export default async (req: Request) => {
       await addModule("taxis","Taxis");
       await addModule("intercambiadores","Intercambiadores");
       await addModule("hometicket","Home Ticket");
-      await addModule("revistas","Revistas");
+      await addModule("revistas","Revistas de Teatros");
       payload.attention.sort((a:any,b:any)=>String(a.deliveryDate).localeCompare(String(b.deliveryDate)));
       payload.currentMaterial.sort((a:any,b:any)=>String(a.module).localeCompare(String(b.module))||String(a.title).localeCompare(String(b.title)));
       return json(payload);

@@ -15,7 +15,7 @@ const ROUTE_PHOTOS={calendario:"/assets/tiles/calendario.jpg",hometicket:"/asset
 function icon(route,cls="nav-ico"){return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[route]||"")+'</svg>'}
 function navMeta(route){const a=$('#mainNav [data-route="'+route+'"]');return a?{href:a.getAttribute("href"),small:a.querySelector("small")?.textContent||"",name:a.querySelector("b")?.textContent||""}:null}
 $$("#mainNav a").forEach(a=>{if(!a.querySelector("svg"))a.insertAdjacentHTML("afterbegin",icon(a.dataset.route))});
-const MODULE_LABELS={carteleria:"Cartelería",radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas",publicidad:"Publicidad",usuarios:"Usuarios",admin:"Usuarios"};
+const MODULE_LABELS={carteleria:"Cartelería",radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas de Teatros",publicidad:"Publicidad",usuarios:"Usuarios",admin:"Usuarios"};
 const ACTION_LABELS={create:"creado",update:"editado",archive:"archivado",save:"guardado",image_replace:"imagen cambiada",image_delete:"imagen quitada",role_change:"rol cambiado",user_create:"usuario creado",user_disable:"usuario desactivado",user_enable:"usuario activado"};
 function modLabel(m){return MODULE_LABELS[m]||m||""}
 function actLabel(a){return ACTION_LABELS[a]||a||""}
@@ -134,7 +134,7 @@ function htForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar pie
 function bindHTForm(existing){const f=$("#htForm");if(!f)return;$("#cancelHT").onclick=()=>{$("#htFormCard").innerHTML=htForm();bindHTForm(null)};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#htAsset")?.files?.[0];try{const assetKey=await uploadAsset(file,"hometicket",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(existing?.id)await api("/api/control?module=hometicket&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module=hometicket",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Home Ticket guardado");homeTicket()}catch(err){say(err.message)}}}
 
 // ===== Revistas: una página de publicidad al mes en cada revista =====
-const MAGAZINES=["Godot","A Escena","Revista Teatros"];
+const MAGAZINES=["Revista Teatros","AEscena","Godot"];
 function monthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
 function monthLabel(m){const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});return t.charAt(0).toUpperCase()+t.slice(1)}
 function monthRange(m){const [y,mo]=m.split("-").map(Number);const last=new Date(y,mo,0).getDate();return {startDate:m+"-01",endDate:m+"-"+String(last).padStart(2,"0")}}
@@ -148,7 +148,7 @@ async function revistas(){
  const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<div class="mag-cell empty"><small>'+esc(mag)+'</small><button type="button" data-add-revista="'+esc(mag)+'|'+m+'">+ Añadir</button></div>';
   return '<div class="mag-cell"><small>'+esc(mag)+'</small><div class="mag-thumb media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></div><b>'+esc(r.spectacle||"Sin espectáculo")+'</b>'+(r.venue?'<span class="mag-venue">'+esc(r.venue)+'</span>':'')+'<div class="item-meta"><span class="badge '+(["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+'</div><div class="item-actions"><button type="button" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-del-revista="'+r.id+'">Archivar</button></div></div>'};
  const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(m)+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'"><div class="mag-label">'+esc(monthLabel(m))+(m===cur?'<em>Este mes</em>':'')+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
- app.innerHTML=pageHead("Revistas","Página de publicidad mensual en "+MAGAZINES.join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">Nueva página</button>')+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
+ app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">Nueva página</button>')+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
  const openForm=r=>{$("#revistasFormCard").innerHTML=revistaForm(r);bindRevistaForm(r&&r.id?r:null,rows)};
  $("#newRevista").onclick=()=>openForm({month:cur});
  $$("[data-add-revista]").forEach(b=>b.onclick=()=>{const [magazine,month]=b.dataset.addRevista.split("|");openForm({magazine,month})});
