@@ -44,7 +44,8 @@ export function cleanInput(moduleName: RecordModule, input: any) {
   return out;
 }
 
-export function isActive(row: any, now = new Date()) {
+export function isActive(row: any, now: Date = new Date()) {
+  if (!(now instanceof Date)) now = new Date();
   if (row.deletedAt) return false;
   if (String(row.status || "").toLowerCase() === "finalizado") return false;
   const today = now.toISOString().slice(0,10);

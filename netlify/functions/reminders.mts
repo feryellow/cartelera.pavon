@@ -22,9 +22,12 @@ async function collect(now=new Date()){
   const current:Current[]=[];
   const state=await carteleriaStore().get("state",{type:"json"}) as any;
   for(const [key,v] of Object.entries(state?.schedule||{}) as any){
-    const date=normalizeDate(v?.next); if(!date)continue;
-    const d=dayDiff(now,date);
-    if([7,3,1,0].includes(d))alerts.push({key:`cart-${key}-D${d}-${date}`,date,days:d,module:"Cartelería",title:v?.title||key.replaceAll("__"," · ").replaceAll("_"," "),location:key,action:"Cambio previsto"});
+    // Avisos por fecha de cambio ("Próximo") y por las fechas de instalación y retirada del editor.
+    for(const [field,action] of [["next","Cambio previsto"],["installDate","Instalación"],["removeDate","Retirada"]] as const){
+      const date=normalizeDate(v?.[field]); if(!date)continue;
+      const d=dayDiff(now,date);
+      if([7,3,1,0].includes(d))alerts.push({key:`cart-${key}-${field}-D${d}-${date}`,date,days:d,module:"Cartelería",title:v?.title||key.replaceAll("__"," · ").replaceAll("_"," "),location:key,action});
+    }
   }
 
   for(const [moduleName,label] of MODULES){
@@ -63,13 +66,14 @@ export default async()=>{
 
   for(const a of alerts){
     const already=await ns.get(a.key,{type:"json"});
-    if(!already)pending.push(a);
+    // Si el aviso se registró pero el correo no llegó a enviarse, se vuelve a intentar.
+    if(!already || !(already as any).sent)pending.push(a);
   }
 
   const day=now.toISOString().slice(0,10);
   const digestKey=`daily-material-digest-${day}`;
   const digestAlready=await ns.get(digestKey,{type:"json"});
-  const shouldSend=!digestAlready && (pending.length>0 || current.length>0);
+  const shouldSend=!(digestAlready as any)?.sent && (pending.length>0 || current.length>0);
 
   if(shouldSend){
     const pendingHtml=pending.length?'<h3 style="margin-top:22px">Requiere atención</h3><table style="border-collapse:collapse;width:100%"><tr><th align="left">Módulo</th><th align="left">Material</th><th align="left">Estado</th><th align="left">Fecha</th></tr>'+
