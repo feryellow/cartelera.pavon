@@ -12,9 +12,15 @@ export default async(req:Request)=>{
   const state=await carteleriaStore().get("state",{type:"json"}) as any;
   const schedule=state?.schedule||{};
   for(const [key,v] of Object.entries(schedule) as any){
-    const install=normalizeDate(v?.date), change=normalizeDate(v?.next);
-    if(install) events.push({id:`cart-i-${key}`,date:install,module:"Cartelería",title:key.replaceAll("__"," · ").replaceAll("_"," "),location:key.split("__")[1]||key,action:"Instalación",status:"programado"});
-    if(change) events.push({id:`cart-c-${key}`,date:change,module:"Cartelería",title:key.replaceAll("__"," · ").replaceAll("_"," "),location:key.split("__")[1]||key,action:"Cambio previsto",status:"cambio próximo"});
+    const install=normalizeDate(v?.installDate||v?.date);
+    const change=normalizeDate(v?.next);
+    const remove=normalizeDate(v?.removeDate);
+    const title=v?.title||key.replaceAll("__"," · ").replaceAll("_"," ");
+    const location=key.split("__")[1]?.replaceAll("_"," ")||key;
+    const status=v?.status||"programado";
+    if(install) events.push({id:`cart-i-${key}`,date:install,module:"Cartelería",title,location,action:"Instalación",status});
+    if(change) events.push({id:`cart-c-${key}`,date:change,module:"Cartelería",title,location,action:"Cambio previsto",status:"cambio próximo"});
+    if(remove) events.push({id:`cart-r-${key}`,date:remove,module:"Cartelería",title,location,action:"Retirada",status});
   }
   if(can(auth.actor,"radio",false)){
     for(const r of await listRecords("radio")){
