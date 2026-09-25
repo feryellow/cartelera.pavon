@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#171310">
+  <meta name="theme-color" content="#131313">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Pavón Control">
-  <title>Pavón Control</title>
+  <meta name="apple-mobile-web-app-title" content="Yellow Control">
+  <title>Yellow Control</title>
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/pavon-app-icon.png">
+  
   <link rel="stylesheet" href="/control.css">
 </head>
 <body>
   <div id="loginGate" class="gate hidden">
     <div class="login-card">
-      <div class="brand-lockup"><img src="/pavon-app-icon.png" alt=""><div><strong>PAVÓN CONTROL</strong><span>Gran Teatro Pavón</span></div></div>
+      <div class="brand-lockup yellow-brand"><span class="brand-mark">YC</span><div><strong>YELLOW CONTROL</strong><span>YELLOW MEDIA · OPERACIONES</span></div></div>
       <h1>Acceso interno</h1>
-      <p id="loginInfo" class="muted">Inicia sesión con tu usuario del teatro.</p>
+      <p id="loginInfo" class="muted">Inicia sesión con tu usuario de Yellow Media.</p>
       <form id="loginForm" class="stack">
         <label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
         <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" required></label>
@@ -33,12 +33,10 @@
     </div>
   </div>
 
-  <header class="topbar">
-    <a class="brand-lockup" href="#dashboard"><img src="/pavon-app-icon.png" alt=""><div><strong>PAVÓN CONTROL</strong><span>Gran Teatro Pavón</span></div></a>
-    <div class="account"><span id="accountName">—</span><button id="logoutBtn" class="ghost">Salir</button></div>
-  </header>
+  <aside class="sidebar-shell">
+    <a class="brand-lockup yellow-brand" href="#dashboard"><span class="brand-mark" aria-hidden="true">YC</span><div><strong>YELLOW CONTROL</strong><span>YELLOW MEDIA · OPERACIONES</span></div></a>
 
-  <nav id="mainNav" class="main-nav" aria-label="Módulos">
+    <nav id="mainNav" class="main-nav" aria-label="Módulos">
     <a href="#dashboard" data-route="dashboard"><small>Resumen</small><b>Inicio</b></a>
     <a href="#calendario" data-route="calendario"><small>Fechas</small><b>Calendario</b></a>
     <a href="/carteleria.html" data-route="carteleria"><small>Soportes</small><b>Cartelería</b></a>
@@ -49,10 +47,28 @@
     <a href="#revistas" data-route="revistas"><small>Mensual</small><b>Revistas de Teatros</b></a>
     <a href="#archivo" data-route="archivo"><small>Histórico</small><b>Archivo</b></a>
     <a href="#admin" data-route="admin"><small>Accesos</small><b>Usuarios</b></a>
-  </nav>
+    </nav>
+
+    <div class="sidebar-account">
+      <span class="account-avatar" aria-hidden="true">Y</span>
+      <div><strong id="accountName">—</strong><span>Yellow Media</span></div>
+      <button id="logoutBtn" class="ghost icon-logout" aria-label="Salir">↗</button>
+    </div>
+  </aside>
+
+  <header class="workspace-topbar">
+    <div class="workspace-context">
+      <span class="workspace-dot"></span>
+      <div><small>OPERACIONES</small><strong>Todos los espacios</strong></div>
+    </div>
+    <div class="workspace-meta">
+      <span><small>APLICACIÓN</small><b>YELLOW CONTROL</b></span>
+      <span><small>ENTORNO</small><b>EN VIVO</b></span>
+    </div>
+  </header>
 
   <main id="app" class="app-shell">
-    <div class="loading">Cargando Pavón Control…</div>
+    <div class="loading">Cargando Yellow Control…</div>
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
