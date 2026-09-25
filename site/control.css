@@ -173,3 +173,33 @@ body[data-route="dashboard"] .app-shell{margin-left:auto}
  [id$="FormCard"]:not(.open){display:none}
  [id$="FormCard"]{scroll-margin-top:140px}
 }
+
+/* ===== Revistas: calendario mensual por revista ===== */
+.mag-calendar{padding:12px}
+.mag-head,.mag-month{display:grid;grid-template-columns:120px repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}
+.mag-head{position:sticky;top:0;padding:4px 0 10px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.mag-month{padding:8px 0;border-top:1px solid var(--line)}
+.mag-month.current{background:rgba(232,197,90,.06);border-radius:10px;padding:8px 6px}
+.mag-label{font-weight:800;font-size:13px;padding-top:6px}
+.mag-label em{display:block;font-style:normal;font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.mag-cell{display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:#18140f}
+.mag-cell>small{display:none;color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.mag-cell>b{font-size:13px;line-height:1.2}
+.mag-cell.empty{align-items:flex-start;justify-content:center;border-style:dashed;background:transparent}
+.mag-cell.empty button{padding:7px 10px;font-size:12px;color:var(--muted)}
+.mag-thumb{margin:0}
+.mag-thumb img{max-width:100%!important;max-height:120px!important;width:auto;display:block;border-radius:6px}
+.mag-thumb:empty{display:none}
+.mag-cell .item-actions{justify-content:flex-start}
+.mag-cell .item-actions button{padding:6px 8px;font-size:11px}
+@media(max-width:700px){
+ .mag-head{display:none}
+ .mag-month{grid-template-columns:1fr;gap:6px}
+ .mag-cell>small{display:block}
+ .mag-cell.empty{flex-direction:row;align-items:center;justify-content:space-between}
+}
+.mag-venue{font-size:11px;color:var(--muted)}
+/* iPhone/Android: con letra de 16px el navegador no hace zoom al tocar un campo */
+@media (hover:none) and (pointer:coarse){
+ input,select,textarea{font-size:16px}
+}

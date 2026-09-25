@@ -13,6 +13,7 @@ const MODULES=[
   ["taxis","Taxis"],
   ["intercambiadores","Intercambiadores"],
   ["hometicket","Home Ticket"],
+  ["revistas","Revistas de Teatros"],
 ] as const;
 
 function esc(v:string){return String(v||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m] as string));}
@@ -33,7 +34,7 @@ async function collect(now=new Date()){
   for(const [moduleName,label] of MODULES){
     for(const r of await listRecords(moduleName)){
       const title=r.spectacle||r.campaignName||r.position||"Registro";
-      const location=r.venue||r.station||r.location||r.support||"";
+      const location=r.magazine||r.venue||r.station||r.location||r.support||"";
       const materialStatus=String(r.materialStatus||"sin indicar");
       if(isActive(r))current.push({module:label,title,location,materialStatus,endDate:r.endDate||""});
 
