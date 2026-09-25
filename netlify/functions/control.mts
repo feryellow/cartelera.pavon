@@ -35,9 +35,9 @@ export default async (req: Request) => {
         for(const r of rows){
           const title=r.spectacle||r.campaignName||r.position||"Registro";
           const place=r.magazine||r.venue||r.station||r.location||r.support||"";
-          if(isActive(r)) payload.currentMaterial.push({module:label,title,place,materialStatus:r.materialStatus||"sin indicar",endDate:r.endDate||""});
+          if(isActive(r)) payload.currentMaterial.push({module:label,venue:r.venue||"",title,place,materialStatus:r.materialStatus||"sin indicar",endDate:r.endDate||""});
           if(r.deliveryDate && !["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())){
-            payload.attention.push({module:label,title,place,deliveryDate:r.deliveryDate,materialStatus:r.materialStatus||"pendiente",overdue:r.deliveryDate<today});
+            payload.attention.push({module:label,venue:r.venue||"",title,place,deliveryDate:r.deliveryDate,materialStatus:r.materialStatus||"pendiente",overdue:r.deliveryDate<today});
           }
         }
       };
