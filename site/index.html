@@ -371,13 +371,25 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
     const preview=document.createElement("button");
     preview.type="button"; preview.textContent="Ver Columna 1";
     preview.style.cssText="min-height:42px;border:1px solid var(--line);border-radius:9px;background:#28221d;color:var(--cream);font-weight:800;cursor:pointer";
-    preview.addEventListener("click",async()=>{
+    preview.addEventListener("click",()=>{
       try{
-        lightboxImage.src=await makeAuxCompositeDataUrl("columna_1");
+        const slot=allSlots.find(s=>s.dataset.id==="columna_1");
+        if(!slot) throw new Error("Columna 1 no disponible");
+        let aux=document.getElementById("columna1Lightbox");
+        if(!aux){
+          aux=document.createElement("div");
+          aux.id="columna1Lightbox";
+          aux.style.cssText="position:relative;width:min(92vw,620px);max-height:88vh;overflow:hidden;border-radius:12px;background:#111";
+          lightbox.querySelector(".lightbox-frame").appendChild(aux);
+        }
+        aux.innerHTML='<img src="/assets/columna1.jpg" alt="Columna 1" style="display:block;width:100%;height:auto">' +
+          (state[key(slot)].dataUrl ? '<img src="'+state[key(slot)].dataUrl+'" alt="" style="position:absolute;left:64.3%;top:42.8%;width:21.8%;height:24.8%;object-fit:'+state[key(slot)].mode+';background:#050505">' : '');
+        lightboxImage.style.display="none";
+        aux.style.display="block";
         lightbox.classList.add("open");
         lightbox.setAttribute("aria-hidden","false");
         document.body.style.overflow="hidden";
-      }catch(e){console.error(e);alert("No se ha podido abrir Columna 1.");}
+      }catch(e){console.error(e);}
     });
     const exp=document.createElement("button");
     exp.id="exportColumna1Btn"; exp.type="button"; exp.textContent="Exportar Columna 1";
