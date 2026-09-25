@@ -25,13 +25,19 @@ export default async (req: Request) => {
       if (can(auth.actor,"radio",false)) {
         const rows=await listRecords("radio"); payload.radio={ total:rows.length, active:rows.filter(isActive).length, endingSoon:rows.filter(r=>r.endDate && r.endDate>=today).slice(0,8) };
       }
-      if (can(auth.actor,"publicidad",false)) {
-        const rows=await listRecords("publicidad"); payload.publicidad={ total:rows.length, active:rows.filter(isActive).length, intercambiadores:rows.filter(r=>String(r.category).toLowerCase()==="intercambiador" && isActive(r)).length };
+      if (can(auth.actor,"taxis",false)) {
+        const rows=await listRecords("taxis"); payload.taxis={ total:rows.length, active:rows.filter(isActive).length };
+      }
+      if (can(auth.actor,"intercambiadores",false)) {
+        const rows=await listRecords("intercambiadores"); payload.intercambiadores={ total:rows.length, active:rows.filter(isActive).length };
+      }
+      if (can(auth.actor,"hometicket",false)) {
+        const rows=await listRecords("hometicket"); payload.hometicket={ total:rows.length, active:rows.filter(isActive).length };
       }
       return json(payload);
     }
     if (!validModule(moduleName)) return json({error:"Unknown module"},400);
-    const auth = await requireAccess(req,moduleName==="publicidad"?"publicidad":"radio",false); if(auth.response) return auth.response;
+    const auth = await requireAccess(req,moduleName,false); if(auth.response) return auth.response;
     let rows=await listRecords(moduleName, url.searchParams.get("includeDeleted")==="1");
     const q=(url.searchParams.get("q")||"").toLowerCase();
     if(q) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
@@ -40,8 +46,7 @@ export default async (req: Request) => {
   }
 
   if (!validModule(moduleName)) return json({error:"Unknown module"},400);
-  const accessName = moduleName==="publicidad"?"publicidad":"radio";
-  const auth = await requireAccess(req,accessName,true); if(auth.response) return auth.response;
+  const auth = await requireAccess(req,moduleName,true); if(auth.response) return auth.response;
 
   if (req.method === "POST") {
     let body:any; try{body=await req.json();}catch{return json({error:"Invalid JSON"},400);}
