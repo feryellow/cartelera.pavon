@@ -2,6 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess, can } from "./_lib/auth.ts";
 import { appendAudit, listAudit } from "./_lib/audit.ts";
 import { carteleriaStore } from "./_lib/store.ts";
+import { normalizeDate } from "./_lib/dates.ts";
 import { cleanInput, getRecord, isActive, listRecords, putRecord, validModule } from "./_lib/records.ts";
 
 function json(data: unknown, status=200){ return Response.json(data,{status}); }
@@ -20,12 +21,17 @@ export default async (req: Request) => {
       const state = await carteleriaStore().get("state",{type:"json"}) as any || {schedule:{},updatedAt:null};
       const schedule = state.schedule || {};
       const today = new Date().toISOString().slice(0,10);
-      const carteleria = Object.entries(schedule).map(([key,v]: any)=>({ key, date:v?.date||"", next:v?.next||"" }));
+      const carteleria = Object.entries(schedule).map(([key,v]: any)=>{
+        // Fecha más próxima entre "Próximo", instalación y retirada; si todas han pasado, la más reciente.
+        const dates=[v?.next,v?.installDate,v?.removeDate].map(normalizeDate).filter(Boolean) as string[];
+        const future=dates.filter(x=>x>=today).sort(), past=dates.filter(x=>x<today).sort();
+        return { key, title:v?.title||"", date:v?.date||"", next: future[0] || past[past.length-1] || "" };
+      });
       const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest:await listAudit(8), attention:[], currentMaterial:[] };
       const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket",label:string)=>{
         if(!can(auth.actor,moduleName,false))return;
         const rows=await listRecords(moduleName);
-        payload[moduleName]={total:rows.length,active:rows.filter(isActive).length};
+        payload[moduleName]={total:rows.length,active:rows.filter(r=>isActive(r)).length};
         for(const r of rows){
           const title=r.spectacle||r.campaignName||r.position||"Registro";
           const place=r.venue||r.station||r.location||r.support||"";
@@ -48,7 +54,7 @@ export default async (req: Request) => {
     let rows=await listRecords(moduleName, url.searchParams.get("includeDeleted")==="1");
     const q=(url.searchParams.get("q")||"").toLowerCase();
     if(q) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
-    if(url.searchParams.get("active")==="1") rows=rows.filter(isActive);
+    if(url.searchParams.get("active")==="1") rows=rows.filter(r=>isActive(r));
     return json({ rows });
   }
 
