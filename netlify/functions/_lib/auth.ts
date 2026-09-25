@@ -25,6 +25,10 @@ function keyActor(req: Request): Actor | null {
 }
 
 export async function resolveActor(req: Request): Promise<Actor | null> {
+  // Temporary open access requested by project owner. Re-enable authentication only on explicit request.
+  if (Netlify.env.get("PAVON_AUTH_DISABLED") !== "false") {
+    return { id: "open-admin", email: "fernando@yellowmedia.es", roles: ["admin"], mode: "legacy" };
+  }
   const fallback = keyActor(req);
   try {
     const user = await getUser();
