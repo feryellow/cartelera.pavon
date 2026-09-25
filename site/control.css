@@ -348,3 +348,18 @@ body[data-route="dashboard"] .app-shell{margin-left:var(--sidebar-w)}
  .page-banner h1{font-size:31px}
  .workspace-context strong{font-size:12px}
 }
+
+/* Yellow Control · panel general */
+.home-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:14px}
+.home-hero .home-hello{margin:0}
+.home-metrics{display:flex;align-items:stretch;gap:6px}
+.home-metrics>span{min-width:120px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;background:#1c1b1b;border:1px solid #282828}
+.home-metrics b{font-family:"Anton",sans-serif;font-size:24px;font-weight:400;line-height:1;color:#ffd400}
+.home-metrics em{font-style:normal;font-size:9px;font-weight:800;line-height:1.15;letter-spacing:.08em;text-transform:uppercase;color:#d0c6ab}
+.home-metrics .critical b{color:#ff453a}
+.home-metrics .critical{border-color:#4a2522}
+@media(max-width:860px){
+ .home-hero{align-items:flex-start;flex-direction:column}
+ .home-metrics{width:100%;overflow-x:auto}
+ .home-metrics>span{flex:1;min-width:112px}
+}
