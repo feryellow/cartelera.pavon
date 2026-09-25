@@ -28,13 +28,13 @@ export default async (req: Request) => {
         return { key, title:v?.title||"", date:v?.date||"", next: future[0] || past[past.length-1] || "" };
       });
       const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest:await listAudit(8), attention:[], currentMaterial:[] };
-      const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket",label:string)=>{
+      const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket"|"revistas",label:string)=>{
         if(!can(auth.actor,moduleName,false))return;
         const rows=await listRecords(moduleName);
         payload[moduleName]={total:rows.length,active:rows.filter(r=>isActive(r)).length};
         for(const r of rows){
           const title=r.spectacle||r.campaignName||r.position||"Registro";
-          const place=r.venue||r.station||r.location||r.support||"";
+          const place=r.magazine||r.venue||r.station||r.location||r.support||"";
           if(isActive(r)) payload.currentMaterial.push({module:label,title,place,materialStatus:r.materialStatus||"sin indicar",endDate:r.endDate||""});
           if(r.deliveryDate && !["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())){
             payload.attention.push({module:label,title,place,deliveryDate:r.deliveryDate,materialStatus:r.materialStatus||"pendiente",overdue:r.deliveryDate<today});
@@ -45,6 +45,7 @@ export default async (req: Request) => {
       await addModule("taxis","Taxis");
       await addModule("intercambiadores","Intercambiadores");
       await addModule("hometicket","Home Ticket");
+      await addModule("revistas","Revistas");
       payload.attention.sort((a:any,b:any)=>String(a.deliveryDate).localeCompare(String(b.deliveryDate)));
       payload.currentMaterial.sort((a:any,b:any)=>String(a.module).localeCompare(String(b.module))||String(a.title).localeCompare(String(b.title)));
       return json(payload);

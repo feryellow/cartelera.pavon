@@ -8,7 +8,7 @@ export default async (req:Request)=>{
   const url=new URL(req.url), key=url.searchParams.get("key");
   if(!validKey(key)) return new Response("Invalid key",{status:400});
   const requested=url.searchParams.get("module")||"publicidad";
-  const moduleName=["radio","publicidad","taxis","intercambiadores","hometicket"].includes(requested)?requested:"publicidad";
+  const moduleName=["radio","publicidad","taxis","intercambiadores","hometicket","revistas"].includes(requested)?requested:"publicidad";
   const store=assetStore();
 
   if(req.method==="GET"){
