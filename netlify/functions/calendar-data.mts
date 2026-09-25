@@ -28,11 +28,14 @@ export default async(req:Request)=>{
       if(r.endDate)events.push({id:`radio-f-${r.id}`,date:r.endDate,module:"Radio",title:r.spectacle||r.campaignName||"Campaña radio",location:r.station||"",action:"Fin de campaña",status:r.status||"activo",recordId:r.id});
     }
   }
-  if(can(auth.actor,"publicidad",false)){
-    for(const r of await listRecords("publicidad")){
-      const mod=String(r.category||"").toLowerCase()==="intercambiador"?"Intercambiadores":"Publicidad";
-      if(r.startDate)events.push({id:`pub-i-${r.id}`,date:r.startDate,module:mod,title:r.spectacle||"Campaña",location:r.location||r.support||"",action:"Inicio de campaña",status:r.status||"activo",recordId:r.id});
-      if(r.endDate)events.push({id:`pub-f-${r.id}`,date:r.endDate,module:mod,title:r.spectacle||"Campaña",location:r.location||r.support||"",action:"Fin de campaña",status:r.status||"activo",recordId:r.id});
+  for(const moduleName of ["taxis","intercambiadores","hometicket"] as const){
+    if(!can(auth.actor,moduleName,false)) continue;
+    for(const r of await listRecords(moduleName)){
+      const mod=moduleName==="taxis"?"Taxis":moduleName==="intercambiadores"?"Intercambiadores":"Home Ticket";
+      const location=moduleName==="hometicket"?[r.venue,r.position].filter(Boolean).join(" · "):(r.location||r.support||"");
+      const title=r.spectacle||r.campaignName||(moduleName==="hometicket"?"Home Ticket":"Campaña");
+      if(r.startDate)events.push({id:`${moduleName}-i-${r.id}`,date:r.startDate,module:mod,title,location,action:"Inicio",status:r.status||"activo",recordId:r.id});
+      if(r.endDate)events.push({id:`${moduleName}-f-${r.id}`,date:r.endDate,module:mod,title,location,action:"Fin",status:r.status||"activo",recordId:r.id});
     }
   }
   events.sort((a,b)=>a.date.localeCompare(b.date)||a.module.localeCompare(b.module));
