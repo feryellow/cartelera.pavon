@@ -55,6 +55,10 @@ export default async (req: Request, _context: Context) => {
     if (!parsed) return new Response("Invalid image", { status: 400 });
     if (parsed.bytes.byteLength > 4_000_000) return new Response("Image too large", { status: 413 });
 
+    // Solo se registra en el histórico si la imagen ha cambiado de verdad.
+    const previous = await store.get(blobKey, { type: "arrayBuffer" }) as ArrayBuffer | null;
+    const same = previous !== null && previous.byteLength === parsed.bytes.byteLength && Buffer.from(previous).equals(Buffer.from(parsed.bytes));
+    if (same) return new Response("OK");
     await store.set(blobKey, parsed.bytes);
     await store.setJSON(metaKey, {
       contentType: parsed.contentType,
@@ -67,6 +71,8 @@ export default async (req: Request, _context: Context) => {
   }
 
   if (req.method === "DELETE") {
+    const existed = (await store.getMetadata(blobKey)) !== null;
+    if (!existed) return new Response("OK");
     await store.delete(blobKey);
     await store.delete(metaKey);
     await appendAudit({ actor: auth.actor!, module: "carteleria", elementId: key, action: "image_delete" });
