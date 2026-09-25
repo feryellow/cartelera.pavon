@@ -85,11 +85,11 @@ export default async()=>{
       current.map(r=>`<tr><td style="padding:7px;border-top:1px solid #ddd">${esc(r.module)}</td><td style="padding:7px;border-top:1px solid #ddd"><strong>${esc(r.title)}</strong><br><small>${esc(r.location)}</small></td><td style="padding:7px;border-top:1px solid #ddd">${esc(r.materialStatus)}</td><td style="padding:7px;border-top:1px solid #ddd">${esc(r.endDate||"—")}</td></tr>`).join("")+'</table>':
       '<p>No hay campañas activas registradas.</p>';
 
-    const subject=`Pavón Control · material y campañas · ${day}`;
-    const html=`<div style="font-family:Arial,sans-serif;color:#222"><h2>Pavón Control</h2><p>Resumen diario de material activo y entregas pendientes.</p>${pendingHtml}${currentHtml}</div>`;
+    const subject=`Yellow Control · material y campañas · ${day}`;
+    const html=`<div style="font-family:Arial,sans-serif;color:#222"><h2>Yellow Control</h2><p>Resumen diario de material activo y entregas pendientes.</p>${pendingHtml}${currentHtml}</div>`;
     const result=await sendPavonMail({subject,html});
     await ns.setJSON(digestKey,{createdAt:new Date().toISOString(),sent:result.sent,emailId:(result as any).id||null,alerts:pending.length,current:current.length});
-    await appendAudit({actor:{id:"system",email:"Pavón Control"},module:"avisos",elementId:digestKey,action:result.sent?"digest_sent":"digest_pending",after:{pending:pending.length,current:current.length}});
+    await appendAudit({actor:{id:"system",email:"Yellow Control"},module:"avisos",elementId:digestKey,action:result.sent?"digest_sent":"digest_pending",after:{pending:pending.length,current:current.length}});
     for(const a of pending)await ns.setJSON(a.key,{...a,createdAt:new Date().toISOString(),sent:result.sent,emailId:(result as any).id||null});
     console.log(JSON.stringify({alerts:alerts.length,pending:pending.length,current:current.length,sent:result.sent}));
     return;
