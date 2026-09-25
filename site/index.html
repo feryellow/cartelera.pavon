@@ -28,6 +28,31 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
 .cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cloud-actions button{appearance:none;border:1px solid var(--line);background:#28221d;color:var(--cream);border-radius:10px;padding:9px 10px;cursor:pointer;font:800 11px/1 Inter,Arial,sans-serif}.cloud-actions button.primary{background:var(--gold);color:#171310;border-color:var(--gold)}
 .cloud-updated{margin-top:8px;color:var(--muted);font-size:10px;line-height:1.35}
 
+
+/* FASE 1 · NORMALIZACIÓN DE CARTELERÍA */
+.view[data-view="abierta"] .stage-card{
+  max-width:1100px;
+  margin:0 auto;
+}
+.view[data-view="abierta"] .canvas-shell{
+  max-width:760px;
+  margin:0 auto;
+}
+.pavon-support-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid rgba(232,197,90,.22);
+  border-radius:10px;
+  background:rgba(232,197,90,.045);
+  color:#c9b98f;
+  font-size:11px;
+  line-height:1.45;
+}
+@media(max-width:760px){
+  .view[data-view="abierta"] .canvas-shell{max-width:none}
+  .pavon-support-note{font-size:12px}
+}
+
 /* PAVON MOBILE EXPERIENCE */
 .calendar-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 @media(max-width:760px){
@@ -166,7 +191,7 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
   );
 
   html=html.replace(
-    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cuatro soportes.</p>\n\n    <div class="zoom-box">',
+    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cinco soportes: fachada principal + Columna 1.</p>\n    <div class="pavon-support-note"><strong>Columna 1 · soporte adicional.</strong> La fachada principal mantiene los cuatro soportes frontales para producción. Columna 1 se gestionará como soporte auxiliar independiente para no perder esa vista limpia.</div>\n\n    <div class="zoom-box">',
     '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cuatro soportes.</p>\n\n    <div class="cloud-box">\n      <div class="cloud-top"><div class="cloud-title">Estado online</div><div id="cloudStatus" class="cloud-status">Conectando…</div></div>\n      <div class="cloud-actions"><button id="reloadCloudBtn">Recargar nube</button><button id="saveCloudBtn" class="primary">Guardar cambios</button></div>\n      <div id="cloudUpdated" class="cloud-updated">Cargando la última actualización…</div>\n    </div>\n\n    <div class="zoom-box">'
   );
 
