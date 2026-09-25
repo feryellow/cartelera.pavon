@@ -28,19 +28,24 @@ window.addEventListener("hashchange",route);
 
 async function dashboard(){
  const d=await api("/api/control?module=dashboard");
- const next=(d.carteleria||[]).filter(x=>x.next).slice(0,8);
+ const all=(d.carteleria||[]).filter(x=>x.next);
+ const today=new Date();today.setHours(0,0,0,0);
+ const alerts=all.map(x=>{const dt=new Date(x.next+"T00:00:00");const days=Math.round((dt-today)/86400000);return {...x,days}}).filter(x=>x.days<=7).sort((a,b)=>a.days-b.days);
+ const next=all.slice().sort((a,b)=>String(a.next).localeCompare(String(b.next))).slice(0,8);
+ const alertHtml=alerts.length?alerts.slice(0,8).map(x=>{
+   const label=x.days<0?"Vencido "+Math.abs(x.days)+" d":x.days===0?"HOY":"D-"+x.days;
+   return '<div class="item"><div><h3>'+esc(x.key.replaceAll("__"," · ").replaceAll("_"," "))+'</h3><div class="item-meta"><span class="badge '+(x.days<0?"warn":"")+'">'+label+'</span><span>'+esc(x.next)+'</span></div></div></div>';
+ }).join(""):'<div class="notice">No hay avisos de cartelería en los próximos 7 días.</div>';
  app.innerHTML=pageHead("Inicio","Estado operativo del Gran Teatro Pavón")+
- '<div class="grid stats">'+
- stat(next.length,"Cambios de cartelería")+
- stat(d.radio?.active??"—","Radio activa")+
- stat(d.publicidad?.active??"—","Publicidad activa")+
- stat(d.publicidad?.intercambiadores??"—","Intercambiadores activos")+
- '</div><div class="grid two-col"><section class="card"><div class="section-title"><h2>Próximos cambios</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+
+ '<div class="grid stats">'+stat(alerts.length,"Avisos ≤ 7 días")+stat(d.radio?.active??"—","Radio activa")+stat(d.publicidad?.active??"—","Publicidad activa")+stat(d.publicidad?.intercambiadores??"—","Intercambiadores activos")+'</div>'+
+ '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Avisos y vencimientos</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+alertHtml+'</div>'+
+ '<div class="section-title" style="margin-top:20px"><h2>Próximos cambios</h2></div><div class="list">'+
  (next.length?next.map(x=>'<div class="item"><div><h3>'+esc(x.key.replaceAll("__"," · ").replaceAll("_"," "))+'</h3><div class="item-meta"><span>'+esc(x.next)+'</span></div></div></div>').join(""):'<div class="notice">No hay fechas de cambio registradas.</div>')+
  '</div></section><section class="card"><div class="section-title"><h2>Últimas modificaciones</h2></div><div class="list">'+
  ((d.latest||[]).length?d.latest.map(a=>'<div class="item"><div><h3>'+esc(a.module)+" · "+esc(a.action)+'</h3><div class="item-meta"><span>'+esc(a.actor?.email||"")+'</span><span>'+new Date(a.at).toLocaleString("es-ES")+'</span></div></div></div>').join(""):'<div class="notice">Todavía no hay histórico.</div>')+
  '</div></section></div>';
 }
+
 function stat(value,label){return '<div class="card stat"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>'}
 
 async function radio(){
@@ -78,19 +83,39 @@ async function publicidad(inter=false){
  const d=await api("/api/control?module=publicidad");
  let rows=d.rows||[];if(inter)rows=rows.filter(r=>(r.category||"").toLowerCase()==="intercambiador");
  const title=inter?"Intercambiadores":"Publicidad / Acuerdos";
+ const filters='<div class="form-grid" style="margin-bottom:12px"><label>Buscar<input id="pubFilterQ" placeholder="Espectáculo, soporte, proveedor…"></label><label>Estado<select id="pubFilterStatus"><option value="">Todos</option><option value="active">Activas ahora</option><option value="finalizado">Finalizadas</option></select></label><label>Desde<input id="pubFilterFrom" type="date"></label><label>Hasta<input id="pubFilterTo" type="date"></label></div>';
  app.innerHTML=pageHead(title,inter?"Campañas activas en intercambiadores y pantallas":"Campañas, acuerdos y soportes publicitarios",'<button id="newPub" class="primary">Nueva campaña</button>')+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Activas ahora</h2><span class="badge ok">'+rows.filter(activeNow).length+'</span></div><div class="list">'+pubItems(rows)+'</div></section><section class="card" id="pubFormCard">'+pubForm(inter?{category:"intercambiador"}:{})+'</section></div>';
- bindPub(rows,inter);await hydrateMedia("publicidad");
+ '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Registros</h2><span id="pubCount" class="badge ok">'+rows.filter(activeNow).length+' activas</span></div>'+filters+'<div id="pubList" class="list">'+pubItems(rows)+'</div></section><section class="card" id="pubFormCard">'+pubForm(inter?{category:"intercambiador"}:{})+'</section></div>';
+ bindPub(rows,inter);
+ const apply=()=>{
+   const q=($("#pubFilterQ").value||"").toLowerCase().trim(),status=$("#pubFilterStatus").value,from=$("#pubFilterFrom").value,to=$("#pubFilterTo").value;
+   const filtered=rows.filter(r=>{
+     if(q && !JSON.stringify(r).toLowerCase().includes(q))return false;
+     if(status==="active"&&!activeNow(r))return false;
+     if(status==="finalizado"&&(r.status||"").toLowerCase()!=="finalizado"&&!r.deletedAt)return false;
+     if(from&&r.endDate&&r.endDate<from)return false;
+     if(to&&r.startDate&&r.startDate>to)return false;
+     return true;
+   });
+   $("#pubList").innerHTML=pubItems(filtered);$("#pubCount").textContent=filtered.length+" visibles";
+   bindPubRows(filtered,inter);hydrateMedia("publicidad");
+ };
+ ["#pubFilterQ","#pubFilterStatus","#pubFilterFrom","#pubFilterTo"].forEach(s=>$(s).addEventListener("input",apply));
+ await hydrateMedia("publicidad");
 }
+
 function pubItems(rows){return rows.length?rows.map(r=>'<div class="item"><div><h3>'+esc(r.spectacle||"Campaña")+'</h3><div class="item-meta"><span>'+esc(r.category||"publicidad")+'</span><span>'+esc(r.location||r.support||"")+'</span><span>'+esc(r.provider||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="publicidad" data-kind="image"></div></div><div class="item-actions"><button data-edit-pub="'+r.id+'">Editar</button><button class="danger" data-del-pub="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
 function pubForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar campaña":"Nueva campaña")+'</h2></div><form id="pubForm" class="form-grid">'+
  input("spectacle","Espectáculo / campaña",r.spectacle)+input("category","Tipo",r.category||"intercambiador")+input("support","Soporte / formato",r.support)+input("location","Ubicación / intercambiador",r.location)+input("provider","Proveedor / medio",r.provider)+input("format","Pieza / formato",r.format)+input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+input("contact","Contacto",r.contact)+selectStatus(r.status)+
  '<label class="wide">Creatividad<input id="pubAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Condiciones / acuerdo<textarea name="agreement">'+esc(r.agreement||"")+'</textarea></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelPub">Limpiar</button></div></form>'}
+function bindPubRows(rows,inter){
+ $("[data-edit-pub]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editPub);if(!r)return;$("#pubFormCard").innerHTML=pubForm(r);bindPubForm(r,inter)});
+ $("[data-del-pub]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta campaña?"))return;await api("/api/control?module=publicidad&id="+b.dataset.delPub,{method:"DELETE"});say("Campaña archivada");publicidad(inter)});
+}
 function bindPub(rows,inter){
  $("#newPub").onclick=()=>{$("#pubFormCard").innerHTML=pubForm(inter?{category:"intercambiador"}:{});bindPubForm(null,inter)};
- $$("[data-edit-pub]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editPub);$("#pubFormCard").innerHTML=pubForm(r);bindPubForm(r,inter)});
- $$("[data-del-pub]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta campaña?"))return;await api("/api/control?module=publicidad&id="+b.dataset.delPub,{method:"DELETE"});say("Campaña archivada");publicidad(inter)});
+ bindPubRows(rows,inter);
  bindPubForm(null,inter);
 }
 function bindPubForm(existing,inter){
@@ -100,8 +125,19 @@ function bindPubForm(existing,inter){
 async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio")el.innerHTML='<audio controls preload="none" src="'+u+'"></audio>';else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 
 async function archivo(){
- const d=await api("/api/control?module=audit&limit=250");
- app.innerHTML=pageHead("Archivo / Histórico","Auditoría de cambios y campañas")+'<div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Elemento</th><th>Usuario</th></tr></thead><tbody>'+
+ const auditP=api("/api/control?module=audit&limit=250");
+ let radioP=Promise.resolve({rows:[]}),pubP=Promise.resolve({rows:[]});
+ if(roles().includes("admin")||roles().includes("gestion")){
+   radioP=api("/api/control?module=radio&includeDeleted=1");
+   pubP=api("/api/control?module=publicidad&includeDeleted=1");
+ }
+ const [d,rd,pd]=await Promise.all([auditP,radioP,pubP]);
+ const finishedRadio=(rd.rows||[]).filter(r=>r.deletedAt||(r.status||"").toLowerCase()==="finalizado");
+ const finishedPub=(pd.rows||[]).filter(r=>r.deletedAt||(r.status||"").toLowerCase()==="finalizado");
+ const finished=[...finishedRadio.map(r=>({module:"Radio",title:r.spectacle||r.campaignName||"Campaña",place:r.station||"",from:r.startDate,to:r.endDate})),...finishedPub.map(r=>({module:(r.category||"").toLowerCase()==="intercambiador"?"Intercambiadores":"Publicidad",title:r.spectacle||"Campaña",place:r.location||r.support||"",from:r.startDate,to:r.endDate}))];
+ app.innerHTML=pageHead("Archivo / Histórico","Cambios y campañas finalizadas")+
+ (finished.length?'<section class="card" style="margin-bottom:14px"><div class="section-title"><h2>Campañas finalizadas / archivadas</h2><span class="badge">'+finished.length+'</span></div><div class="list">'+finished.map(r=>'<div class="item"><div><h3>'+esc(r.module)+' · '+esc(r.title)+'</h3><div class="item-meta"><span>'+esc(r.place)+'</span><span>'+fdate(r.from)+' → '+fdate(r.to)+'</span></div></div></div>').join("")+'</div></section>':'')+
+ '<div class="card"><div class="section-title"><h2>Auditoría</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Elemento</th><th>Usuario</th></tr></thead><tbody>'+
  (d.rows||[]).map(r=>'<tr><td>'+new Date(r.at).toLocaleString("es-ES")+'</td><td>'+esc(r.module)+'</td><td>'+esc(r.action)+'</td><td>'+esc(r.elementId||"")+'</td><td>'+esc(r.actor?.email||"")+'</td></tr>').join("")+
  '</tbody></table></div></div>';
 }
