@@ -27,11 +27,11 @@ export async function putRecord(moduleName: RecordModule, id: string, value: unk
 }
 
 const allowed: Record<RecordModule,string[]> = {
-  radio: ["venue","spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status"],
+  radio: ["venue","spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status","materialStatus","deliveryDate"],
   publicidad: ["spectacle","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","category","location"],
-  taxis: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location"],
-  intercambiadores: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location"],
-  hometicket: ["venue","position","spectacle","startDate","endDate","assetKey","assetName","notes","status"],
+  taxis: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  intercambiadores: ["spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  hometicket: ["venue","position","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate"],
 };
 
 export function cleanInput(moduleName: RecordModule, input: any) {
