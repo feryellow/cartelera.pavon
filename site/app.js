@@ -11,7 +11,7 @@ function has(role){return roles().includes("admin")||roles().includes(role)}
 function canRoute(route){if(roles().includes("admin"))return true;if(route==="dashboard"||route==="calendario"||route==="carteleria"||route==="archivo")return true;if((route==="radio"||route==="taxis"||route==="intercambiadores"||route==="hometicket"||route==="revistas")&&roles().includes("gestion"))return true;return false}
 const ICON_PATHS={dashboard:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',carteleria:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/>',hometicket:'<path d="M3 8a2 2 0 0 0 0 4 2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 0 0-4V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',radio:'<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="15.5" cy="14" r="3"/><path d="M7 12h3M7 16h3M6 8l11-4"/>',taxis:'<path d="M5 17V12l2-5h10l2 5v5M3 17h18v3H3zM9 4h6"/><circle cx="7.5" cy="14" r="1"/><circle cx="16.5" cy="14" r="1"/>',intercambiadores:'<rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21l1-3M16 21l-1-3"/>',revistas:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M18 8h2v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/>',archivo:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',admin:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'};
 // Fotos de las tarjetas de Inicio y cabeceras. Para cambiar una foto, sustituye el archivo en /assets/tiles/ (formato 4:3, JPG).
-const ROUTE_PHOTOS={calendario:"/assets/tiles/calendario.jpg",hometicket:"/assets/tiles/hometicket.jpg",radio:"/assets/tiles/radio.jpg",taxis:"/assets/tiles/taxis.jpg",intercambiadores:"/assets/tiles/intercambiadores.jpg",archivo:"/assets/tiles/archivo.jpg",admin:"/assets/tiles/usuarios.jpg"};
+const ROUTE_PHOTOS={carteleria:"/assets/facade/taquilla.jpg",calendario:"/assets/tiles/calendario.jpg",hometicket:"/assets/tiles/hometicket.jpg",radio:"/assets/tiles/radio.jpg",taxis:"/assets/tiles/taxis.jpg",intercambiadores:"/assets/tiles/intercambiadores.jpg",archivo:"/assets/tiles/archivo.jpg",admin:"/assets/tiles/usuarios.jpg"};
 function icon(route,cls="nav-ico"){return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[route]||"")+'</svg>'}
 function navMeta(route){const a=$('#mainNav [data-route="'+route+'"]');return a?{href:a.getAttribute("href"),small:a.querySelector("small")?.textContent||"",name:a.querySelector("b")?.textContent||""}:null}
 $$("#mainNav a").forEach(a=>{if(!a.querySelector("svg"))a.insertAdjacentHTML("afterbegin",icon(a.dataset.route))});
@@ -19,7 +19,7 @@ const MODULE_LABELS={avisos:"Avisos",carteleria:"Cartelería",radio:"Radio",taxi
 const ACTION_LABELS={create:"creado",update:"editado",archive:"archivado",save:"guardado",image_replace:"imagen cambiada",image_delete:"imagen quitada",role_change:"rol cambiado",user_create:"usuario creado",user_disable:"usuario desactivado",user_enable:"usuario activado",email_sent:"correo enviado",email_pending:"correo pendiente",digest_sent:"resumen enviado",digest_pending:"resumen pendiente"};
 function modLabel(m){return MODULE_LABELS[m]||m||""}
 function actLabel(a){return ACTION_LABELS[a]||a||""}
-function prettyKey(k=""){const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
+function prettyKey(k=""){const cs=CART_SLOTS.find(x=>x.key===k);if(cs)return cs.name;const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
 function openFormCard(){setTimeout(()=>{const c=$('[id$="FormCard"]');if(!c)return;c.classList.add("open");if(matchMedia("(max-width:700px)").matches)c.scrollIntoView({behavior:"smooth",block:"start"})},0)}
 document.addEventListener("click",e=>{const t=e.target.closest("#newCampaign,#newRadio,#newHT,#newRevista,[data-edit-campaign],[data-edit-radio],[data-edit-ht],[data-edit-revista],[data-add-revista]");if(t)openFormCard();const c=e.target.closest("#cancelCampaign,#cancelRadio,#cancelHT,#cancelRevista");if(c)setTimeout(()=>{const f=$('[id$="FormCard"]');f&&f.classList.remove("open")},0)});
 function applyNav(){document.body.dataset.route=state.route;$$("[data-route]").forEach(a=>{const r=a.dataset.route;a.classList.toggle("active",r===state.route);a.classList.toggle("locked",!canRoute(r))});$("#accountName").textContent=state.actor?.email||"";const na=$("#navAccountName");if(na){na.textContent=state.actor?.email||"—";const av=$(".account-avatar");if(av)av.textContent=(state.actor?.email||"Y").charAt(0).toUpperCase()}const act=$("#mainNav a.active");if(act&&matchMedia("(max-width:980px)").matches)act.scrollIntoView({inline:"center",block:"nearest"})}
@@ -37,7 +37,7 @@ function statusBadge(v){const s=(v||"activo").toLowerCase();return '<span class=
 function pageHead(title,sub,actions=""){const home=state.route==="dashboard"?"":'<a class="btn back-home" href="#dashboard">← Inicio</a>';const m=navMeta(state.route),photo=ROUTE_PHOTOS[state.route];return '<div class="page-banner'+(photo?' has-photo':'')+'"'+(photo?' style="--photo:url('+photo+')"':'')+'><div class="page-banner-txt">'+(m?.small?'<small>'+esc(m.small)+'</small>':'')+'<h1>'+esc(title)+'</h1><p>'+esc(sub||"")+'</p></div></div><div class="page-actions actions-row">'+home+actions+"</div>"}
 async function blobUrl(assetKey,moduleName){if(!assetKey)return null;if(state.assetUrls.has(assetKey))return state.assetUrls.get(assetKey);const r=await fetch("/api/asset?key="+encodeURIComponent(assetKey)+"&module="+moduleName,{headers:headers()});if(!r.ok)return null;const b=await r.blob(),u=URL.createObjectURL(b);state.assetUrls.set(assetKey,u);return u}
 function routeName(){return (location.hash||"#dashboard").slice(1).split("?")[0]||"dashboard"}
-async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/carteleria.html?vista="+encodeURIComponent(q.get("vista")));return}state.route=routeName();if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
+async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}state.route=nextRoute;if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
 async function dashboard(){
@@ -61,7 +61,7 @@ async function dashboard(){
 }
 
 function homeHeader(alerts,d={}){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
- const aviso=first?'<a class="home-alert'+(first.days<0?' late':'')+'" href="/carteleria.html"><small>'+(first.days<0?'Fuera de plazo':'Urgente')+' · Cartelería<em>'+(first.days<0?'+'+Math.abs(first.days)+' d':first.days===0?'HOY':'D-'+first.days)+'</em></small><b>'+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+'</b><span>'+(first.days<0?"Vencido hace "+Math.abs(first.days)+(Math.abs(first.days)===1?" día":" días"):first.days===0?"Cambio hoy":"Cambio en "+first.days+(first.days===1?" día":" días"))+' · '+fdate(first.next)+'</span></a>':"";
+ const aviso=first?'<a class="home-alert'+(first.days<0?' late':'')+'" href="#carteleria"><small>'+(first.days<0?'Fuera de plazo':'Urgente')+' · Cartelería<em>'+(first.days<0?'+'+Math.abs(first.days)+' d':first.days===0?'HOY':'D-'+first.days)+'</em></small><b>'+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+'</b><span>'+(first.days<0?"Vencido hace "+Math.abs(first.days)+(Math.abs(first.days)===1?" día":" días"):first.days===0?"Cambio hoy":"Cambio en "+first.days+(first.days===1?" día":" días"))+' · '+fdate(first.next)+'</span></a>':"";
  return '<div class="home-hero"><div class="home-hello"><small class="home-kicker">Panel general · Yellow Media</small><h1>'+greet+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+'</p></div>'+homeKpis(d)+'</div>'+aviso}
 function homeTiles(d,alerts){const count=(n,one,many)=>n==null?"":n+" "+(n===1?one:many);const badges={carteleria:alerts.length?count(alerts.length,"aviso","avisos")+" ≤ 7 días":"",radio:d.radio?count(d.radio.active,"cuña activa","cuñas activas"):"",taxis:d.taxis?count(d.taxis.active,"campaña activa","campañas activas"):"",intercambiadores:d.intercambiadores?count(d.intercambiadores.active,"campaña activa","campañas activas"):"",hometicket:d.hometicket?count(d.hometicket.active,"activo","activos"):"",revistas:d.revistas?d.revistas.active+" de "+MAGAZINES.length+" este mes":""};
  const routes=["calendario","carteleria","hometicket","radio","taxis","intercambiadores","revistas","archivo","admin"].filter(canRoute);
@@ -225,6 +225,189 @@ let spectaclesLoaded=false;
 async function loadSpectacles(){if(spectaclesLoaded)return;spectaclesLoaded=true;try{const r=await fetch("/data/espectaculos.json",{cache:"no-cache"});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.espectaculos||[]).forEach(x=>{const n=typeof x==="string"?x:x?.nombre;if(n&&n.trim())SPECTACLES.add(n.trim())})}}catch{}renderSpectacleList()}
 function learnSpectacles(rows){(rows||[]).forEach(r=>{if(r.spectacle&&r.spectacle.trim())SPECTACLES.add(r.spectacle.trim())});renderSpectacleList()}
 function renderSpectacleList(){let dl=$("#spectacleList");if(!dl){dl=document.createElement("datalist");dl.id="spectacleList";document.body.appendChild(dl)}dl.innerHTML=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es")).map(n=>'<option value="'+esc(n)+'">').join("")}
+
+// ===================== CARTELERÍA (integrada en Yellow Control) =====================
+// Datos compatibles con la versión anterior: /api/state (slots + schedule) y /api/image?key=<vista>__<soporte> (dataURL).
+const CART_VIEWS=[
+ {id:"taquilla",name:"Taquilla cerrada",img:"/assets/facade/taquilla.jpg",w:1448,h:1086},
+ {id:"lona",name:"Lona + secundarios",img:"/assets/facade/lona.jpg",w:856,h:718},
+ {id:"abierta",name:"Taquilla abierta",img:"/assets/facade/abierta.jpg",w:946,h:1381},
+ {id:"columna",name:"Columna 1",img:"/assets/columna1.jpg",w:260,h:380}
+];
+const CART_SLOTS=[
+ {key:"taquilla__secundario-1",view:"taquilla",name:"Secundario 1",r:[19.06,40.06,13.54,27.90]},
+ {key:"taquilla__taquilla-izq",view:"taquilla",name:"Taquilla izquierda cerrada",r:[35.77,40.79,11.67,26.89]},
+ {key:"taquilla__taquilla-der",view:"taquilla",name:"Taquilla derecha cerrada",r:[50.97,40.70,11.05,26.98]},
+ {key:"taquilla__secundario-2",view:"taquilla",name:"Secundario 2",r:[66.02,40.06,12.50,27.81]},
+ {key:"lona__lona",view:"lona",name:"Lona",r:[19.16,9.75,64.25,29.39]},
+ {key:"lona__sec1",view:"lona",name:"Secundario 1 (lona)",r:[12.38,47.63,26.05,16.57]},
+ {key:"lona__sec2",view:"lona",name:"Secundario 2 (lona)",r:[38.90,47.77,25.12,16.43]},
+ {key:"lona__sec3",view:"lona",name:"Secundario 3 (lona)",r:[65.19,47.77,24.88,16.57]},
+ {key:"abierta__taquilla-izq-abierta",view:"abierta",name:"Taquilla izquierda abierta",r:[3.59,15.86,21.04,40.70]},
+ {key:"abierta__taquilla-der-abierta",view:"abierta",name:"Taquilla derecha abierta",r:[81.92,16.29,15.75,39.97]},
+ {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[64.3,42.8,21.8,24.8]}
+];
+const CART_STATUS=["pendiente","aprobado","en producción","instalado"];
+const cart={loaded:false,view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
+const cartSlot=k=>CART_SLOTS.find(s=>s.key===k);
+const cartView=id=>CART_VIEWS.find(v=>v.id===id);
+function canEditCart(){return roles().some(r=>["admin","gestion","carteleria"].includes(r))}
+function cartSched(k){return cart.schedule[k]||(cart.schedule[k]={date:"",next:"",title:"",installDate:"",removeDate:"",status:"",notes:""})}
+function cartMode(k){return (cart.slots[k]&&cart.slots[k].mode)||"contain"}
+function cartDaysTo(iso){if(!iso)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(iso+"T00:00:00")-t)/864e5)}
+function cartNextDate(k){const s=cartSched(k);const t=new Date().toISOString().slice(0,10);const ds=[["Instalación",s.installDate],["Retirada",s.removeDate]].filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[1]||""));const fut=ds.filter(x=>x[1]>=t).sort((a,b)=>a[1].localeCompare(b[1]));return fut[0]||null}
+
+async function cartLoad(){
+ const d=await api("/api/state",{cache:"no-store"});const st=d.state||{};
+ cart.slots=st.slots||{};cart.schedule=st.schedule||{};cart.updatedAt=st.updatedAt||null;cart.img={};cart.dirty.clear();cart.imgDirty.clear();
+ await Promise.all(CART_SLOTS.filter(s=>cart.slots[s.key]&&cart.slots[s.key].hasImage).map(async s=>{try{const r=await fetch("/api/image?key="+encodeURIComponent(s.key),{cache:"no-store",headers:headers()});if(r.ok)cart.img[s.key]=await r.text()}catch{}}));
+ cart.loaded=true;
+}
+
+async function carteleria(){
+ if(!cart.loaded||!cart.dirty.size)await cartLoad();
+ const q=new URLSearchParams((location.hash.split("?")[1])||"");const v=q.get("vista");if(v&&cartView(v))cart.view=v;
+ if(!cart.sel||cartSlot(cart.sel).view!==cart.view)cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;
+ const edit=canEditCart();
+ const withImg=CART_SLOTS.filter(s=>cart.img[s.key]).length;
+ const upcoming=CART_SLOTS.map(s=>({s,n:cartNextDate(s.key)})).filter(x=>x.n).sort((a,b)=>a.n[1].localeCompare(b.n[1]));
+ const next=upcoming[0];const nd=next?cartDaysTo(next.n[1]):null;
+ const pend=CART_SLOTS.filter(s=>{const st=cartSched(s.key).status;return st&&st!=="instalado"}).length;
+ app.innerHTML=pageHead("Cartelería","Fachada y soportes del Gran Teatro Pavón",
+   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar PNG</button>'+(edit?'<button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+  '<div class="kpi-row">'+kpi(withImg+"/"+CART_SLOTS.length,"Soportes con cartel")+kpi(upcoming.length,"Cambios programados")+(next?'<span class="kpi '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b><em>'+esc(next.n[0]+" · "+next.s.name)+'</em></span>':kpi(0,"Sin cambios próximos"))+kpi(pend,"Por instalar",pend?"warn":"")+'</div>'+
+  '<div class="cart-sync" id="cartSync"></div>'+
+  '<div class="grid cart-grid">'+
+   '<section class="card cart-preview"><div class="section-title"><div><small class="section-kicker">Previsualización</small><h2 id="cartViewName"></h2></div><div class="seg" id="cartNight"><button type="button" data-n="0">Día</button><button type="button" data-n="1">Noche</button></div></div>'+
+   '<div class="chip-row cart-views" id="cartViews">'+CART_VIEWS.map(v=>'<button type="button" class="chip" data-v="'+v.id+'">'+esc(v.name)+'</button>').join("")+'</div>'+
+   '<div class="cart-stage-wrap"><div class="cart-stage" id="cartStage"></div></div>'+
+   '<p class="cart-hint">'+(edit?"Toca un soporte para editarlo. Los cambios se ven aquí antes de guardar.":"Vista de consulta.")+'</p>'+
+   '<div class="chip-row" id="cartSlotChips"></div></section>'+
+   '<section class="card cart-panel" id="cartPanel"></section>'+
+  '</div>'+
+  '<section class="card" style="margin-top:14px"><div class="section-title"><div><small class="section-kicker">Agenda</small><h2>Próximos cambios</h2></div></div><div class="list" id="cartUpcoming"></div></section>'+
+  '<section style="margin-top:18px"><div class="home-section-label"><span>Todos los soportes</span><span>'+CART_SLOTS.length+' soportes</span></div><div class="cart-cards" id="cartCards"></div></section>'+
+  (edit?'<div class="cart-savebar" id="cartSavebar"><span>Cambios sin guardar</span><button type="button" class="primary" id="cartSave2">Guardar</button></div>':'')+
+  '<input type="file" id="cartFile" accept="image/*" hidden>';
+ $("#cartViews").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;cart.view=c.dataset.v;cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;cartRender()};
+ $("#cartNight").onclick=e=>{const b=e.target.closest("button");if(!b)return;cart.night=b.dataset.n==="1";cartRender()};
+ $("#cartExport").onclick=()=>cartExport(false);
+ $("#cartShare").onclick=()=>cartExport(true);
+ if(edit){$("#cartSave").onclick=cartSave;$("#cartSave2").onclick=cartSave;
+  $("#cartFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f)await cartSetFile(cart.sel,f)}}
+ cartRender();
+}
+
+function cartRender(){
+ const v=cartView(cart.view),edit=canEditCart();
+ $("#cartViewName").textContent=v.name;
+ $$("#cartViews .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===cart.view));
+ $$("#cartNight button").forEach(b=>b.classList.toggle("on",(b.dataset.n==="1")===cart.night));
+ const stage=$("#cartStage");stage.className="cart-stage"+(cart.night?" night":"");stage.style.aspectRatio=v.w+" / "+v.h;
+ stage.innerHTML='<img class="cart-bg" src="'+v.img+'" alt="'+esc(v.name)+'">'+CART_SLOTS.filter(s=>s.view===cart.view).map(s=>{const im=cart.img[s.key];return '<button type="button" class="cart-slot'+(s.key===cart.sel?" sel":"")+(im?"":" empty")+'" data-k="'+s.key+'" style="left:'+s.r[0]+'%;top:'+s.r[1]+'%;width:'+s.r[2]+'%;height:'+s.r[3]+'%">'+(im?'<img src="'+im+'" style="object-fit:'+cartMode(s.key)+'" alt="">':'<span>'+esc(s.name)+'</span>')+'</button>'}).join("");
+ stage.onclick=e=>{const b=e.target.closest(".cart-slot");if(!b)return;cart.sel=b.dataset.k;cartRender();if(matchMedia("(max-width:980px)").matches)$("#cartPanel").scrollIntoView({behavior:"smooth",block:"start"})};
+ if(edit){stage.ondragover=e=>{e.preventDefault()};stage.ondrop=async e=>{e.preventDefault();const b=e.target.closest(".cart-slot");const f=e.dataTransfer.files[0];if(b&&f){cart.sel=b.dataset.k;await cartSetFile(b.dataset.k,f)}}}
+ $("#cartSlotChips").innerHTML=CART_SLOTS.filter(s=>s.view===cart.view).map(s=>'<button type="button" class="chip'+(s.key===cart.sel?" on":"")+'" data-k="'+s.key+'"><i class="dot'+(cart.img[s.key]?" full":"")+'"></i>'+esc(s.name)+'</button>').join("");
+ $("#cartSlotChips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;cart.sel=c.dataset.k;cartRender()};
+ cartPanel();cartUpcoming();cartCards();cartSyncState();
+}
+
+function cartPanel(){
+ const s=cartSlot(cart.sel),sc=cartSched(s.key),im=cart.img[s.key],edit=canEditCart();
+ const n=cartNextDate(s.key),nd=n?cartDaysTo(n[1]):null;
+ $("#cartPanel").innerHTML='<div class="section-title"><div><small class="section-kicker">Soporte · '+esc(cartView(s.view).name)+'</small><h2>'+esc(s.name)+'</h2></div>'+(sc.status?'<span class="badge '+(sc.status==="instalado"?"ok":"warn")+'">'+esc(sc.status)+'</span>':'')+'</div>'+
+  '<div class="cart-drop'+(im?" has":"")+'" id="cartDrop">'+(im?'<img src="'+im+'" alt="Cartel" style="object-fit:'+cartMode(s.key)+'">':'<div><b>'+(edit?"Carga el cartel":"Sin cartel")+'</b>'+(edit?'<span>Toca aquí o arrastra una imagen</span>':'')+'</div>')+'</div>'+
+  (n?'<div class="cart-next '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b> '+esc(n[0])+' · '+fdate(n[1])+'</div>':'')+
+  (edit?'<div class="actions-row cart-actions"><button type="button" id="cartPick">'+(im?"Cambiar cartel":"Cargar cartel")+'</button>'+(im?'<button type="button" id="cartFit">'+(cartMode(s.key)==="contain"?"Llenar hueco":"Encajar entero")+'</button><button type="button" class="danger" id="cartRemove">Quitar</button>':'')+'</div>':'')+
+  '<form class="form-grid cart-form" id="cartForm">'+
+   '<label class="wide">Espectáculo / pieza<input name="title" list="spectacleList" autocomplete="off" value="'+esc(sc.title||"")+'"'+(edit?'':' disabled')+'></label>'+
+   '<label>Instalación<input type="date" name="installDate" value="'+esc(sc.installDate||"")+'"'+(edit?'':' disabled')+'></label>'+
+   '<label>Retirada<input type="date" name="removeDate" value="'+esc(sc.removeDate||"")+'"'+(edit?'':' disabled')+'></label>'+
+   '<label class="wide">Estado<select name="status"'+(edit?'':' disabled')+'><option value="">Sin estado</option>'+CART_STATUS.map(x=>'<option'+(x===sc.status?" selected":"")+'>'+x+'</option>').join("")+'</select></label>'+
+   '<label class="wide">Observaciones<textarea name="notes"'+(edit?'':' disabled')+'>'+esc(sc.notes||"")+'</textarea></label>'+
+   ((sc.next||sc.date)?'<p class="cart-legacy">Notas anteriores: '+esc([sc.date,sc.next].filter(Boolean).join(" · "))+'</p>':'')+
+  '</form>';
+ loadSpectacles();
+ if(!edit)return;
+ $("#cartPick").onclick=()=>$("#cartFile").click();
+ $("#cartDrop").onclick=()=>$("#cartFile").click();
+ const d=$("#cartDrop");d.ondragover=e=>{e.preventDefault();d.classList.add("over")};d.ondragleave=()=>d.classList.remove("over");d.ondrop=async e=>{e.preventDefault();d.classList.remove("over");const f=e.dataTransfer.files[0];if(f)await cartSetFile(s.key,f)};
+ if(im){$("#cartFit").onclick=()=>{cart.slots[s.key]={...(cart.slots[s.key]||{}),mode:cartMode(s.key)==="contain"?"cover":"contain",hasImage:true};cartMark(s.key);cartRender()};
+  $("#cartRemove").onclick=()=>{if(!confirm("¿Quitar el cartel de "+s.name+"?"))return;delete cart.img[s.key];cart.slots[s.key]={...(cart.slots[s.key]||{}),hasImage:false};cartMark(s.key,true);cartRender()}}
+ $("#cartForm").oninput=e=>{const el=e.target;if(!el.name)return;cartSched(s.key)[el.name]=el.value;cartMark(s.key);cartSyncState();if(el.type==="date"||el.tagName==="SELECT"){cartUpcoming();cartCards()}};
+}
+
+function cartUpcoming(){
+ const t=new Date().toISOString().slice(0,10);
+ const ev=[];CART_SLOTS.forEach(s=>{const sc=cartSched(s.key);[["Instalación",sc.installDate],["Retirada",sc.removeDate]].forEach(([a,d])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(d||"")&&d>=t)ev.push({s,a,d,title:sc.title})})});
+ ev.sort((a,b)=>a.d.localeCompare(b.d));
+ $("#cartUpcoming").innerHTML=ev.length?ev.slice(0,8).map(x=>{const n=cartDaysTo(x.d);return '<button type="button" class="item cart-up" data-k="'+x.s.key+'"><div><h3>'+esc(x.a)+' · '+esc(x.s.name)+'</h3><div class="item-meta"><span class="badge '+(n<=3?"warn":"")+'">'+(n===0?"HOY":"D-"+n)+'</span><span>'+fdate(x.d)+'</span>'+(x.title?'<span>'+esc(x.title)+'</span>':'')+'</div></div></button>'}).join(""):'<div class="notice">No hay instalaciones ni retiradas programadas. Añade fechas en la ficha de cada soporte.</div>';
+ $("#cartUpcoming").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;cart.sel=b.dataset.k;cart.view=cartSlot(cart.sel).view;cartRender();$("#cartStage").scrollIntoView({behavior:"smooth",block:"center"})};
+}
+
+function cartCards(){
+ $("#cartCards").innerHTML=CART_SLOTS.map(s=>{const im=cart.img[s.key],sc=cartSched(s.key);return '<button type="button" class="cart-card'+(s.key===cart.sel?" sel":"")+'" data-k="'+s.key+'"><div class="cart-thumb">'+(im?'<img src="'+im+'" alt="">':'<span>Sin cartel</span>')+'<em>'+esc(cartView(s.view).name)+'</em></div><b>'+esc(s.name)+'</b><small>'+esc(sc.title||"—")+'</small><div class="item-meta">'+(sc.status?'<span class="badge '+(sc.status==="instalado"?"ok":"warn")+'">'+esc(sc.status)+'</span>':'')+(sc.installDate?'<span>Inst. '+fdate(sc.installDate)+'</span>':'')+(sc.removeDate?'<span>Ret. '+fdate(sc.removeDate)+'</span>':'')+'</div></button>'}).join("");
+ $("#cartCards").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;cart.sel=b.dataset.k;cart.view=cartSlot(cart.sel).view;cartRender();$("#cartStage").scrollIntoView({behavior:"smooth",block:"center"})};
+}
+
+function cartMark(k,img=false){cart.dirty.add(k);if(img)cart.imgDirty.add(k);cartSyncState()}
+function cartSyncState(){
+ const el=$("#cartSync");if(!el)return;const n=cart.dirty.size;
+ el.innerHTML=cart.saving?'<span class="badge warn">Guardando…</span>':n?'<span class="badge warn">'+n+(n===1?" soporte con cambios sin guardar":" soportes con cambios sin guardar")+'</span>':'<span class="badge ok">Sincronizado</span>'+(cart.updatedAt?'<span class="muted"> Última actualización: '+new Date(cart.updatedAt).toLocaleString("es-ES")+'</span>':'');
+ const bar=$("#cartSavebar");if(bar)bar.classList.toggle("show",n>0&&!cart.saving);
+}
+
+function cartReadImage(file){return new Promise((res,rej)=>{if(!/^image\//.test(file.type)){rej(new Error("El archivo debe ser una imagen (JPG o PNG)."));return}const fr=new FileReader();fr.onerror=()=>rej(new Error("No se ha podido leer la imagen."));fr.onload=()=>{const img=new Image();img.onerror=()=>rej(new Error("La imagen no es válida."));img.onload=()=>{let q=.86,max=1800;const draw=()=>{const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)};let out=draw();while(out.length>2_800_000&&q>.5){q-=.1;max=Math.round(max*.85);out=draw()}res(out)};img.src=fr.result};fr.readAsDataURL(file)})}
+async function cartSetFile(k,file){try{const data=await cartReadImage(file);cart.img[k]=data;cart.slots[k]={...(cart.slots[k]||{}),mode:cartMode(k),hasImage:true};cartMark(k,true);cartRender();say("Cartel cargado · falta guardar")}catch(e){say(e.message)}}
+
+async function cartSave(){
+ if(!cart.dirty.size){say("No hay cambios que guardar");return}
+ cart.saving=true;cartSyncState();
+ try{
+  // 1. Leer la última versión para no pisar cambios de otras personas en soportes no tocados
+  const d=await api("/api/state",{cache:"no-store"});const remote=d.state||{};const slots={...(remote.slots||{})},schedule={...(remote.schedule||{})};
+  // 2. Subir o quitar solo las imágenes modificadas
+  for(const k of cart.imgDirty){if(cart.img[k])await api("/api/image?key="+encodeURIComponent(k),{method:"PUT",headers:{"content-type":"text/plain;charset=utf-8"},body:cart.img[k]});else await fetch("/api/image?key="+encodeURIComponent(k),{method:"DELETE",headers:headers()}).then(r=>{if(!r.ok&&r.status!==404)throw new Error("No se pudo quitar el cartel")})}
+  // 3. Fusionar solo los soportes modificados
+  for(const k of cart.dirty){slots[k]={mode:cartMode(k),hasImage:!!cart.img[k]};schedule[k]={...cartSched(k)}}
+  const updatedAt=new Date().toISOString();
+  await api("/api/state",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({slots,schedule,updatedAt})});
+  const changedViews=[...new Set([...cart.dirty].map(k=>cartSlot(k)?.view).filter(Boolean))];
+  cart.dirty.clear();cart.imgDirty.clear();cart.updatedAt=updatedAt;cart.saving=false;
+  await cartLoad();cartRender();say("Cartelería guardada");
+  // 4. Aviso por correo con la vista modificada (no bloquea el guardado)
+  try{for(const v of changedViews.slice(0,2)){const png=await cartComposite(v,false);await fetch("/api/email-update",{method:"POST",headers:headers({"content-type":"application/json"}),body:JSON.stringify({page:v,pngDataUrl:png,updatedAt})})}}catch{}
+ }catch(e){cart.saving=false;cartSyncState();say(e.message||"No se han podido guardar los cambios")}
+}
+
+function cartLoadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error("No se pudo cargar una imagen"));i.src=src})}
+async function cartComposite(viewId,night){
+ const v=cartView(viewId),bg=await cartLoadImg(v.img);const scale=Math.max(1,Math.round(1600/Math.max(v.w,v.h)*10)/10);
+ const W=Math.round(v.w*scale),H=Math.round(v.h*scale),c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+ g.filter=night?"brightness(0.38) saturate(0.8)":"none";g.drawImage(bg,0,0,W,H);g.filter="none";
+ for(const s of CART_SLOTS.filter(x=>x.view===viewId)){const x=s.r[0]/100*W,y=s.r[1]/100*H,w=s.r[2]/100*W,h=s.r[3]/100*H;const im=cart.img[s.key];
+  if(!im){g.fillStyle="rgba(10,10,10,.82)";g.fillRect(x,y,w,h);continue}
+  const p=await cartLoadImg(im);g.save();g.beginPath();g.rect(x,y,w,h);g.clip();g.fillStyle="#050505";g.fillRect(x,y,w,h);
+  const mode=cartMode(s.key),ratio=mode==="cover"?Math.max(w/p.naturalWidth,h/p.naturalHeight):Math.min(w/p.naturalWidth,h/p.naturalHeight);const pw=p.naturalWidth*ratio,ph=p.naturalHeight*ratio;
+  if(night){g.shadowColor="rgba(255,236,170,.55)";g.shadowBlur=24}g.drawImage(p,x+(w-pw)/2,y+(h-ph)/2,pw,ph);g.restore()}
+ g.fillStyle="rgba(19,19,19,.78)";g.fillRect(0,H-Math.round(34*scale/1.2),W,Math.round(34*scale/1.2));g.fillStyle="#FFD400";g.font="600 "+Math.round(15*scale/1.2)+"px 'Plus Jakarta Sans',Arial";g.textBaseline="middle";
+ g.fillText("Gran Teatro Pavón · "+v.name+" · "+new Date().toLocaleDateString("es-ES"),Math.round(14*scale/1.2),H-Math.round(17*scale/1.2));
+ return c.toDataURL("image/png");
+}
+async function cartExport(share){
+ try{const png=await cartComposite(cart.view,cart.night);const name="Pavon_"+cart.view+"_"+new Date().toLocaleDateString("sv")+".png";
+  const blob=await (await fetch(png)).blob();const file=new File([blob],name,{type:"image/png"});
+  if(share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Cartelería Gran Teatro Pavón",text:"Cartelería · "+cartView(cart.view).name});return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  say(share?"Imagen descargada: adjúntala en WhatsApp o en el correo":"PNG descargado")}catch(e){if(e&&e.name==="AbortError")return;say(e.message||"No se ha podido exportar")}
+}
+window.addEventListener("beforeunload",e=>{if(cart.dirty.size){e.preventDefault();e.returnValue=""}});
+
+// ===== Modo claro / oscuro (por persona, se recuerda en este navegador) =====
+function currentTheme(){return document.documentElement.dataset.theme==="light"?"light":"dark"}
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("yc-theme",t)}catch{}const b=$("#themeToggle");if(b)b.setAttribute("aria-label",t==="light"?"Cambiar a modo oscuro":"Cambiar a modo claro");const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="light"?"#f5f3ee":"#131313"}
+setTheme(currentTheme());
+document.addEventListener("click",e=>{if(e.target.closest("#themeToggle"))setTheme(currentTheme()==="light"?"dark":"light")});
 
 async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 

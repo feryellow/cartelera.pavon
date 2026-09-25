@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartelería · Gran Teatro Pavón</title>
+<style>
+html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:Arial,sans-serif}
+.boot{min-height:100vh;display:grid;place-items:center;text-align:center;padding:30px}
+.boot strong{display:block;font-size:20px;margin-bottom:8px}
+.boot span{font-size:12px;color:#c9b98f}
+</style>
+</head>
+<body>
+<div class="boot"><div><strong>Gran Teatro Pavón</strong><span>Cargando plantilla interactiva…</span></div></div>
+<script>
+(async()=>{
+  const parts=Array.from({length:13},(_,i)=>"/bundle/part-"+String(i).padStart(2,"0")+".txt");
+  const responses=await Promise.all(parts.map(p=>fetch(p,{cache:"force-cache"})));
+  if(responses.some(r=>!r.ok)) throw new Error("No se ha podido cargar la plantilla.");
+  let html=(await Promise.all(responses.map(r=>r.text()))).join("");
+
+  const cloudCss=`
+.cloud-box{margin:0 0 14px;border:1px solid var(--line);border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.02)}
+.cloud-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.cloud-title{color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.16em;font-weight:900}
+.cloud-status{font-size:10px;color:var(--muted);text-align:right}.cloud-status.ok{color:#d9c875}.cloud-status.dirty{color:#f0c95d}.cloud-status.error{color:#e9a18f}
+.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cloud-actions button{appearance:none;border:1px solid var(--line);background:#28221d;color:var(--cream);border-radius:10px;padding:9px 10px;cursor:pointer;font:800 11px/1 Inter,Arial,sans-serif}.cloud-actions button.primary{background:var(--gold);color:#171310;border-color:var(--gold)}
+.cloud-updated{margin-top:8px;color:var(--muted);font-size:10px;line-height:1.35}
+
+
+/* FASE 1 · NORMALIZACIÓN DE CARTELERÍA */
+.view[data-view="abierta"] .stage-card{
+  max-width:1100px;
+  margin:0 auto;
+}
+.view[data-view="abierta"] .canvas-shell{
+  max-width:760px;
+  margin:0 auto;
+}
+.pavon-support-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid rgba(232,197,90,.22);
+  border-radius:10px;
+  background:rgba(232,197,90,.045);
+  color:#c9b98f;
+  font-size:11px;
+  line-height:1.45;
+}
+@media(max-width:760px){
+  .view[data-view="abierta"] .canvas-shell{max-width:none}
+  .pavon-support-note{font-size:12px}
+}
+
+.columna1-aux{
+  margin:16px 0 0;
+  padding:14px;
+  border:1px solid rgba(232,197,90,.24);
+  border-radius:14px;
+  background:#0f0d0b;
+}
+.columna1-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  margin:0 0 10px;color:var(--cream);
+}
+.columna1-head strong{display:block;color:var(--gold);font-size:14px;letter-spacing:.03em}
+.columna1-head span{display:block;color:var(--muted);font-size:10px;line-height:1.3}
+.columna1-shell{
+  position:relative;
+  width:min(100%,520px);
+  margin:0 auto;
+  overflow:hidden;
+  border-radius:12px;
+  background:#050505;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+.columna1-shell>img{display:block;width:100%;height:auto}
+.columna1-shell .slot{position:absolute}
+@media(max-width:760px){
+  .columna1-aux{margin-top:12px;padding:8px;border-radius:12px}
+  .columna1-head{align-items:flex-start;flex-direction:column;gap:3px;padding:4px}
+  .columna1-head strong{font-size:15px}
+  .columna1-head span{font-size:11px}
+  .columna1-shell{width:100%;border-radius:10px}
+}
+
+.pavon-meta-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(232,197,90,.12)}
+.pavon-meta-fields label{display:grid;gap:4px;min-width:0;color:var(--muted);font:700 9px/1 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{box-sizing:border-box;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;width:100%;background:#15120f;color:var(--cream);border:1px solid var(--line);border-radius:7px;padding:7px;font:600 10px/1.3 Inter,Arial,sans-serif}
+.pavon-meta-fields textarea{grid-column:1/-1;min-height:52px;resize:vertical}
+@media(max-width:760px){.pavon-meta-fields{grid-template-columns:1fr}.pavon-meta-fields textarea{grid-column:auto}.pavon-meta-fields input,.pavon-meta-fields select,.pavon-meta-fields textarea{min-height:40px;font-size:16px}}
+@media (hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}
+
+/* PAVON MOBILE EXPERIENCE */
+.calendar-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+@media(max-width:760px){
+  html,body{background:#171310!important;overflow-x:hidden}
+  body{font-size:15px!important}
+  .topbar{padding:10px 4px 6px!important;gap:10px!important}
+  .eyebrow{font-size:12px!important;letter-spacing:.16em!important;margin-bottom:8px!important}
+  .brand{min-height:44px!important;padding:9px 12px!important}
+  .brand span{font-size:12px!important}
+  .tabs{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    margin:10px 0 14px!important;
+  }
+  .tab,.calendar-nav{
+    width:100%!important;
+    min-height:48px!important;
+    box-sizing:border-box!important;
+    border-radius:8px!important;
+    border:1px solid #EACB68!important;
+    background:linear-gradient(180deg,#F5D66C 0%,#C8A140 100%)!important;
+    color:#171310!important;
+    padding:12px 10px!important;
+    font:900 13px/1.1 Inter,Arial,sans-serif!important;
+    letter-spacing:.01em!important;
+    box-shadow:0 4px 12px rgba(0,0,0,.24),0 0 0 1px rgba(255,229,139,.22) inset!important;
+    text-align:center!important;
+    text-decoration:none!important;
+  }
+  .tab.active{
+    background:linear-gradient(180deg,#FFE58B 0%,#D7AF45 100%)!important;
+    box-shadow:0 5px 18px rgba(232,197,90,.32),0 0 0 1px rgba(255,244,193,.42) inset!important;
+  }
+  .tab:active,.calendar-nav:active{transform:scale(.985)!important}
+  .shell{display:block!important;max-width:none!important;width:100%!important}
+  .main{padding:8px 10px 16px!important}
+  .stage-card{
+    padding:7px!important;
+    border-radius:16px!important;
+    background:#0f0d0b!important;
+    border:1px solid rgba(232,197,90,.22)!important;
+    box-shadow:0 8px 26px rgba(0,0,0,.30)!important;
+  }
+  .view{padding:0!important;background:none!important}
+  .view[data-view="abierta"]{padding:0!important;background:none!important}
+  .canvas-shell,.view[data-view="abierta"] .canvas-shell{
+    width:100%!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    border-radius:13px!important;
+  }
+  .canvas-shell:hover{
+    transform:none!important;
+    box-shadow:none!important;
+    filter:none!important;
+  }
+  .stage{
+    width:100%!important;
+    border-radius:12px!important;
+    overflow:hidden!important;
+    box-shadow:none!important;
+    touch-action:manipulation!important;
+  }
+  .lightbox-trigger{
+    top:10px!important;
+    right:10px!important;
+    width:auto!important;
+    height:42px!important;
+    padding:0 14px!important;
+    border-radius:8px!important;
+    background:linear-gradient(180deg,#F6D96F,#C9A241)!important;
+    color:#171310!important;
+    border:1px solid #FFE28A!important;
+    font:900 11px/1 Inter,Arial,sans-serif!important;
+    letter-spacing:.06em!important;
+    box-shadow:0 4px 14px rgba(0,0,0,.35)!important;
+  }
+  .side{
+    border-left:0!important;
+    border-top:1px solid rgba(232,197,90,.22)!important;
+    padding:16px 12px 30px!important;
+  }
+  .side h2{font-size:20px!important;margin-bottom:4px!important}
+  .tiny{font-size:12px!important;line-height:1.45!important}
+  .zoom-box,.selected-box,.cloud-box,.calendar-box{
+    border-radius:12px!important;
+    padding:13px!important;
+  }
+  .actions{grid-template-columns:1fr!important;gap:9px!important}
+  .actions button,.cloud-actions button,#exportBtn,#clearBtn{
+    min-height:46px!important;
+    font-size:13px!important;
+    border-radius:8px!important;
+  }
+  .cloud-actions{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .cloud-actions button.primary{
+    background:linear-gradient(180deg,#F6D96F,#C9A241)!important;
+    color:#171310!important;
+    border-color:#F2D46C!important;
+  }
+  .slot-list{gap:8px!important}
+  .slot-row{padding:11px!important;border-radius:10px!important}
+  .calendar-fields{grid-template-columns:1fr!important}
+  .calendar-fields input{min-height:42px!important;font-size:13px!important}
+  .lightbox{padding:8px!important}
+  .lightbox-frame{
+    width:calc(100vw - 16px)!important;
+    max-width:calc(100vw - 16px)!important;
+    max-height:96vh!important;
+    padding:6px!important;
+    border-radius:12px!important;
+  }
+  .lightbox-frame img{
+    max-width:100%!important;
+    max-height:calc(96vh - 12px)!important;
+    width:100%!important;
+    height:auto!important;
+    object-fit:contain!important;
+  }
+  .lightbox-close{
+    top:8px!important;
+    right:8px!important;
+    width:42px!important;
+    height:42px!important;
+    z-index:5!important;
+  }
+  .lightbox-help{display:none!important}
+  .footer{font-size:10px!important;line-height:1.4!important}
+}
+`;
+
+  html=html.replace('hint:"Taquilla cerrada · cuatro soportes."', 'hint:"Taquilla cerrada · cinco soportes: fachada principal + Columna 1."');
+
+  html=html.replace(
+    "input[type=file] { display:none; }",
+    cloudCss+"\ninput[type=file] { display:none; }"
+  );
+
+  html=html.replace(
+    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cuatro soportes.</p>\n\n    <div class="zoom-box">',
+    '<h2>Editor de soportes</h2>\n    <p class="tiny" id="pageHint">Taquilla cerrada · cinco soportes: fachada principal + Columna 1.</p>\n    <div class="pavon-support-note"><strong>Columna 1 · soporte adicional.</strong> La fachada principal mantiene los cuatro soportes frontales para producción. Columna 1 se gestionará como soporte auxiliar independiente para no perder esa vista limpia.</div>\n\n    <div class="cloud-box">\n      <div class="cloud-top"><div class="cloud-title">Estado online</div><div id="cloudStatus" class="cloud-status">Conectando…</div></div>\n      <div class="cloud-actions"><button id="reloadCloudBtn">Recargar nube</button><button id="saveCloudBtn" class="primary">Guardar cambios</button></div>\n      <div id="cloudUpdated" class="cloud-updated">Cargando la última actualización…</div>\n    </div>\n\n    <div class="zoom-box">'
+  );
+
+  html=html.replace(
+    'const calendarGrid = document.getElementById("calendarGrid");',
+    'const calendarGrid = document.getElementById("calendarGrid");\n  const cloudStatus=document.getElementById("cloudStatus");\n  const cloudUpdated=document.getElementById("cloudUpdated");\n  const saveCloudBtn=document.getElementById("saveCloudBtn");\n  const reloadCloudBtn=document.getElementById("reloadCloudBtn");'
+  );
+
+
+  html=html.replace(
+    '  const allSlots = [...document.querySelectorAll(".slot")];',
+    `  const taquillaView = document.querySelector(".view.active") || document.querySelector(".view");
+  if (taquillaView && !document.getElementById("columna1Aux")) {
+    const aux = document.createElement("section");
+    aux.id = "columna1Aux";
+    aux.className = "columna1-aux";
+    aux.innerHTML = '<div class="columna1-head"><div><strong>Columna 1</strong><span>Soporte adicional</span></div><span>Fuera de la vista principal de producción</span></div>' +
+      '<div class="columna1-shell"><img src="/assets/columna1.jpg?v=20260925-3" alt="Foto base Columna 1">' +
+      '<div class="slot columna1-slot" data-page="taquilla" data-id="columna_1" data-name="Columna 1" data-aux="true" style="left:64.3%;top:42.8%;width:21.8%;height:24.8%;"><div class="media"></div></div></div>';
+    taquillaView.appendChild(aux);
+  }
+  if (taquillaView && !document.getElementById("columnasGeneral")) {
+    const general = document.createElement("section");
+    general.id = "columnasGeneral";
+    general.className = "columna1-aux";
+    general.innerHTML = '<div class="columna1-head"><div><strong>Vista general de columnas</strong><span>Referencia de fachada</span></div></div>' +
+      '<div class="columna1-shell"><img src="/assets/columna.jpg?v=20260925-1" alt="Vista general de columnas y taquilla" style="display:block;width:100%;height:auto"></div>';
+    taquillaView.appendChild(general);
+  }
+  const allSlots = [...document.querySelectorAll(".slot")];`
+  );
+
+  const cloudJs=`
+  function slotCloudKey(slot){return slot.dataset.page+"__"+slot.dataset.id;}
+  function slotMetaKey(slot,field){return "pavon_meta_"+slot.dataset.page+"_"+slot.dataset.id+"_"+field;}
+  function enhanceScheduleFields(){
+    const rows=[...calendarGrid.querySelectorAll(".calendar-row")],slots=activeSlots();
+    rows.forEach((row,i)=>{
+      const slot=slots[i]; if(!slot||row.querySelector(".pavon-meta-fields"))return;
+      const box=document.createElement("div"); box.className="pavon-meta-fields";
+      const title=document.createElement("input"); title.placeholder="Espectáculo / pieza"; title.dataset.meta="title";
+      const install=document.createElement("input"); install.type="date"; install.dataset.meta="installDate"; install.title="Fecha de instalación";
+      const remove=document.createElement("input"); remove.type="date"; remove.dataset.meta="removeDate"; remove.title="Fecha de retirada";
+      const status=document.createElement("select"); status.dataset.meta="status";
+      ["pendiente","aprobado","en producción","instalado"].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;status.appendChild(o);});
+      const notes=document.createElement("textarea"); notes.placeholder="Observaciones"; notes.dataset.meta="notes";
+      for(const el of [title,install,remove,status,notes]){
+        let v="";try{v=localStorage.getItem(slotMetaKey(slot,el.dataset.meta))||"";}catch(e){}
+        if(v)el.value=v;
+        el.addEventListener("input",()=>{try{localStorage.setItem(slotMetaKey(slot,el.dataset.meta),el.value);}catch(e){}markCloudDirty();});
+      }
+      const wrap=(el,txt)=>{const l=document.createElement("label");l.append(txt,el);return l};
+      box.append(title,wrap(install,"Instalación"),wrap(remove,"Retirada"),status,notes); row.appendChild(box);
+    });
+  }
+  function setCloudStatus(text,kind=""){cloudStatus.textContent=text;cloudStatus.className="cloud-status"+(kind?" "+kind:"");}
+  function markCloudDirty(){setCloudStatus("Cambios sin guardar","dirty");}
+  function getEditKey(){
+    let k="";
+    try{k=sessionStorage.getItem("pavon_edit_key")||"";}catch(e){}
+    if(!k){k=prompt("Clave de edición del panel Pavón:")||"";if(k){try{sessionStorage.setItem("pavon_edit_key",k);}catch(e){}}}
+    return k||null;
+  }
+  async function compressDataUrl(dataUrl,maxSide=1800,quality=.88){
+    if(!dataUrl||!dataUrl.startsWith("data:image/")) return dataUrl;
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=dataUrl;});
+    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+    if(scale===1 && dataUrl.length<1800000) return dataUrl;
+    const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",quality);
+  }
+  async function fetchCloudImage(slot){
+    const r=await fetch("/api/image?key="+encodeURIComponent(slotCloudKey(slot)),{cache:"no-store"});
+    if(r.status===404)return null;if(!r.ok)throw new Error("No se pudo cargar "+slot.dataset.name);return await r.text();
+  }
+  async function loadCloudState(){
+    setCloudStatus("Cargando…");reloadCloudBtn.disabled=true;
+    try{
+      const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw new Error("No se pudo leer el estado online.");
+      const payload=await r.json(),remote=payload.state||{},slots=remote.slots||{},schedule=remote.schedule||{};
+      window.pavonPublicEdit=!!payload.publicEdit;
+      window.pavonRequireKey=!!payload.requireKey;
+      window.pavonAuthenticated=!!payload.authenticated;
+      for(const slot of allSlots){
+        const meta=slots[slotCloudKey(slot)]||{};
+        state[key(slot)].mode=meta.mode||"contain";
+        const old=slot.querySelector("img");if(old)old.remove();state[key(slot)].dataUrl=null;
+        if(meta.hasImage){
+          const data=await fetchCloudImage(slot);
+          if(data){const media=slot.querySelector(".media"),img=document.createElement("img");img.src=data;img.style.objectFit=state[key(slot)].mode;media.appendChild(img);state[key(slot)].dataUrl=data;}
+        }
+        const sch=schedule[slotCloudKey(slot)]||{};
+        try{
+          localStorage.setItem(scheduleKey(slot,"date"),sch.date||"");
+          localStorage.setItem(scheduleKey(slot,"next"),sch.next||"");
+          for(const field of ["title","installDate","removeDate","status","notes"]){localStorage.setItem(slotMetaKey(slot,field),sch[field]||"");}
+        }catch(e){}
+      }
+      renderList();renderCalendar();enhanceScheduleFields();selectSlot(null);
+      if(remote.updatedAt){cloudUpdated.textContent="Última actualización: "+new Date(remote.updatedAt).toLocaleString("es-ES");}
+      else cloudUpdated.textContent="Todavía no hay una versión guardada en la nube.";
+      if(window.pavonPublicEdit){cloudUpdated.textContent += " · Edición compartida activa";}
+      setCloudStatus("Sincronizado","ok");
+    }catch(e){console.error(e);setCloudStatus("Modo local","error");cloudUpdated.textContent="No se ha podido conectar con Netlify.";}
+    finally{reloadCloudBtn.disabled=false;}
+  }
+  async function saveCloudState(){
+    const editKey=(window.pavonPublicEdit||window.pavonAuthenticated) ? "" : getEditKey();if(!window.pavonPublicEdit && !window.pavonAuthenticated && !editKey)return;
+    saveCloudBtn.disabled=true;reloadCloudBtn.disabled=true;setCloudStatus("Guardando…");
+    try{
+      const slotMeta={},schedule={};
+      for(const slot of allSlots){
+        const sk=slotCloudKey(slot),s=state[key(slot)];
+        if(s.dataUrl){
+          const normalized=await compressDataUrl(s.dataUrl);
+          const r=await fetch("/api/image?key="+encodeURIComponent(sk),{method:"PUT",headers:{"content-type":"text/plain;charset=utf-8",...(editKey?{"x-edit-key":editKey}:{})},body:normalized});
+          if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+          if(!r.ok)throw new Error("No se pudo guardar "+slot.dataset.name);
+          s.dataUrl=normalized;const img=slot.querySelector("img");if(img)img.src=normalized;
+        }else{
+          const r=await fetch("/api/image?key="+encodeURIComponent(sk),{method:"DELETE",headers:(editKey?{"x-edit-key":editKey}:{})});
+          if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+          if(!r.ok&&r.status!==404)throw new Error("No se pudo borrar "+slot.dataset.name);
+        }
+        slotMeta[sk]={mode:s.mode||"contain",hasImage:!!s.dataUrl};
+        let date="",next="",title="",installDate="",removeDate="",status="",notes="";
+        try{
+          date=localStorage.getItem(scheduleKey(slot,"date"))||"";
+          next=localStorage.getItem(scheduleKey(slot,"next"))||"";
+          title=localStorage.getItem(slotMetaKey(slot,"title"))||"";
+          installDate=localStorage.getItem(slotMetaKey(slot,"installDate"))||"";
+          removeDate=localStorage.getItem(slotMetaKey(slot,"removeDate"))||"";
+          status=localStorage.getItem(slotMetaKey(slot,"status"))||"";
+          notes=localStorage.getItem(slotMetaKey(slot,"notes"))||"";
+        }catch(e){}
+        schedule[sk]={date,next,title,installDate,removeDate,status,notes};
+      }
+      const updatedAt=new Date().toISOString();
+      const r=await fetch("/api/state",{method:"PUT",headers:{"content-type":"application/json",...(editKey?{"x-edit-key":editKey}:{})},body:JSON.stringify({slots:slotMeta,schedule,updatedAt})});
+      if(r.status===401){try{sessionStorage.removeItem("pavon_edit_key");}catch(e){}throw new Error("Clave de edición incorrecta.");}
+      if(!r.ok)throw new Error("No se pudo guardar el estado general.");
+      cloudUpdated.textContent="Última actualización: "+new Date(updatedAt).toLocaleString("es-ES");setCloudStatus("Guardado","ok");
+      try{
+        const pngDataUrl=await makeCompositeDataUrl(activePage);
+        const mail=await fetch("/api/email-update",{method:"POST",headers:{"content-type":"application/json",...(editKey?{"x-edit-key":editKey}:{})},body:JSON.stringify({page:activePage,pngDataUrl,updatedAt})});
+        if(mail.status===202) cloudUpdated.textContent += " · correo pendiente de configurar";
+        else if(!mail.ok) cloudUpdated.textContent += " · error de correo";
+        else cloudUpdated.textContent += " · correo enviado";
+      }catch(mailErr){console.error(mailErr);cloudUpdated.textContent += " · error de correo";}
+    }catch(e){console.error(e);setCloudStatus("Error al guardar","error");alert(e.message||"No se han podido guardar los cambios.");}
+    finally{saveCloudBtn.disabled=false;reloadCloudBtn.disabled=false;}
+  }
+  saveCloudBtn.addEventListener("click",saveCloudState);
+  reloadCloudBtn.addEventListener("click",loadCloudState);
+  calendarGrid.addEventListener("input",markCloudDirty);
+  const originalRenderCalendar=renderCalendar;
+  renderCalendar=function(){originalRenderCalendar();setTimeout(enhanceScheduleFields,0);};
+  fileInput.addEventListener("change",markCloudDirty);
+  fitBtn.addEventListener("click",markCloudDirty);
+  removeBtn.addEventListener("click",markCloudDirty);
+  clearBtn.addEventListener("click",markCloudDirty);
+`;
+
+  html=html.replace(
+    'exportBtn.addEventListener("click", async () => {',
+    cloudJs+`
+  async function makeAuxCompositeDataUrl(slotId) {
+    const slot = allSlots.find(s => s.dataset.id === slotId && s.dataset.aux === "true");
+    if (!slot) throw new Error("Soporte auxiliar no encontrado");
+    const bgEl = slot.closest(".columna1-shell").querySelector(":scope > img");
+    const bg = new Image();
+    await new Promise((res,rej)=>{ bg.onload=res; bg.onerror=rej; bg.src=bgEl.src; });
+    const canvas=document.createElement("canvas");
+    canvas.width=bg.naturalWidth; canvas.height=bg.naturalHeight;
+    const ctx=canvas.getContext("2d");
+    ctx.drawImage(bg,0,0,canvas.width,canvas.height);
+    const s=state[key(slot)];
+    if(s.dataUrl){
+      const x=parseFloat(slot.style.left)/100*canvas.width;
+      const y=parseFloat(slot.style.top)/100*canvas.height;
+      const w=parseFloat(slot.style.width)/100*canvas.width;
+      const h=parseFloat(slot.style.height)/100*canvas.height;
+      const img=new Image();
+      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=s.dataUrl;});
+      drawPlaced(ctx,img,x,y,w,h,s.mode);
+    }
+    return canvas.toDataURL("image/png");
+  }
+
+  const columna1Aux=document.getElementById("columna1Aux");
+  if(columna1Aux){
+    const tools=document.createElement("div");
+    tools.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px";
+    const preview=document.createElement("button");
+    preview.type="button"; preview.textContent="Ver Columna 1";
+    preview.style.cssText="min-height:42px;border:1px solid var(--line);border-radius:9px;background:#28221d;color:var(--cream);font-weight:800;cursor:pointer";
+    preview.addEventListener("click",()=>{
+      try{
+        const slot=allSlots.find(s=>s.dataset.id==="columna_1");
+        if(!slot) throw new Error("Columna 1 no disponible");
+        let aux=document.getElementById("columna1Lightbox");
+        if(!aux){
+          aux=document.createElement("div");
+          aux.id="columna1Lightbox";
+          aux.style.cssText="position:relative;width:min(92vw,620px);max-height:88vh;overflow:hidden;border-radius:12px;background:#111";
+          lightbox.querySelector(".lightbox-frame").appendChild(aux);
+        }
+        aux.innerHTML='<img src="/assets/columna1.jpg?v=20260925-3" alt="Columna 1" style="display:block;width:100%;height:auto">' +
+          (state[key(slot)].dataUrl ? '<img src="'+state[key(slot)].dataUrl+'" alt="" style="position:absolute;left:64.3%;top:42.8%;width:21.8%;height:24.8%;object-fit:'+state[key(slot)].mode+';background:#050505">' : '');
+        lightboxImage.style.display="none";
+        aux.style.display="block";
+        lightbox.classList.add("open");
+        lightbox.setAttribute("aria-hidden","false");
+        document.body.style.overflow="hidden";
+      }catch(e){console.error(e);}
+    });
+    const exp=document.createElement("button");
+    exp.id="exportColumna1Btn"; exp.type="button"; exp.textContent="Exportar Columna 1";
+    exp.style.cssText="min-height:42px;border:1px solid var(--gold);border-radius:9px;background:var(--gold);color:#171310;font-weight:900;cursor:pointer";
+    exp.addEventListener("click",async()=>{
+      try{
+        const a=document.createElement("a");
+        a.download="Pavon_columna_1.png";
+        a.href=await makeAuxCompositeDataUrl("columna_1");
+        a.click();
+      }catch(e){console.error(e);alert("No se ha podido exportar Columna 1.");}
+    });
+    tools.append(preview,exp);
+    columna1Aux.appendChild(tools);
+  }
+
+  exportBtn.addEventListener("click", async () => {`
+  );
+
+  html=html.replace(
+    'const pageSlots = allSlots.filter(s => s.dataset.page === pageName);',
+    'const pageSlots = allSlots.filter(s => s.dataset.page === pageName && s.dataset.aux !== "true");'
+  );
+
+  html=html.replace(
+    'renderList();\n  renderCalendar();\n})();',
+    'renderList();\n  renderCalendar();\n  loadCloudState();\n})();'
+  );
+  // Mobile app identity / iPhone home-screen icon.
+  const appHead = '<link rel="manifest" href="/manifest.webmanifest">' +
+    '<link rel="apple-touch-icon" sizes="180x180" href="/yellow-app-icon-180.png">' +
+    '<meta name="apple-mobile-web-app-capable" content="yes">' +
+    '<meta name="mobile-web-app-capable" content="yes">' +
+    '<meta name="apple-mobile-web-app-title" content="Yellow Control">' +
+    '<meta name="theme-color" content="#171310">';
+  html = html.replace("</head>", appHead + "</head>");
+
+  // Correct official theatre URL.
+  html=html.replaceAll("https://elgranteatropavon.com/","https://www.granteatropavon.com/");
+  html=html.replaceAll("https://elgranteatropavon.com","https://www.granteatropavon.com/");
+
+  // Keep Cartelería focused: global navigation already exposes Inicio and Calendario.
+  const mobileEnhanceScript=`
+<script>
+window.addEventListener("DOMContentLoaded",()=>{
+  const home=document.createElement("a");
+  home.href="/#dashboard";home.textContent="← Inicio";home.setAttribute("aria-label","Volver a Inicio");
+  home.style.cssText="position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9999;background:#E8C55A;color:#171310;padding:10px 13px;border-radius:10px;text-decoration:none;font:700 13px 'Plus Jakarta Sans',Arial,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.35)";
+  document.body.appendChild(home);
+
+  const requested=new URLSearchParams(location.search).get("vista");
+  const labels={
+    taquilla:"taquilla cerrada",
+    lona:"lona + secundarios",
+    abierta:"taquilla abierta"
+  };
+  if(requested && labels[requested]){
+    const target=[...document.querySelectorAll(".tab")]
+      .find(el=>el.textContent.trim().toLowerCase()===labels[requested]);
+    if(target) setTimeout(()=>target.click(),0);
+  }
+
+  document.querySelectorAll(".lightbox-trigger").forEach(btn=>{
+    btn.textContent="VER GRANDE";
+    btn.style.cssText="width:auto;height:auto;padding:8px 12px;font:800 11px/1 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:.08em";
+    btn.setAttribute("aria-label","Ver imagen en grande");
+  });
+});
+<\/script>`;
+  html=html.replace("</body>",mobileEnhanceScript+"</body>");
+
+
+  document.open();
+  document.write(html);
+  document.close();
+})().catch(err=>{
+  console.error(err);
+  document.body.innerHTML='<div class="boot"><div><strong>No se ha podido cargar la plantilla</strong><span>'+String(err.message||err)+'</span></div></div>';
+});
+</script>
+</body>
+</html>
