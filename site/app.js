@@ -75,14 +75,14 @@ function stat(value,label){return '<div class="card stat"><strong>'+esc(value)+'
 
 async function radio(){
  const d=await api("/api/control?module=radio");
- const rows=d.rows||[], active=rows.filter(r=>activeNow(r));
+ const rows=d.rows||[], active=rows.filter(r=>activeNow(r)),activeSpaces=new Set(rows.map(r=>r.venue).filter(Boolean)).size;
  const base=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío"];
  const extras=[...new Set(rows.map(r=>r.venue).filter(Boolean).filter(v=>!base.includes(v)))];
  const groups=[...base,...extras];
  const chips='<div class="chip-row radio-filter"><span class="chip-label">Espacio</span><button type="button" class="chip on" data-radio-filter="">Todos ('+rows.length+')</button>'+groups.map((v,i)=>'<button type="button" class="chip" data-radio-filter="'+i+'">'+esc(venueShort(v))+' ('+rows.filter(r=>r.venue===v).length+')</button>').join("")+(rows.some(r=>!r.venue)?'<button type="button" class="chip" data-radio-filter="unassigned">Sin asignar ('+rows.filter(r=>!r.venue).length+')</button>':'')+'</div>';
  const sections=groups.map((v,i)=>'<div class="space-panel" data-radio-space="'+i+'"><div class="section-title radio-space"><div><small class="section-kicker">ESPACIO</small><h2>'+esc(v)+'</h2></div><span class="badge">'+rows.filter(r=>r.venue===v).length+'</span></div><div class="list">'+radioItems(rows.filter(r=>r.venue===v))+'</div></div>').join("")+(rows.some(r=>!r.venue)?'<div class="space-panel" data-radio-space="unassigned"><div class="section-title radio-space"><div><small class="section-kicker">SIN ASIGNAR</small><h2>Sin espacio asignado</h2></div></div><div class="list">'+radioItems(rows.filter(r=>!r.venue))+'</div></div>':"");
  app.innerHTML=pageHead("Radio","Campañas y cuñas por espacio",'<button id="newRadio" class="primary">+ Nueva campaña</button>')+
- chips+'<div class="module-kpi"><span><b>'+active.length+'</b><em>En emisión<br>ahora</em></span><span><b>'+rows.length+'</b><em>Campañas<br>registradas</em></span><span><b>'+groups.length+'</b><em>Espacios con<br>radio</em></span></div>'+
+ chips+'<div class="module-kpi"><span><b>'+active.length+'</b><em>En emisión<br>ahora</em></span><span><b>'+rows.length+'</b><em>Campañas<br>registradas</em></span><span><b>'+activeSpaces+'</b><em>Espacios con<br>registros</em></span></div>'+
  '<div class="grid two-col module-workspace"><section class="card">'+sections+'</section><section class="card" id="radioFormCard">'+radioForm()+'</section></div>';
  $$("[data-radio-filter]").forEach(b=>b.onclick=()=>{$$("[data-radio-filter]").forEach(x=>x.classList.toggle("on",x===b));const target=b.dataset.radioFilter;$$("[data-radio-space]").forEach(p=>p.classList.toggle("filtered-out",!!target&&p.dataset.radioSpace!==target))});
  bindRadio(rows);
