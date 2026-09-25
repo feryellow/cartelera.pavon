@@ -7,7 +7,8 @@ function validKey(k:string|null):k is string { return Boolean(k && /^[a-zA-Z0-9_
 export default async (req:Request)=>{
   const url=new URL(req.url), key=url.searchParams.get("key");
   if(!validKey(key)) return new Response("Invalid key",{status:400});
-  const moduleName=url.searchParams.get("module")==="radio"?"radio":"publicidad";
+  const requested=url.searchParams.get("module")||"publicidad";
+  const moduleName=["radio","publicidad","taxis","intercambiadores","hometicket"].includes(requested)?requested:"publicidad";
   const store=assetStore();
 
   if(req.method==="GET"){
