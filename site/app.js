@@ -49,7 +49,7 @@ async function dashboard(){
    const label=x.days<0?"Vencido "+Math.abs(x.days)+" d":x.days===0?"HOY":"D-"+x.days;
    return '<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span class="badge '+(x.days<0?"warn":"")+'">'+label+'</span><span>'+fdate(x.next)+'</span></div></div></div>';
  }).join(""):'<div class="notice">No hay avisos de cartelería en los próximos 7 días.</div>';
- app.innerHTML=homeHeader(alerts)+homeTiles(d,alerts)+
+ app.innerHTML=homeHeader(alerts,d)+homeTiles(d,alerts)+
  '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Material que requiere atención</h2><span class="badge warn">'+(d.attention||[]).length+'</span></div><div class="list attention-list">'+((d.attention||[]).length?(d.attention||[]).map(x=>'<div class="item '+(x.overdue?"overdue":"")+'"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"pendiente")+'</span><span>Entrega: '+fdate(x.deliveryDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material pendiente con fecha límite registrada.</div>')+'</div></section><section class="card"><div class="section-title"><h2>Material activo ahora</h2><span class="badge ok">'+(d.currentMaterial||[]).length+'</span></div><div class="list">'+((d.currentMaterial||[]).length?(d.currentMaterial||[]).map(x=>'<div class="item"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"sin indicar")+'</span><span>Fin: '+fdate(x.endDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material activo registrado.</div>')+'</div></section></div>'+
  '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Avisos y vencimientos</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+alertHtml+'</div>'+
  '<div class="section-title" style="margin-top:20px"><h2>Próximos cambios</h2></div><div class="list">'+
@@ -59,9 +59,14 @@ async function dashboard(){
  '</div></section></div>';
 }
 
-function homeHeader(alerts){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
+function homeHeader(alerts,d){
+ const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";
+ const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+ const first=alerts[0],active=(d.currentMaterial||[]).length,pending=(d.attention||[]).length,critical=(d.attention||[]).filter(x=>x.overdue).length;
+ const metrics='<div class="home-metrics"><span><b>'+String(active).padStart(2,"0")+'</b><em>Material<br>activo</em></span><span><b>'+String(pending).padStart(2,"0")+'</b><em>Material<br>pendiente</em></span><span class="'+(critical?"critical":"")+'"><b>'+String(alerts.length).padStart(2,"0")+'</b><em>Avisos de<br>cartelería</em></span></div>';
  const aviso=first?'<a class="home-alert'+(first.days<0?' late':'')+'" href="/carteleria.html"><small>'+(first.days<0?'Fuera de plazo':'Urgente')+' · Cartelería<em>'+(first.days<0?'+'+Math.abs(first.days)+' d':first.days===0?'HOY':'D-'+first.days)+'</em></small><b>'+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+'</b><span>'+(first.days<0?"Vencido hace "+Math.abs(first.days)+(Math.abs(first.days)===1?" día":" días"):first.days===0?"Cambio hoy":"Cambio en "+first.days+(first.days===1?" día":" días"))+' · '+fdate(first.next)+'</span></a>':"";
- return '<div class="home-hello"><h1>'+greet+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+'</p></div>'+aviso}
+ return '<div class="home-hero"><div class="home-hello"><h1>'+greet+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+' · Yellow Media</p></div>'+metrics+'</div>'+aviso
+}
 function homeTiles(d,alerts){const count=(n,one,many)=>n==null?"":n+" "+(n===1?one:many);const badges={carteleria:alerts.length?count(alerts.length,"aviso","avisos")+" ≤ 7 días":"",radio:d.radio?count(d.radio.active,"cuña activa","cuñas activas"):"",taxis:d.taxis?count(d.taxis.active,"campaña activa","campañas activas"):"",intercambiadores:d.intercambiadores?count(d.intercambiadores.active,"campaña activa","campañas activas"):"",hometicket:d.hometicket?count(d.hometicket.active,"activo","activos"):"",revistas:d.revistas?d.revistas.active+" de "+MAGAZINES.length+" este mes":""};
  const routes=["calendario","carteleria","hometicket","radio","taxis","intercambiadores","revistas","archivo","admin"].filter(canRoute);
  return '<div class="home-section-label"><span>Secciones</span><span>'+routes.length+' módulos</span></div><nav class="home-tiles" aria-label="Secciones">'+routes.map(r=>{const m=navMeta(r);if(!m)return"";const photo=ROUTE_PHOTOS[r],b=badges[r];return '<a class="home-tile'+(photo?' has-photo':'')+'" href="'+esc(m.href)+'"'+(photo?' style="--photo:url('+photo+')"':'')+'>'+icon(r,"tile-ico")+(b?'<span class="tile-badge'+(r==="carteleria"&&alerts.length?' hot':'')+'">'+esc(b)+'</span>':'')+'<span class="tile-txt"><small>'+esc(m.small)+'</small><b>'+(r==="intercambiadores"?"Intercam&shy;biadores":esc(m.name))+'</b></span></a>'}).join("")+'</nav>'}
@@ -71,11 +76,15 @@ function stat(value,label){return '<div class="card stat"><strong>'+esc(value)+'
 async function radio(){
  const d=await api("/api/control?module=radio");
  const rows=d.rows||[], active=rows.filter(r=>activeNow(r));
- const venues=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío"];
- const extras=[...new Set(rows.map(r=>r.venue).filter(Boolean).filter(v=>!venues.includes(v)))];
- const groups=[...venues,...extras];
- app.innerHTML=pageHead("Radio","Campañas y cuñas por espacio",'<button id="newRadio" class="primary">Nueva campaña</button>')+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>EN EMISIÓN AHORA</h2><span class="badge ok">'+active.length+'</span></div>'+groups.map(v=>'<div class="section-title radio-space"><h2>'+esc(v)+'</h2></div><div class="list">'+radioItems(rows.filter(r=>r.venue===v))+'</div>').join("")+(rows.some(r=>!r.venue)?'<div class="section-title radio-space"><h2>Sin espacio asignado</h2></div><div class="list">'+radioItems(rows.filter(r=>!r.venue))+'</div>':"")+'</section><section class="card" id="radioFormCard">'+radioForm()+'</section></div>';
+ const base=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío"];
+ const extras=[...new Set(rows.map(r=>r.venue).filter(Boolean).filter(v=>!base.includes(v)))];
+ const groups=[...base,...extras];
+ const chips='<div class="chip-row radio-filter"><span class="chip-label">Espacio</span><button type="button" class="chip on" data-radio-filter="">Todos ('+rows.length+')</button>'+groups.map((v,i)=>'<button type="button" class="chip" data-radio-filter="'+i+'">'+esc(venueShort(v))+' ('+rows.filter(r=>r.venue===v).length+')</button>').join("")+(rows.some(r=>!r.venue)?'<button type="button" class="chip" data-radio-filter="unassigned">Sin asignar ('+rows.filter(r=>!r.venue).length+')</button>':'')+'</div>';
+ const sections=groups.map((v,i)=>'<div class="space-panel" data-radio-space="'+i+'"><div class="section-title radio-space"><div><small class="section-kicker">ESPACIO</small><h2>'+esc(v)+'</h2></div><span class="badge">'+rows.filter(r=>r.venue===v).length+'</span></div><div class="list">'+radioItems(rows.filter(r=>r.venue===v))+'</div></div>').join("")+(rows.some(r=>!r.venue)?'<div class="space-panel" data-radio-space="unassigned"><div class="section-title radio-space"><div><small class="section-kicker">SIN ASIGNAR</small><h2>Sin espacio asignado</h2></div></div><div class="list">'+radioItems(rows.filter(r=>!r.venue))+'</div></div>':"");
+ app.innerHTML=pageHead("Radio","Campañas y cuñas por espacio",'<button id="newRadio" class="primary">+ Nueva campaña</button>')+
+ chips+'<div class="module-kpi"><span><b>'+active.length+'</b><em>En emisión<br>ahora</em></span><span><b>'+rows.length+'</b><em>Campañas<br>registradas</em></span><span><b>'+groups.length+'</b><em>Espacios con<br>radio</em></span></div>'+
+ '<div class="grid two-col module-workspace"><section class="card">'+sections+'</section><section class="card" id="radioFormCard">'+radioForm()+'</section></div>';
+ $$("[data-radio-filter]").forEach(b=>b.onclick=()=>{$$("[data-radio-filter]").forEach(x=>x.classList.toggle("on",x===b));const target=b.dataset.radioFilter;$$("[data-radio-space]").forEach(p=>p.classList.toggle("filtered-out",!!target&&p.dataset.radioSpace!==target))});
  bindRadio(rows);
  await hydrateMedia("radio");
 }
@@ -126,8 +135,10 @@ function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)
 const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro"];
 async function homeTicket(){
  const d=await api("/api/control?module=hometicket"),rows=d.rows||[];
- const grouped=HOME_TICKET_SPACES.map(v=>'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><h2>'+esc(v)+'</h2><span class="badge">'+rows.filter(r=>r.venue===v).length+'</span></div><div class="list">'+htItems(rows.filter(r=>r.venue===v))+'</div></div>').join("");
- app.innerHTML=pageHead("Home Ticket","5 Home Ticket diferenciados por espacio",'<button id="newHT" class="primary">Nueva pieza</button>')+'<div class="grid two-col"><section class="card">'+grouped+'</section><section class="card" id="htFormCard">'+htForm()+'</section></div>';
+ const grouped=HOME_TICKET_SPACES.map((v,i)=>'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">'+String(i+1).padStart(2,"0")+' · HOME TICKET</small><h2>'+esc(v)+'</h2></div><span class="badge">'+rows.filter(r=>r.venue===v).length+' piezas</span></div><div class="list">'+htItems(rows.filter(r=>r.venue===v))+'</div></div>').join("");
+ app.innerHTML=pageHead("Home Ticket","Formatos y creatividades de los 5 espacios",'<button id="newHT" class="primary">+ Nueva pieza</button>')+
+ '<div class="module-kpi"><span><b>'+HOME_TICKET_SPACES.length+'</b><em>Espacios<br>gestionados</em></span><span><b>'+rows.filter(activeNow).length+'</b><em>Piezas<br>activas</em></span><span><b>'+rows.length+'</b><em>Piezas<br>registradas</em></span></div>'+
+ '<div class="grid two-col module-workspace"><section class="card">'+grouped+'</section><section class="card" id="htFormCard">'+htForm()+'</section></div>';
  htChips(rows);$("#newHT").onclick=()=>{$("#htFormCard").innerHTML=htForm();bindHTForm(null)};$$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);$("#htFormCard").innerHTML=htForm(r);bindHTForm(r)});$$("[data-del-ht]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta pieza?"))return;await api("/api/control?module=hometicket&id="+b.dataset.delHt,{method:"DELETE"});say("Pieza archivada");homeTicket()});bindHTForm(null);await hydrateMedia("hometicket");
 }
 function htItems(rows){return rows.length?rows.map(r=>'<div class="item"><div><h3>'+esc(r.position||"Home Ticket")+'</h3><div class="item-meta"><span>'+esc(r.spectacle||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>Material: '+esc(r.materialStatus||"sin indicar")+'</span><span>Entrega: '+fdate(r.deliveryDate)+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="hometicket" data-kind="image"></div></div><div class="item-actions"><button data-edit-ht="'+r.id+'">Editar</button><button class="danger" data-del-ht="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">Todavía no hay piezas cargadas para este Home Ticket.</div>'}
