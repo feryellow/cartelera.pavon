@@ -397,8 +397,6 @@ html,body{margin:0;min-height:100%;background:#171310;color:#E8C55A;font-family:
   exportBtn.addEventListener("click", async () => {`
   );
 
-  );
-
   html=html.replace(
     'const pageSlots = allSlots.filter(s => s.dataset.page === pageName);',
     'const pageSlots = allSlots.filter(s => s.dataset.page === pageName && s.dataset.aux !== "true");'
