@@ -80,7 +80,8 @@ async function radio(){
  radioChips(rows);bindRadio(rows);
  await hydrateMedia("radio");
 }
-function activeNow(r){const t=new Date().toISOString().slice(0,10);return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
+function localToday(){return new Date().toLocaleDateString("sv")}
+function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
 function radioItems(rows){return rows.length?rows.map(r=>'<div class="item" data-id="'+r.id+'"><div><h3>'+esc(r.spectacle||r.campaignName||"Campaña radio")+'</h3><div class="item-meta"><span>'+esc(r.station||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>'+esc(r.spotName||"")+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
 function radioForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar campaña":"Nueva campaña")+'</h2></div><form id="radioForm" class="form-grid">'+
  venueSelect(r.venue)+input("spectacle","Espectáculo",r.spectacle)+input("station","Emisora",r.station)+input("campaignName","Campaña",r.campaignName)+input("spotName","Nombre de la cuña",r.spotName)+
@@ -94,7 +95,9 @@ function venueSelect(v=""){const values=VENUES;return '<label>Espacio<select nam
 function materialStatusSelect(v="pendiente"){const values=["pendiente","solicitado","en producción","recibido","entregado","listo"];return '<label>Estado del material<select name="materialStatus">'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
 function selectStatus(v="activo"){return '<label>Estado<select name="status">'+["activo","pendiente","finalizado"].map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
 function formObject(form){return Object.fromEntries(new FormData(form).entries())}
-async function uploadAsset(file,moduleName,existing){if(!file)return existing||"";const k=crypto.randomUUID().replaceAll("-","");const r=await fetch("/api/asset?key="+k+"&module="+moduleName,{method:"PUT",headers:headers({"content-type":file.type||"application/octet-stream"}),body:file});if(!r.ok)throw new Error(await r.text());return k}
+const MAX_UPLOAD_MB=5.5;
+function checkFileSize(file){if(file&&file.size>MAX_UPLOAD_MB*1024*1024)throw new Error("«"+file.name+"» pesa "+(file.size/1048576).toFixed(1)+" MB. El máximo es "+MAX_UPLOAD_MB+" MB: comprímelo (audio en MP3, PDF optimizado) y vuelve a intentarlo.")}
+async function uploadAsset(file,moduleName,existing){if(!file)return existing||"";checkFileSize(file);const k=crypto.randomUUID().replaceAll("-","");const r=await fetch("/api/asset?key="+k+"&module="+moduleName,{method:"PUT",headers:headers({"content-type":file.type||"application/octet-stream"}),body:file});if(!r.ok)throw new Error(await r.text());return k}
 function bindRadio(rows){
  $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm();bindRadioForm(null)};
  $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);$("#radioFormCard").innerHTML=radioForm(r);bindRadioForm(r)});
@@ -203,7 +206,7 @@ function magChips(months,cur){const cal=$(".mag-calendar");if(!cal)return;const 
 
 const DONE_MATERIAL=["recibido","entregado","listo"];
 function pendingMaterial(r){return !r.deletedAt&&!DONE_MATERIAL.includes(String(r.materialStatus||"").toLowerCase())&&(r.status||"").toLowerCase()!=="finalizado"}
-function overdue(r){const t=new Date().toISOString().slice(0,10);return pendingMaterial(r)&&r.deliveryDate&&r.deliveryDate<t}
+function overdue(r){const t=localToday();return pendingMaterial(r)&&r.deliveryDate&&r.deliveryDate<t}
 function kpi(n,label,cls=""){return '<span class="kpi '+cls+'"><b>'+String(n).padStart(2,"0")+'</b><em>'+esc(label)+'</em></span>'}
 // Indicadores de Inicio con definición estricta:
 //  - Activas ahora: registros de Radio, Taxis, Intercambiadores, Home Ticket y Revistas cuyo periodo incluye hoy.
@@ -248,18 +251,19 @@ const CART_SLOTS=[
  {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[67.0,39.2,18.1,25.3]}
 ];
 const CART_STATUS=["pendiente","aprobado","en producción","instalado"];
-const cart={loaded:false,view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
+function cartFingerprint(st,k){const m=(st.slots||{})[k]||{},s=(st.schedule||{})[k]||{};return JSON.stringify([m.rev||"",!!m.hasImage,m.mode||"contain",s.title||"",s.installDate||"",s.removeDate||"",s.status||"",s.notes||""])}
+const cart={base:{},loaded:false,view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
 const cartSlot=k=>CART_SLOTS.find(s=>s.key===k);
 const cartView=id=>CART_VIEWS.find(v=>v.id===id);
 function canEditCart(){return roles().some(r=>["admin","gestion","carteleria"].includes(r))}
 function cartSched(k){return cart.schedule[k]||(cart.schedule[k]={date:"",next:"",title:"",installDate:"",removeDate:"",status:"",notes:""})}
 function cartMode(k){return (cart.slots[k]&&cart.slots[k].mode)||"contain"}
 function cartDaysTo(iso){if(!iso)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(iso+"T00:00:00")-t)/864e5)}
-function cartNextDate(k){const s=cartSched(k);const t=new Date().toISOString().slice(0,10);const ds=[["Instalación",s.installDate],["Retirada",s.removeDate]].filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[1]||""));const fut=ds.filter(x=>x[1]>=t).sort((a,b)=>a[1].localeCompare(b[1]));return fut[0]||null}
+function cartNextDate(k){const s=cartSched(k);const t=localToday();const ds=[["Instalación",s.installDate],["Retirada",s.removeDate]].filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[1]||""));const fut=ds.filter(x=>x[1]>=t).sort((a,b)=>a[1].localeCompare(b[1]));return fut[0]||null}
 
 async function cartLoad(){
  const d=await api("/api/state",{cache:"no-store"});const st=d.state||{};
- cart.slots=st.slots||{};cart.schedule=st.schedule||{};cart.updatedAt=st.updatedAt||null;cart.img={};cart.dirty.clear();cart.imgDirty.clear();
+ cart.slots=st.slots||{};cart.schedule=st.schedule||{};cart.updatedAt=st.updatedAt||null;cart.base={};CART_SLOTS.forEach(s=>{cart.base[s.key]=cartFingerprint(st,s.key)});cart.img={};cart.dirty.clear();cart.imgDirty.clear();
  await Promise.all(CART_SLOTS.filter(s=>cart.slots[s.key]&&cart.slots[s.key].hasImage).map(async s=>{try{const r=await fetch("/api/image?key="+encodeURIComponent(s.key),{cache:"no-store",headers:headers()});if(r.ok)cart.img[s.key]=await r.text()}catch{}}));
  cart.loaded=true;
 }
@@ -338,7 +342,7 @@ function cartPanel(){
 }
 
 function cartUpcoming(){
- const t=new Date().toISOString().slice(0,10);
+ const t=localToday();
  const ev=[];CART_SLOTS.forEach(s=>{const sc=cartSched(s.key);[["Instalación",sc.installDate],["Retirada",sc.removeDate]].forEach(([a,d])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(d||"")&&d>=t)ev.push({s,a,d,title:sc.title})})});
  ev.sort((a,b)=>a.d.localeCompare(b.d));
  $("#cartUpcoming").innerHTML=ev.length?ev.slice(0,8).map(x=>{const n=cartDaysTo(x.d);return '<button type="button" class="item cart-up" data-k="'+x.s.key+'"><div><h3>'+esc(x.a)+' · '+esc(x.s.name)+'</h3><div class="item-meta"><span class="badge '+(n<=3?"warn":"")+'">'+(n===0?"HOY":"D-"+n)+'</span><span>'+fdate(x.d)+'</span>'+(x.title?'<span>'+esc(x.title)+'</span>':'')+'</div></div></button>'}).join(""):'<div class="notice">No hay instalaciones ni retiradas programadas. Añade fechas en la ficha de cada soporte.</div>';
@@ -366,11 +370,15 @@ async function cartSave(){
  try{
   // 1. Leer la última versión para no pisar cambios de otras personas en soportes no tocados
   const d=await api("/api/state",{cache:"no-store"});const remote=d.state||{};const slots={...(remote.slots||{})},schedule={...(remote.schedule||{})};
+  // 1b. ¿Alguien ha cambiado estos mismos soportes desde que los abriste?
+  const clash=[...cart.dirty].filter(k=>cartFingerprint(remote,k)!==cart.base[k]);
+  if(clash.length){const who=[...new Set(clash.map(k=>(remote.slots||{})[k]?.by).filter(Boolean))];const names=clash.map(k=>cartSlot(k)?.name||k).join(", ");
+   if(!confirm("Otra persona"+(who.length?" ("+who.join(", ")+")":"")+" ha modificado "+names+" mientras lo editabas.\n\nAceptar: guardar tu versión y sustituir la suya.\nCancelar: no guardar y cargar la versión actual.")){cart.saving=false;cart.dirty.clear();cart.imgDirty.clear();await cartLoad();cartRender();say("Se ha cargado la versión actual");return}}
   // 2. Subir o quitar solo las imágenes modificadas
   for(const k of cart.imgDirty){if(cart.img[k])await api("/api/image?key="+encodeURIComponent(k),{method:"PUT",headers:{"content-type":"text/plain;charset=utf-8"},body:cart.img[k]});else await fetch("/api/image?key="+encodeURIComponent(k),{method:"DELETE",headers:headers()}).then(r=>{if(!r.ok&&r.status!==404)throw new Error("No se pudo quitar el cartel")})}
   // 3. Fusionar solo los soportes modificados
-  for(const k of cart.dirty){slots[k]={mode:cartMode(k),hasImage:!!cart.img[k]};schedule[k]={...cartSched(k)}}
   const updatedAt=new Date().toISOString();
+  for(const k of cart.dirty){slots[k]={mode:cartMode(k),hasImage:!!cart.img[k],rev:updatedAt,by:state.actor?.email||""};schedule[k]={...cartSched(k)}}
   await api("/api/state",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({slots,schedule,updatedAt})});
   const changedViews=[...new Set([...cart.dirty].map(k=>cartSlot(k)?.view).filter(Boolean))];
   cart.dirty.clear();cart.imgDirty.clear();cart.updatedAt=updatedAt;cart.saving=false;
@@ -409,6 +417,15 @@ function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.s
 setTheme(currentTheme());
 document.addEventListener("click",e=>{if(e.target.closest("#themeToggle"))setTheme(currentTheme()==="light"?"dark":"light")});
 
+document.addEventListener("change",e=>{const f=e.target;if(f.type==="file"&&f.id!=="cartFile"&&f.files&&f.files[0]){try{checkFileSize(f.files[0])}catch(err){say(err.message);f.value=""}}});
+
+// ===== Correo de prueba (solo administración) =====
+function mailTestCard(){return '<section class="card" style="margin-top:14px"><div class="section-title"><div><small class="section-kicker">Avisos por correo</small><h2>Comprobar el correo</h2></div></div><p class="muted" style="margin:0 0 12px">Envía ahora el resumen diario (material pendiente y activo) a los destinatarios configurados, sin esperar a las 9:00.</p><div class="actions-row"><button type="button" id="mailStatus">Ver configuración</button><button type="button" class="primary" id="mailTest">Enviar correo de prueba</button></div><div id="mailResult" style="margin-top:12px"></div></section>'}
+function bindMailTest(){const out=$("#mailResult");if(!out)return;
+ const show=d=>{out.innerHTML=d.configured?'<div class="notice" style="text-align:left">Remitente: <b>'+esc(d.from||"—")+'</b><br>Para: <b>'+esc((d.to||[]).join(", ")||"—")+'</b>'+(d.cc&&d.cc.length?'<br>Copia: <b>'+esc(d.cc.join(", "))+'</b>':'')+'</div>':'<div class="notice" style="text-align:left">El correo <b>no está configurado</b>. Faltan en Netlify: '+esc((d.missing||[]).join(", "))+'.</div>'};
+ $("#mailStatus").onclick=async()=>{try{show(await api("/api/test-email"))}catch(e){say(e.message)}};
+ $("#mailTest").onclick=async()=>{const b=$("#mailTest");b.disabled=true;b.textContent="Enviando…";try{const d=await api("/api/test-email",{method:"POST"});show(d);say(d.sent?"Correo enviado":"No se ha enviado: "+(d.reason||"revisa la configuración"))}catch(e){say(e.message)}finally{b.disabled=false;b.textContent="Enviar correo de prueba"}}}
+
 async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 
 async function archivo(){
@@ -437,9 +454,9 @@ function renderCalendar(events){
 
 async function admin(){
  if(!roles().includes("admin"))throw new Error("Acceso reservado a administración");
- let d;try{d=await api("/api/admin-users")}catch(e){app.innerHTML=pageHead("Usuarios","Administración de accesos")+'<div class="card notice">Netlify Identity todavía no está habilitado para este proyecto. El código de roles ya está preparado, pero la gestión de usuarios queda bloqueada hasta activar Identity en Netlify.</div>';return}
+ let d;try{d=await api("/api/admin-users")}catch(e){app.innerHTML=pageHead("Usuarios","Administración de accesos")+'<div class="card notice">Netlify Identity todavía no está habilitado para este proyecto. El código de roles ya está preparado, pero la gestión de usuarios queda bloqueada hasta activar Identity en Netlify.</div>'+mailTestCard();bindMailTest();return}
  const users=d.users||[];
- app.innerHTML=pageHead("Usuarios","Roles y permisos reales")+'<div class="grid two-col"><section class="card"><div class="section-title"><h2>Usuarios</h2></div><div class="list">'+users.map(u=>'<div class="item"><div><h3>'+esc(u.email)+'</h3><div class="item-meta"><span>'+esc((u.roles||[]).join(", ")||"sin rol")+'</span>'+statusBadge(u.disabled?"desactivado":"activo")+'</div></div><div class="item-actions"><select data-role-id="'+u.id+'">'+["admin","gestion","carteleria","consulta"].map(r=>'<option '+((u.roles||[]).includes(r)?"selected":"")+'>'+r+'</option>').join("")+'</select><button data-save-role="'+u.id+'">Guardar rol</button><button data-toggle-user="'+u.id+'" data-disabled="'+(u.disabled?"1":"0")+'">'+(u.disabled?"Activar":"Desactivar")+'</button></div></div>').join("")+'</div></section><section class="card"><div class="section-title"><h2>Crear usuario</h2></div><form id="newUserForm" class="stack"><label>Email<input name="email" type="email" required></label><label>Rol<select name="role"><option>carteleria</option><option>gestion</option><option>consulta</option><option>admin</option></select></label><button class="primary">Crear y enviar recuperación de contraseña</button></form></section></div>';
+ app.innerHTML=pageHead("Usuarios","Roles y permisos reales")+'<div class="grid two-col"><section class="card"><div class="section-title"><h2>Usuarios</h2></div><div class="list">'+users.map(u=>'<div class="item"><div><h3>'+esc(u.email)+'</h3><div class="item-meta"><span>'+esc((u.roles||[]).join(", ")||"sin rol")+'</span>'+statusBadge(u.disabled?"desactivado":"activo")+'</div></div><div class="item-actions"><select data-role-id="'+u.id+'">'+["admin","gestion","carteleria","consulta"].map(r=>'<option '+((u.roles||[]).includes(r)?"selected":"")+'>'+r+'</option>').join("")+'</select><button data-save-role="'+u.id+'">Guardar rol</button><button data-toggle-user="'+u.id+'" data-disabled="'+(u.disabled?"1":"0")+'">'+(u.disabled?"Activar":"Desactivar")+'</button></div></div>').join("")+'</div></section><section class="card"><div class="section-title"><h2>Crear usuario</h2></div><form id="newUserForm" class="stack"><label>Email<input name="email" type="email" required></label><label>Rol<select name="role"><option>carteleria</option><option>gestion</option><option>consulta</option><option>admin</option></select></label><button class="primary">Crear y enviar recuperación de contraseña</button></form></section></div>'+mailTestCard();bindMailTest();
  $$("[data-save-role]").forEach(b=>b.onclick=async()=>{const id=b.dataset.saveRole,role=$('[data-role-id="'+id+'"]').value;await api("/api/admin-users",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({id,role})});say("Rol actualizado");admin()});
  $$("[data-toggle-user]").forEach(b=>b.onclick=async()=>{await api("/api/admin-users",{method:b.dataset.disabled==="1"?"PATCH":"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({id:b.dataset.toggleUser})});say("Acceso actualizado");admin()});
  $("#newUserForm").onsubmit=async e=>{e.preventDefault();const v=formObject(e.currentTarget);await api("/api/admin-users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(v)});say("Usuario creado");admin()};

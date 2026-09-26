@@ -24,7 +24,7 @@ export default async (req:Request)=>{
     const contentType=req.headers.get("content-type")||"application/octet-stream";
     if(!/^(image\/|audio\/|application\/pdf)/.test(contentType))return new Response("Unsupported file type",{status:415});
     const buf=await req.arrayBuffer();
-    if(buf.byteLength>25*1024*1024)return new Response("File too large",{status:413});
+    if(buf.byteLength>6*1024*1024)return new Response("El archivo supera 6 MB. Redúcelo antes de subirlo.",{status:413});
     await store.set(`file_${key}`,buf);
     await store.setJSON(`meta_${key}`,{contentType,size:buf.byteLength,updatedAt:new Date().toISOString(),updatedBy:auth.actor!.email});
     return Response.json({ok:true,key,size:buf.byteLength,contentType});

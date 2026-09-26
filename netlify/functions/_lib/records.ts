@@ -1,4 +1,5 @@
 import { controlStore } from "./store.ts";
+import { madridToday } from "./dates.ts";
 
 export const MODULES = ["radio", "publicidad", "taxis", "intercambiadores", "hometicket", "revistas"] as const;
 export type RecordModule = typeof MODULES[number];
@@ -49,7 +50,7 @@ export function isActive(row: any, now: Date = new Date()) {
   if (!(now instanceof Date)) now = new Date();
   if (row.deletedAt) return false;
   if (String(row.status || "").toLowerCase() === "finalizado") return false;
-  const today = now.toISOString().slice(0,10);
+  const today = madridToday(now);
   const start = row.startDate || "";
   const end = row.endDate || "";
   return (!start || start <= today) && (!end || end >= today);

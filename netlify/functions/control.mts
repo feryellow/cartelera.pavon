@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess, can } from "./_lib/auth.ts";
 import { appendAudit, listAudit } from "./_lib/audit.ts";
 import { carteleriaStore } from "./_lib/store.ts";
-import { normalizeDate } from "./_lib/dates.ts";
+import { normalizeDate, madridToday } from "./_lib/dates.ts";
 import { cleanInput, getRecord, isActive, listRecords, putRecord, validModule } from "./_lib/records.ts";
 
 function json(data: unknown, status=200){ return Response.json(data,{status}); }
@@ -20,7 +20,7 @@ export default async (req: Request) => {
       const auth = await requireAccess(req,"dashboard",false); if(auth.response) return auth.response;
       const state = await carteleriaStore().get("state",{type:"json"}) as any || {schedule:{},updatedAt:null};
       const schedule = state.schedule || {};
-      const today = new Date().toISOString().slice(0,10);
+      const today = madridToday();
       const carteleria = Object.entries(schedule).map(([key,v]: any)=>{
         // Fecha más próxima entre "Próximo", instalación y retirada; si todas han pasado, la más reciente.
         const dates=[v?.next,v?.installDate,v?.removeDate].map(normalizeDate).filter(Boolean) as string[];
