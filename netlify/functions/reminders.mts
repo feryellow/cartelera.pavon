@@ -4,7 +4,7 @@ import { listRecords, isActive } from "./_lib/records.ts";
 import { normalizeDate, dayDiff, madridToday, madridHour } from "./_lib/dates.ts";
 import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
 import { renderDigest } from "./_lib/digest.ts";
-import { collectEvents } from "./_lib/calendar.ts";
+import { collectEvents, SLOT_NAMES } from "./_lib/calendar.ts";
 import { appendAudit } from "./_lib/audit.ts";
 
 type Alert={key:string,date:string,days:number,module:string,title:string,location:string,action:string,materialStatus?:string,kind?:string};
@@ -29,7 +29,7 @@ async function collect(now=new Date()){
     for(const [field,action] of [["next","Cambio previsto"],["installDate","Instalación"],["removeDate","Retirada"]] as const){
       const date=normalizeDate(v?.[field]); if(!date)continue;
       const d=dayDiff(now,date);
-      if([7,3,1,0].includes(d))alerts.push({key:`cart-${key}-${field}-D${d}-${date}`,date,days:d,module:"Cartelería",title:v?.title||key.replaceAll("__"," · ").replaceAll("_"," "),location:key,action,kind:field==="removeDate"?"retirada":"montaje"});
+      if([7,3,1,0].includes(d))alerts.push({key:`cart-${key}-${field}-D${d}-${date}`,date,days:d,module:"Cartelería",title:v?.title||SLOT_NAMES[key]||key,location:SLOT_NAMES[key]||key,action,kind:field==="removeDate"?"retirada":"montaje"});
     }
   }
 

@@ -5,9 +5,9 @@ import { normalizeDate } from "./dates.ts";
 
 export type EventRow = { id: string; date: string; time?: string; module: string; moduleKey: string; title: string; location: string; action: string; status: string; recordId?: string; slotKey?: string; kind: string; notes?: string; auto: boolean; venue: string; responsable?: string; reminder?: string };
 
-const SLOT_NAMES: Record<string, string> = {
-  "taquilla__secundario-1": "Secundario 1", "taquilla__taquilla-izq": "Taquilla izquierda cerrada", "taquilla__taquilla-der": "Taquilla derecha cerrada",
-  "taquilla__secundario-2": "Secundario 2", "lona__lona": "Lona", "lona__sec1": "Secundario 1 (lona)", "lona__sec2": "Secundario 2 (lona)", "lona__sec3": "Secundario 3 (lona)",
+export const SLOT_NAMES: Record<string, string> = {
+  "taquilla__secundario-1": "Columna 2", "taquilla__taquilla-izq": "Taquilla izquierda cerrada", "taquilla__taquilla-der": "Taquilla derecha cerrada",
+  "taquilla__secundario-2": "Columna 3", "lona__lona": "Lona", "lona__sec1": "Secundario 1 (lona)", "lona__sec2": "Secundario 2 (lona)", "lona__sec3": "Secundario 3 (lona)",
   "abierta__taquilla-izq-abierta": "Taquilla izquierda abierta", "abierta__taquilla-der-abierta": "Taquilla derecha abierta", "taquilla__columna_1": "Columna 1",
 };
 const LABEL: Record<string, string> = { radio: "Radio", taxis: "Taxis", intercambiadores: "Intercambiadores", hometicket: "Home Ticket", revistas: "Revistas de Teatros" };
