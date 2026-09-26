@@ -624,3 +624,16 @@ label{color:var(--muted);letter-spacing:.02em}
  .radio-line-row{grid-template-columns:repeat(2,1fr)}
  .radio-line-row>div{grid-column:1/-1}
 }
+
+
+/* Radio · ajustes de cabecera, mes activo y correo */
+.radio-contract-head-compact{grid-template-columns:1fr}
+.radio-contract-head-compact h2{margin-bottom:8px}
+.radio-contract-head-compact p{font-size:14px;color:var(--muted)}
+.radio-mail-panel{margin:0 0 14px;border-color:rgba(255,212,0,.28)}
+.radio-mail-form textarea{min-height:230px;line-height:1.5}
+.radio-mail-hint{margin:10px 0 0;font-size:11px}
+@media(max-width:640px){
+ .radio-mail-panel .actions-row{display:grid;grid-template-columns:1fr 1fr}
+ .radio-mail-panel .actions-row button{width:100%}
+}
