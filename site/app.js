@@ -453,7 +453,8 @@ async function carteleria(){
  const next=upcoming[0];const nd=next?cartDaysTo(next.n[1]):null;
  const pend=CART_SLOTS.filter(s=>{const st=cartSched(s.key).status;return st&&st!=="instalado"}).length;
  app.innerHTML=pageHead("Cartelería","Fachada y soportes del Gran Teatro Pavón",
-   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar PNG</button>'+(edit?'<button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar PNG</button>'+(edit?'<button type="button" id="cartMontaje">Confirmar montaje</button><button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+  '<div id="montajePanel"></div>'+
   '<div class="kpi-row">'+kpi(withImg+"/"+CART_SLOTS.length,"Soportes con cartel")+kpi(upcoming.length,"Cambios programados")+(next?'<span class="kpi '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b><em>'+esc(next.n[0]+" · "+next.s.name)+'</em></span>':kpi(0,"Sin cambios próximos"))+kpi(pend,"Por instalar",pend?"warn":"")+'</div>'+
   '<div class="cart-sync" id="cartSync"></div>'+
   '<div class="grid cart-grid">'+
@@ -472,9 +473,49 @@ async function carteleria(){
  $("#cartNight").onclick=e=>{const b=e.target.closest("button");if(!b)return;cart.night=b.dataset.n==="1";cartRender()};
  $("#cartExport").onclick=()=>cartExport(false);
  $("#cartShare").onclick=()=>cartExport(true);
- if(edit){$("#cartSave").onclick=cartSave;$("#cartSave2").onclick=cartSave;
+ if(edit){$("#cartSave").onclick=cartSave;$("#cartSave2").onclick=cartSave;$("#cartMontaje").onclick=()=>montajePanel();
   $("#cartFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f)await cartSetFile(cart.sel,f)}}
  cartRender();
+}
+
+// ===================== CONFIRMAR MONTAJE =====================
+// Marca soportes como instalados, adjunta la foto real y avisa por correo a los compañeros.
+const montaje={sel:new Set(),photos:{},contacts:null,dest:{}};
+function montajeCompress(file){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const max=1400,k=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL("image/jpeg",0.8))};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("No se ha podido leer la foto «"+file.name+"»"))};img.src=url})}
+async function montajePanel(){
+ const p=$("#montajePanel");if(!p)return;
+ if(!montaje.contacts){try{montaje.contacts=(await api("/api/contacts")).contacts||[]}catch(e){say(e.message);return}montaje.contacts.forEach(c=>{if(!(c.email in montaje.dest))montaje.dest[c.email]="to"})}
+ if(!montaje.sel.size&&cart.sel)montaje.sel.add(cart.sel);
+ const groups=CART_VIEWS.map(v=>({v,slots:CART_SLOTS.filter(s=>s.view===v.id)})).filter(g=>g.slots.length);
+ p.innerHTML='<section class="card montaje-card"><div class="section-title"><div><small class="section-kicker">Confirmar montaje</small><h2>¿Qué se ha montado?</h2></div><button type="button" class="ghost" id="mjClose">Cerrar</button></div>'+
+  '<p class="muted" style="margin:0 0 12px">Marca los soportes cambiados y añade la foto real de cada uno. Al enviar, quedan como instalados con fecha de hoy y se avisa por correo.</p>'+
+  groups.map(g=>'<div class="mj-group"><small class="chip-label">'+esc(g.v.name)+'</small>'+g.slots.map(s=>{const on=montaje.sel.has(s.key),t=cartSched(s.key).title;return '<div class="mj-slot'+(on?" on":"")+'"><label class="mj-check"><input type="checkbox" data-mj="'+s.key+'"'+(on?" checked":"")+'><span><b>'+esc(s.name)+'</b>'+(t?'<em>'+esc(t)+'</em>':'')+'</span></label>'+
+   (on?'<div class="mj-photo">'+(montaje.photos[s.key]?'<img src="'+montaje.photos[s.key]+'" alt=""><button type="button" class="ghost" data-mj-del="'+s.key+'">Quitar foto</button>':'<label class="btn">Añadir foto<input type="file" accept="image/*" capture="environment" data-mj-file="'+s.key+'" hidden></label>')+'</div>':'')+'</div>'}).join("")+'</div>').join("")+
+  '<label class="mj-note">Nota (opcional)<textarea id="mjNote" rows="3" placeholder="Ej.: Montado por la mañana sin incidencias.">'+esc(montaje.note||"")+'</textarea></label>'+
+  '<div class="mj-dest"><div class="section-title" style="margin:6px 0 8px"><h3 style="margin:0">Destinatarios</h3><span class="muted" style="font-size:12px">Para · Copia · No</span></div>'+
+  montaje.contacts.map(c=>'<div class="mj-person"><span><b>'+esc(c.name)+'</b><em>'+esc(c.email)+'</em></span><div class="seg">'+[["to","Para"],["cc","Copia"],["no","No"]].map(([v,l])=>'<button type="button" data-mj-dest="'+esc(c.email)+'" data-v="'+v+'" class="'+(montaje.dest[c.email]===v?"on":"")+'">'+l+'</button>').join("")+'</div></div>').join("")+'</div>'+
+  '<p class="cart-legacy" style="margin:10px 0 0">Mientras esté activo el modo desarrollo, el correo solo te llega a ti (fernando@yellowmedia.es) e indica a quién se habría enviado.</p>'+
+  '<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="mjSend">Enviar confirmación</button></div><div id="mjResult"></div></section>';
+ const keepNote=()=>{const n=$("#mjNote");if(n)montaje.note=n.value};
+ $("#mjClose").onclick=()=>{p.innerHTML=""};
+ $$("[data-mj]",p).forEach(c=>c.onchange=()=>{keepNote();c.checked?montaje.sel.add(c.dataset.mj):montaje.sel.delete(c.dataset.mj);montajePanel()});
+ $$("[data-mj-file]",p).forEach(i=>i.onchange=async()=>{const f=i.files[0];if(!f)return;keepNote();try{montaje.photos[i.dataset.mjFile]=await montajeCompress(f);montajePanel()}catch(e){say(e.message)}});
+ $$("[data-mj-del]",p).forEach(b=>b.onclick=()=>{keepNote();delete montaje.photos[b.dataset.mjDel];montajePanel()});
+ $$("[data-mj-dest]",p).forEach(b=>b.onclick=()=>{keepNote();montaje.dest[b.dataset.mjDest]=b.dataset.v;montajePanel()});
+ $("#mjSend").onclick=async()=>{
+  keepNote();const keys=CART_SLOTS.filter(s=>montaje.sel.has(s.key)).map(s=>s.key);
+  if(!keys.length){say("Marca al menos un soporte");return}
+  if(cart.dirty.size){say("Guarda antes los cambios pendientes de Cartelería");return}
+  const to=montaje.contacts.filter(c=>montaje.dest[c.email]==="to"),cc=montaje.contacts.filter(c=>montaje.dest[c.email]==="cc");
+  if(!to.length){say("Elige al menos un destinatario en «Para»");return}
+  const sinFoto=keys.filter(k=>!montaje.photos[k]).map(k=>cartSlot(k).name);
+  if(!confirm("Confirmar montaje de: "+keys.map(k=>cartSlot(k).name).join(", ")+(sinFoto.length?"\n\nSin foto: "+sinFoto.join(", "):"")+"\n\nPara: "+to.map(c=>c.name).join(", ")+(cc.length?"\nCopia: "+cc.map(c=>c.name).join(", "):"")+"\n\n¿Enviar?"))return;
+  const b=$("#mjSend");b.disabled=true;b.textContent="Enviando…";
+  try{const r=await api("/api/montaje",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({slots:keys.map(k=>({key:k,photo:montaje.photos[k]||""})),note:montaje.note||"",to:to.map(c=>c.email),cc:cc.map(c=>c.email)})});
+   const msg=r.sent?(r.live?"Correo enviado a "+r.intendedTo.join(", ")+(r.intendedCc.length?" (copia: "+r.intendedCc.join(", ")+")":""):"Correo de prueba enviado solo a "+(r.sentTo||[]).join(", ")+". En producción iría a "+r.intendedTo.join(", ")+(r.intendedCc.length?" con copia a "+r.intendedCc.join(", "):"")+"."):"Soportes marcados como instalados, pero el correo no se ha enviado: "+(r.reason||"revisa la configuración de correo");
+   montaje.sel.clear();montaje.photos={};montaje.note="";await cartLoad();await carteleria();
+   const box=$("#montajePanel");if(box)box.innerHTML='<section class="card montaje-card"><div class="notice" style="text-align:left">'+esc(msg)+'</div></section>';say(r.sent?"Montaje confirmado":"Montaje guardado sin correo")}
+  catch(e){say(e.message);b.disabled=false;b.textContent="Enviar confirmación"}};
 }
 
 function cartRender(){
