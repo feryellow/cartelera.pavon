@@ -654,7 +654,7 @@ async function archivo(){
 }
 
 // ===================== CALENDARIO =====================
-const HITO_TYPES=["Estreno","Rueda de prensa","Pase gráfico","Entrevista / medios","Reunión","Cierre de edición","Evento","Otro"];
+const HITO_TYPES=["Estreno","Nota de prensa","Rueda de prensa","Pase gráfico","Entrevista / medios","Reunión","Cierre de edición","Evento","Otro"];
 const HITO_REMINDERS=[["","Por defecto"],["none","Sin aviso"],["15m","15 minutos antes"],["1h","1 hora antes"],["1d","1 día antes"],["2d","2 días antes"]];
 const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito"};
 const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aaa296",entrega:"#ff6b5e",hito:"#7fb8ff"};
