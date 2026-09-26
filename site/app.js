@@ -89,7 +89,7 @@ function radioForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar 
  input("timeSlot","Franja horaria",r.timeSlot)+input("contact","Contacto",r.contact)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+selectStatus(r.status)+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'}
-function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' list="spectacleList" autocomplete="off"':"")+'></label>'}
+function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' data-ac="spectacle" autocomplete="off"':"")+'></label>'}
 const VENUES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro","Soho City Madrid"];
 function venueSelect(v=""){const values=VENUES;return '<label>Espacio<select name="venue"><option value="">Seleccionar…</option>'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'}
 function materialStatusSelect(v="pendiente"){const values=["pendiente","solicitado","en producción","recibido","entregado","listo"];return '<label>Estado del material<select name="materialStatus">'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
@@ -227,7 +227,28 @@ const SPECTACLES=new Set();
 let spectaclesLoaded=false;
 async function loadSpectacles(){if(spectaclesLoaded)return;spectaclesLoaded=true;try{const r=await fetch("/data/espectaculos.json",{cache:"no-cache"});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.espectaculos||[]).forEach(x=>{const n=typeof x==="string"?x:x?.nombre;if(n&&n.trim())SPECTACLES.add(n.trim())})}}catch{}renderSpectacleList()}
 function learnSpectacles(rows){(rows||[]).forEach(r=>{if(r.spectacle&&r.spectacle.trim())SPECTACLES.add(r.spectacle.trim())});renderSpectacleList()}
-function renderSpectacleList(){let dl=$("#spectacleList");if(!dl){dl=document.createElement("datalist");dl.id="spectacleList";document.body.appendChild(dl)}dl.innerHTML=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es")).map(n=>'<option value="'+esc(n)+'">').join("")}
+function renderSpectacleList(){}
+// Desplegable propio: coincidencias desde el principio del título, sin distinguir mayúsculas ni tildes.
+function acNorm(t){return String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/^[¡¿"'“”‘’#\s]+/,"").trim()}
+const ac={box:null,input:null,items:[],idx:-1};
+function acEnsure(){if(ac.box)return ac.box;const b=document.createElement("div");b.className="ac-box";b.setAttribute("role","listbox");document.body.appendChild(b);
+ b.addEventListener("mousedown",e=>{const o=e.target.closest(".ac-opt");if(!o)return;e.preventDefault();acPick(o.dataset.v)});ac.box=b;return b}
+function acPlace(){if(!ac.box||!ac.input)return;const r=ac.input.getBoundingClientRect(),vh=window.visualViewport?window.visualViewport.height:innerHeight;const below=vh-r.bottom-8,above=r.top-8;const up=below<180&&above>below;const max=Math.max(120,Math.min(320,(up?above:below)-4));Object.assign(ac.box.style,{left:r.left+"px",width:r.width+"px",maxHeight:max+"px",top:up?"auto":(r.bottom+4)+"px",bottom:up?(innerHeight-r.top+4)+"px":"auto"})}
+if(window.visualViewport)visualViewport.addEventListener("resize",()=>acPlace());
+function acShow(inp){ac.input=inp;const q=acNorm(inp.value);const b=acEnsure();if(!q){acHide();return}
+ const list=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es"));ac.items=list.filter(n=>acNorm(n).startsWith(q)).slice(0,40);ac.idx=-1;
+ b.innerHTML=ac.items.length?ac.items.map((n,i)=>'<div class="ac-opt" role="option" data-i="'+i+'" data-v="'+esc(n)+'"><b>'+esc(n.slice(0,inp.value.trim().length))+'</b>'+esc(n.slice(inp.value.trim().length))+'</div>').join(""):'<div class="ac-empty">No hay espectáculos que empiecen así. Se guardará como lo escribas.</div>';
+ b.classList.add("show");acPlace()}
+function acHide(){if(ac.box)ac.box.classList.remove("show");ac.idx=-1}
+function acPick(v){const inp=ac.input;if(!inp)return;inp.value=v;acHide();ac.picking=true;inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}));ac.picking=false}
+document.addEventListener("input",e=>{const t=e.target;if(t.matches&&t.matches('input[data-ac="spectacle"]')&&!t.disabled){if(ac.picking)return;acShow(t)}});
+document.addEventListener("focusin",e=>{const t=e.target;if(t.matches&&t.matches('input[data-ac="spectacle"]')){loadSpectacles();if(t.value)acShow(t)}});
+document.addEventListener("focusout",e=>{if(e.target===ac.input)setTimeout(acHide,120)});
+document.addEventListener("keydown",e=>{if(!ac.box||!ac.box.classList.contains("show")||e.target!==ac.input)return;const opts=[...ac.box.querySelectorAll(".ac-opt")];
+ if(e.key==="Escape"){acHide();return}if(!opts.length)return;
+ if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();ac.idx=e.key==="ArrowDown"?(ac.idx+1)%opts.length:(ac.idx<=0?opts.length-1:ac.idx-1);opts.forEach((o,i)=>o.classList.toggle("on",i===ac.idx));opts[ac.idx].scrollIntoView({block:"nearest"})}
+ else if(e.key==="Enter"&&ac.idx>=0){e.preventDefault();acPick(opts[ac.idx].dataset.v)}});
+window.addEventListener("scroll",acPlace,true);window.addEventListener("resize",acPlace);
 
 // ===================== CARTELERÍA (integrada en Yellow Control) =====================
 // Datos compatibles con la versión anterior: /api/state (slots + schedule) y /api/image?key=<vista>__<soporte> (dataURL).
@@ -324,7 +345,7 @@ function cartPanel(){
   (n?'<div class="cart-next '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b> '+esc(n[0])+' · '+fdate(n[1])+'</div>':'')+
   (edit?'<div class="actions-row cart-actions"><button type="button" id="cartPick">'+(im?"Cambiar cartel":"Cargar cartel")+'</button>'+(im?'<button type="button" id="cartFit">'+(cartMode(s.key)==="contain"?"Llenar hueco":"Encajar entero")+'</button><button type="button" class="danger" id="cartRemove">Quitar</button>':'')+'</div>':'')+
   '<form class="form-grid cart-form" id="cartForm">'+
-   '<label class="wide">Espectáculo / pieza<input name="title" list="spectacleList" autocomplete="off" value="'+esc(sc.title||"")+'"'+(edit?'':' disabled')+'></label>'+
+   '<label class="wide">Espectáculo / pieza<input name="title" data-ac="spectacle" autocomplete="off" value="'+esc(sc.title||"")+'"'+(edit?'':' disabled')+'></label>'+
    '<label>Instalación<input type="date" name="installDate" value="'+esc(sc.installDate||"")+'"'+(edit?'':' disabled')+'></label>'+
    '<label>Retirada<input type="date" name="removeDate" value="'+esc(sc.removeDate||"")+'"'+(edit?'':' disabled')+'></label>'+
    '<label class="wide">Estado<select name="status"'+(edit?'':' disabled')+'><option value="">Sin estado</option>'+CART_STATUS.map(x=>'<option'+(x===sc.status?" selected":"")+'>'+x+'</option>').join("")+'</select></label>'+
