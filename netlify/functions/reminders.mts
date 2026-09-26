@@ -92,7 +92,7 @@ export default async(req?:Request)=>{
     const seen=new Set(pending.map(a=>a.module+"|"+a.title+"|"+a.date));
     upcoming=upcoming.filter(u=>!seen.has(u.module+"|"+u.title+"|"+u.date));
     const rcp=mailRecipients();
-    const subject=(forced?"[Prueba] ":"")+`Yellow Control · ${pending.length?pending.length+(pending.length===1?" aviso":" avisos"):"sin avisos urgentes"} · ${day.split("-").reverse().join("/")}`;
+    const subject=(forced?"[Prueba] ":"")+`Yellow Control · ${pending.length?pending.length+(pending.length===1?" aviso requiere":" avisos requieren")+" atención":"sin avisos urgentes"} · ${upcoming.length} ${upcoming.length===1?"fecha":"fechas"} esta semana`;
     const html=renderDigest({day,test:forced,appUrl,devRecipient:rcp.live?"":rcp.to[0],
       pending:pending.sort((x,y)=>x.days-y.days).map(a=>({...a,location:a.module==="Cartelería"?a.location.replaceAll("__"," · ").replaceAll("_"," "):a.location})),
       upcoming,
