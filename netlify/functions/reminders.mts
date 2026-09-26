@@ -1,7 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { carteleriaStore, notificationStore } from "./_lib/store.ts";
 import { listRecords, isActive } from "./_lib/records.ts";
-import { normalizeDate, dayDiff } from "./_lib/dates.ts";
+import { normalizeDate, dayDiff, madridToday, madridHour } from "./_lib/dates.ts";
 import { sendPavonMail } from "./_lib/mailer.ts";
 import { appendAudit } from "./_lib/audit.ts";
 
@@ -59,8 +59,11 @@ async function collect(now=new Date()){
   return {alerts,current};
 }
 
-export default async()=>{
+export default async(req?:Request)=>{
   const now=new Date();
+  // Se programa a las 07:00 y 08:00 UTC; solo actúa cuando en Madrid son las 9 (verano e invierno).
+  const forced=req?new URL(req.url).searchParams.get("force")==="1":false;
+  if(!forced&&madridHour(now)!==9){console.log(JSON.stringify({skipped:true,madridHour:madridHour(now)}));return;}
   const {alerts,current}=await collect(now);
   const ns=notificationStore();
   const pending:Alert[]=[];
@@ -71,10 +74,10 @@ export default async()=>{
     if(!already || !(already as any).sent)pending.push(a);
   }
 
-  const day=now.toISOString().slice(0,10);
+  const day=madridToday(now);
   const digestKey=`daily-material-digest-${day}`;
   const digestAlready=await ns.get(digestKey,{type:"json"});
-  const shouldSend=!(digestAlready as any)?.sent && (pending.length>0 || current.length>0);
+  const shouldSend=forced || (!(digestAlready as any)?.sent && (pending.length>0 || current.length>0));
 
   if(shouldSend){
     const pendingHtml=pending.length?'<h3 style="margin-top:22px">Requiere atención</h3><table style="border-collapse:collapse;width:100%"><tr><th align="left">Módulo</th><th align="left">Material</th><th align="left">Estado</th><th align="left">Fecha</th></tr>'+
@@ -85,9 +88,11 @@ export default async()=>{
       current.map(r=>`<tr><td style="padding:7px;border-top:1px solid #ddd">${esc(r.module)}</td><td style="padding:7px;border-top:1px solid #ddd"><strong>${esc(r.title)}</strong><br><small>${esc(r.location)}</small></td><td style="padding:7px;border-top:1px solid #ddd">${esc(r.materialStatus)}</td><td style="padding:7px;border-top:1px solid #ddd">${esc(r.endDate||"—")}</td></tr>`).join("")+'</table>':
       '<p>No hay campañas activas registradas.</p>';
 
-    const subject=`Yellow Control · material y campañas · ${day}`;
+    const subject=(forced?"[Prueba] ":"")+`Yellow Control · material y campañas · ${day}`;
     const html=`<div style="font-family:Arial,sans-serif;color:#222"><h2>Yellow Control</h2><p>Resumen diario de material activo y entregas pendientes.</p>${pendingHtml}${currentHtml}</div>`;
     const result=await sendPavonMail({subject,html});
+    // Una prueba no cuenta como envío del día: no marca avisos ni resumen.
+    if(forced){console.log(JSON.stringify({test:true,alerts:alerts.length,pending:pending.length,current:current.length,sent:result.sent}));return;}
     await ns.setJSON(digestKey,{createdAt:new Date().toISOString(),sent:result.sent,emailId:(result as any).id||null,alerts:pending.length,current:current.length});
     await appendAudit({actor:{id:"system",email:"Yellow Control"},module:"avisos",elementId:digestKey,action:result.sent?"digest_sent":"digest_pending",after:{pending:pending.length,current:current.length}});
     for(const a of pending)await ns.setJSON(a.key,{...a,createdAt:new Date().toISOString(),sent:result.sent,emailId:(result as any).id||null});
@@ -98,4 +103,4 @@ export default async()=>{
   console.log(JSON.stringify({alerts:alerts.length,pending:pending.length,current:current.length,sent:false,reason:"nothing_new"}));
 };
 
-export const config:Config={schedule:"0 7 * * *"};
+export const config:Config={schedule:"0 7,8 * * *"};

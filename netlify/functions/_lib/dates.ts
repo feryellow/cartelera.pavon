@@ -9,8 +9,16 @@ export function normalizeDate(input: unknown): string | null {
   return Number.isNaN(d.valueOf()) ? null : d.toISOString().slice(0,10);
 }
 
+// Fecha del día en Madrid (YYYY-MM-DD), con cambio de hora incluido.
+export function madridToday(now: Date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+export function madridHour(now: Date = new Date()) {
+  return Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(now)) % 24;
+}
+
 export function dayDiff(from: Date, isoDate: string) {
-  const a = new Date(from.toISOString().slice(0,10) + "T00:00:00Z");
+  const a = new Date(madridToday(from) + "T00:00:00Z");
   const b = new Date(isoDate + "T00:00:00Z");
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
