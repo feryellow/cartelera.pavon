@@ -82,6 +82,8 @@ function radioContract(id){return RADIO_CONTRACTS.find(c=>c.id===id)}
 function radioLine(contract,id){return contract?.lines?.find(l=>l.id===id)}
 function radioMonths(contract){return [...new Set((contract?.lines||[]).flatMap(l=>Object.keys(l.monthly||{})))].sort()}
 function radioMonthLabel(m){if(!m)return"—";const [y,mo]=m.split("-").map(Number);return new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^./,x=>x.toUpperCase())}
+function radioDefaultMonth(months,current){if(!months?.length)return"";if(months.includes(current))return current;return months.find(m=>m>=current)||months[months.length-1]}
+function radioValidity(endDate){if(!endDate)return"";return "Válido hasta el "+new Date(endDate+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}
 function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function radioWeekKey(v){if(!v)return"";const d=new Date(v+"T12:00:00"),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
 function radioFmt(n){return new Intl.NumberFormat("es-ES").format(radioNum(n))}
@@ -140,11 +142,11 @@ async function radio(){
  const current=monthKey(new Date()),eligible=contracts.filter(c=>radioMonths(c).includes(current));
  if(!radioView.contractId||!radioContract(radioView.contractId))radioView.contractId=(eligible[0]||contracts[0])?.id||"";
  const contract=radioContract(radioView.contractId),months=radioMonths(contract);
- if(!radioView.month||!months.includes(radioView.month))radioView.month=months.includes(current)?current:months[0]||"";
+ if(!radioView.month||!months.includes(radioView.month))radioView.month=radioDefaultMonth(months,current);
  const month=radioView.month,monthRows=radioRows(rows,contract.id,month),legacy=rows.filter(r=>!r.contractId);
  app.innerHTML=pageHead("Radio","Control contractual, reparto por espectáculo, materiales y consumo",'<button id="radioPrint" class="btn">Informe mensual</button><button id="newRadio" class="primary">+ Nueva asignación</button>')+
  radioContractTabs(contracts,contract.id)+
- '<section class="card radio-contract-head"><div><small class="section-kicker">Contrato activo</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2><p>'+esc(contract.provider)+' · '+esc(contract.contractNumber)+' · '+fdate(contract.startDate)+' → '+fdate(contract.endDate)+'</p></div><div class="radio-contract-note">'+esc(contract.notes||"")+'</div></section>'+
+ '<section class="card radio-contract-head radio-contract-head-compact"><div><small class="section-kicker">Contrato activo</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2><p>'+esc(radioValidity(contract.endDate))+'</p></div></section>'+
  radioMonthTabs(contract,month)+radioInventoryKpis(contract,month,monthRows)+
  '<div class="grid radio-main-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Inventario contractual</small><h2>'+esc(radioMonthLabel(month))+'</h2></div><span class="badge">'+monthRows.length+' asignaciones</span></div>'+radioLineTable(contract,month,monthRows)+'</section>'+
  '<section class="card" id="radioFormCard">'+radioForm({},contract,month)+'</section></div>'+
@@ -152,7 +154,8 @@ async function radio(){
  '<section class="card"><div class="section-title"><div><small class="section-kicker">Control semanal</small><h2>Semanas del mes</h2></div></div>'+radioWeekPanel(monthRows,month,contract)+'<div class="section-title radio-report-title"><div><small class="section-kicker">Informe</small><h2>Consumo por espectáculo</h2></div></div>'+radioSpectacleReport(monthRows,contract)+'</section></div>'+
  (legacy.length?'<section class="card radio-legacy"><div class="section-title"><h2>Registros anteriores sin contrato</h2><span class="badge">'+legacy.length+'</span></div><p class="muted">Se conservan para no perder información. Puedes editarlos y asignarlos a uno de los tres contratos cuando corresponda.</p><div class="list">'+radioAssignments(legacy,{lines:[]})+'</div></section>':"");
  $$("[data-radio-contract]").forEach(b=>b.onclick=()=>{radioView.contractId=b.dataset.radioContract;radioView.month="";radio()});
- $$("[data-radio-month]").forEach(b=>b.onclick=()=>{radioView.month=b.dataset.radioMonth;radio()});
+ $("[data-radio-month]").forEach(b=>b.onclick=()=>{radioView.month=b.dataset.radioMonth;radio()});
+ requestAnimationFrame(()=>{const strip=$(".radio-months"),active=$(".radio-months .chip.on");if(strip&&active)strip.scrollLeft=Math.max(0,active.offsetLeft-strip.offsetLeft-10)});
  $("#radioPrint").onclick=()=>radioPrint(contract,month,monthRows);
  bindRadio(rows,contract,month);await hydrateMedia("radio")
 }
