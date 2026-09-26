@@ -69,26 +69,117 @@ function homeTiles(d,alerts){const count=(n,one,many)=>n==null?"":n+" "+(n===1?o
 
 function stat(value,label){return '<div class="card stat"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>'}
 
+let RADIO_CONTRACTS=[];
+const radioView={contractId:"",month:""};
+
+async function loadRadioContracts(){
+ if(RADIO_CONTRACTS.length)return RADIO_CONTRACTS;
+ const r=await fetch("/data/radio-contracts.json",{cache:"no-cache"});
+ if(!r.ok)throw new Error("No se ha podido cargar el inventario contractual de Radio");
+ const d=await r.json();RADIO_CONTRACTS=d.contracts||[];return RADIO_CONTRACTS
+}
+function radioContract(id){return RADIO_CONTRACTS.find(c=>c.id===id)}
+function radioLine(contract,id){return contract?.lines?.find(l=>l.id===id)}
+function radioMonths(contract){return [...new Set((contract?.lines||[]).flatMap(l=>Object.keys(l.monthly||{})))].sort()}
+function radioMonthLabel(m){if(!m)return"—";const [y,mo]=m.split("-").map(Number);return new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^./,x=>x.toUpperCase())}
+function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function radioFmt(n){return new Intl.NumberFormat("es-ES").format(radioNum(n))}
+function radioRows(rows,contractId,month){return rows.filter(r=>r.contractId===contractId&&r.inventoryMonth===month)}
+function radioLineStats(contract,line,month,rows){
+ const capacity=radioNum(line?.monthly?.[month]),used=rows.filter(r=>r.lineId===line.id);
+ const planned=used.reduce((a,r)=>a+radioNum(r.plannedSpots),0),actual=used.reduce((a,r)=>a+radioNum(r.actualSpots),0);
+ return {capacity,planned,actual,remaining:capacity-planned,rows:used}
+}
+function radioContractTotal(contract,month,rows,unit){
+ const lines=(contract.lines||[]).filter(l=>l.unit===unit);
+ return lines.reduce((o,l)=>{const x=radioLineStats(contract,l,month,rows);o.capacity+=x.capacity;o.planned+=x.planned;o.actual+=x.actual;return o},{capacity:0,planned:0,actual:0})
+}
+function radioContractTabs(contracts,selected){
+ return '<div class="radio-contract-tabs">'+contracts.map(c=>'<button type="button" class="radio-contract-tab '+(c.id===selected?'on':'')+'" data-radio-contract="'+esc(c.id)+'"><small>'+esc(c.venue.replace("Gran Teatro CaixaBank ","").replace("Gran Teatro ",""))+'</small><b>'+esc(c.brand)+'</b><span>'+esc(c.startDate.slice(0,4))+'–'+esc(c.endDate.slice(0,4))+'</span></button>').join("")+'</div>'
+}
+function radioMonthTabs(contract,selected){
+ return '<div class="chip-row radio-months"><span class="chip-label">Mes</span>'+radioMonths(contract).map(m=>'<button type="button" class="chip '+(m===selected?'on':'')+'" data-radio-month="'+m+'">'+esc(radioMonthLabel(m).replace(" 20"," ’"))+'</button>').join("")+'</div>'
+}
+function radioInventoryKpis(contract,month,rows){
+ const units=[...new Set((contract.lines||[]).map(l=>l.unit))];
+ return '<div class="radio-inventory-kpis">'+units.map(unit=>{const x=radioContractTotal(contract,month,rows,unit),remaining=x.capacity-x.planned;return '<div class="radio-inv-kpi"><small>'+esc(unit)+'</small><strong>'+radioFmt(x.planned)+' <em>/ '+radioFmt(x.capacity)+'</em></strong><span>'+radioFmt(Math.max(0,remaining))+' disponibles'+(x.actual?' · '+radioFmt(x.actual)+' emitidas/realizadas':'')+'</span></div>'}).join("")+'</div>'
+}
+function radioLineTable(contract,month,rows){
+ const lineRows=(contract.lines||[]).filter(l=>radioNum(l.monthly?.[month])>0);
+ return '<div class="radio-line-table"><div class="radio-line-head"><span>Emisora / programa</span><span>Contratado</span><span>Asignado</span><span>Real</span><span>Disponible</span></div>'+
+ lineRows.map(l=>{const x=radioLineStats(contract,l,month,rows),over=x.remaining<0;return '<div class="radio-line-row"><div><b>'+esc(l.station)+'</b><span>'+esc(l.program)+' · '+esc(l.duration)+' · '+esc(l.timeSlot)+'</span></div><strong>'+radioFmt(x.capacity)+'</strong><strong>'+radioFmt(x.planned)+'</strong><strong>'+radioFmt(x.actual)+'</strong><strong class="'+(over?'radio-over':'')+'">'+radioFmt(x.remaining)+'</strong></div>'}).join("")+'</div>'
+}
+function radioAssignments(rows,contract){
+ if(!rows.length)return '<div class="notice">Todavía no hay asignaciones para este mes. El inventario está disponible para repartir entre espectáculos.</div>';
+ return rows.slice().sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||""))).map(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas";return '<div class="item radio-assignment" data-id="'+r.id+'"><div><div class="item-meta"><span class="badge">'+esc(l?.station||r.station||"Radio")+'</span><span>'+esc(l?.program||"")+'</span></div><h3>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span><b>'+radioFmt(r.plannedSpots)+'</b> '+esc(unit)+' planificadas</span>'+(radioNum(r.actualSpots)?'<span><b>'+radioFmt(r.actualSpots)+'</b> reales</span>':'')+'<span>'+esc(r.spotName||"Sin nombre de cuña")+'</span>'+statusBadge(r.materialStatus||r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Archivar</button></div></div>'}).join("")
+}
+function radioWeekPanel(rows,month,contract){
+ const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),weeks=[];let d=1;
+ while(d<=last){const dt=new Date(y,m-1,d),mon=d-((dt.getDay()+6)%7),start=Math.max(1,mon),end=Math.min(last,mon+6);if(!weeks.some(w=>w.start===start))weeks.push({start,end});d=end+1}
+ const inRange=(r,w)=>{const a=r.startDate||month+"-01",b=r.endDate||a,s=month+"-"+String(w.start).padStart(2,"0"),e=month+"-"+String(w.end).padStart(2,"0");return a<=e&&b>=s};
+ return '<div class="radio-weeks">'+weeks.map((w,i)=>{const rr=rows.filter(r=>inRange(r,w));return '<div class="radio-week"><div><small>SEMANA '+(i+1)+'</small><b>'+w.start+'–'+w.end+' '+radioMonthLabel(month).split(" ")[0]+'</b></div><span>'+rr.length+' asignación'+(rr.length===1?'':'es')+'</span>'+(rr.length?'<p>'+rr.map(r=>esc(r.spectacle||"Sin espectáculo")+' · '+radioFmt(r.plannedSpots)+' '+esc(r.unit||radioLine(contract,r.lineId)?.unit||"cuñas")).join(" · ")+'</p>':'')+'</div>'}).join("")+'</div>'
+}
+function radioSpectacleReport(rows,contract){
+ const map=new Map();rows.forEach(r=>{const k=r.spectacle||r.campaignName||"Sin espectáculo";const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas",key=k+"|"+unit;const x=map.get(key)||{name:k,unit,planned:0,actual:0};x.planned+=radioNum(r.plannedSpots);x.actual+=radioNum(r.actualSpots);map.set(key,x)});
+ const all=[...map.values()].sort((a,b)=>b.planned-a.planned);
+ return all.length?'<div class="radio-spectacle-report">'+all.map(x=>'<div><b>'+esc(x.name)+'</b><span>'+radioFmt(x.planned)+' '+esc(x.unit)+(x.actual?' · '+radioFmt(x.actual)+' reales':'')+'</span></div>').join("")+'</div>':'<div class="notice">Sin consumo asignado a espectáculos este mes.</div>'
+}
+function radioPrint(contract,month,rows){
+ const units=[...new Set(contract.lines.map(l=>l.unit))],summaries=units.map(u=>({u,...radioContractTotal(contract,month,rows,u)}));
+ const bySpectacle=new Map();rows.forEach(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas",k=(r.spectacle||"Sin espectáculo")+"|"+unit,x=bySpectacle.get(k)||{name:r.spectacle||"Sin espectáculo",unit,planned:0,actual:0};x.planned+=radioNum(r.plannedSpots);x.actual+=radioNum(r.actualSpots);bySpectacle.set(k,x)});
+ const w=window.open("","_blank","width=980,height=760");if(!w){say("El navegador ha bloqueado la ventana del informe");return}
+ const lines=contract.lines.filter(l=>radioNum(l.monthly?.[month])>0).map(l=>{const x=radioLineStats(contract,l,month,rows);return '<tr><td><b>'+esc(l.station)+'</b><br><small>'+esc(l.program)+'</small></td><td>'+radioFmt(x.capacity)+'</td><td>'+radioFmt(x.planned)+'</td><td>'+radioFmt(x.actual)+'</td><td>'+radioFmt(x.remaining)+'</td></tr>'}).join("");
+ const specs=[...bySpectacle.values()].sort((a,b)=>b.planned-a.planned).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+radioFmt(x.planned)+' '+esc(x.unit)+'</td><td>'+radioFmt(x.actual)+'</td></tr>').join("");
+ w.document.write('<!doctype html><meta charset="utf-8"><title>Informe Radio · '+esc(radioMonthLabel(month))+'</title><style>body{font-family:Arial,sans-serif;margin:34px;color:#111}h1{font-size:28px;margin-bottom:4px}h2{margin-top:28px}p{color:#555}.k{display:flex;gap:12px}.k div{border:1px solid #ddd;padding:14px;min-width:180px}.k b{font-size:22px;display:block}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;padding:9px;border-bottom:1px solid #ddd;font-size:13px}small{color:#666}@media print{button{display:none}}</style><h1>RADIO · '+esc(contract.venue)+'</h1><p>'+esc(contract.brand)+' · '+esc(radioMonthLabel(month))+' · '+esc(contract.contractNumber)+'</p><div class="k">'+summaries.map(x=>'<div><small>'+esc(x.u)+'</small><b>'+radioFmt(x.planned)+' / '+radioFmt(x.capacity)+'</b><span>'+radioFmt(x.capacity-x.planned)+' disponibles · '+radioFmt(x.actual)+' reales</span></div>').join("")+'</div><h2>Inventario por emisora / programa</h2><table><thead><tr><th>Emisora / programa</th><th>Contratado</th><th>Asignado</th><th>Real</th><th>Disponible</th></tr></thead><tbody>'+lines+'</tbody></table><h2>Consumo por espectáculo</h2><table><thead><tr><th>Espectáculo</th><th>Planificado</th><th>Real</th></tr></thead><tbody>'+specs+'</tbody></table><p><small>Generado desde Yellow Control. Las cifras reales dependen del certificado de emisión cuando se haya registrado.</small></p><button onclick="print()">Imprimir / Guardar PDF</button>');
+ w.document.close()
+}
 async function radio(){
- const d=await api("/api/control?module=radio");
- const rows=d.rows||[];loadSpectacles();learnSpectacles(rows), active=rows.filter(r=>activeNow(r));
- const venues=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío"];
- const extras=[...new Set(rows.map(r=>r.venue).filter(Boolean).filter(v=>!venues.includes(v)))];
- const groups=[...venues,...extras];
- app.innerHTML=pageHead("Radio","Campañas y cuñas por espacio",'<button id="newRadio" class="primary">+ Nueva campaña</button>')+moduleKpis(rows,"En emisión ahora")+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>EN EMISIÓN AHORA</h2><span class="badge ok">'+active.length+'</span></div>'+groups.map(v=>'<div class="space-panel" data-venue="'+esc(v)+'"><div class="section-title radio-space"><div><small class="section-kicker">Espacio</small><h2>'+esc(v)+'</h2></div><span class="badge">'+rows.filter(r=>r.venue===v).length+'</span></div><div class="list">'+radioItems(rows.filter(r=>r.venue===v))+'</div></div>').join("")+(rows.some(r=>!r.venue)?'<div class="space-panel" data-venue=""><div class="section-title radio-space"><div><small class="section-kicker">Espacio</small><h2>Sin espacio asignado</h2></div><span class="badge">'+rows.filter(r=>!r.venue).length+'</span></div><div class="list">'+radioItems(rows.filter(r=>!r.venue))+'</div></div>':"")+'</section><section class="card" id="radioFormCard">'+radioForm()+'</section></div>';
- radioChips(rows);bindRadio(rows);
- await hydrateMedia("radio");
+ const [d,contracts]=await Promise.all([api("/api/control?module=radio"),loadRadioContracts()]);
+ const rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
+ const current=monthKey(new Date()),eligible=contracts.filter(c=>radioMonths(c).includes(current));
+ if(!radioView.contractId||!radioContract(radioView.contractId))radioView.contractId=(eligible[0]||contracts[0])?.id||"";
+ const contract=radioContract(radioView.contractId),months=radioMonths(contract);
+ if(!radioView.month||!months.includes(radioView.month))radioView.month=months.includes(current)?current:months[0]||"";
+ const month=radioView.month,monthRows=radioRows(rows,contract.id,month),legacy=rows.filter(r=>!r.contractId);
+ app.innerHTML=pageHead("Radio","Control contractual, reparto por espectáculo, materiales y consumo",'<button id="radioPrint" class="btn">Informe mensual</button><button id="newRadio" class="primary">+ Nueva asignación</button>')+
+ radioContractTabs(contracts,contract.id)+
+ '<section class="card radio-contract-head"><div><small class="section-kicker">Contrato activo</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2><p>'+esc(contract.provider)+' · '+esc(contract.contractNumber)+' · '+fdate(contract.startDate)+' → '+fdate(contract.endDate)+'</p></div><div class="radio-contract-note">'+esc(contract.notes||"")+'</div></section>'+
+ radioMonthTabs(contract,month)+radioInventoryKpis(contract,month,monthRows)+
+ '<div class="grid radio-main-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Inventario contractual</small><h2>'+esc(radioMonthLabel(month))+'</h2></div><span class="badge">'+monthRows.length+' asignaciones</span></div>'+radioLineTable(contract,month,monthRows)+'</section>'+
+ '<section class="card" id="radioFormCard">'+radioForm({},contract,month)+'</section></div>'+
+ '<div class="grid two-col radio-bottom-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Planificación</small><h2>Asignaciones del mes</h2></div></div><div class="list">'+radioAssignments(monthRows,contract)+'</div></section>'+
+ '<section class="card"><div class="section-title"><div><small class="section-kicker">Control semanal</small><h2>Semanas del mes</h2></div></div>'+radioWeekPanel(monthRows,month,contract)+'<div class="section-title radio-report-title"><div><small class="section-kicker">Informe</small><h2>Consumo por espectáculo</h2></div></div>'+radioSpectacleReport(monthRows,contract)+'</section></div>'+
+ (legacy.length?'<section class="card radio-legacy"><div class="section-title"><h2>Registros anteriores sin contrato</h2><span class="badge">'+legacy.length+'</span></div><p class="muted">Se conservan para no perder información. Puedes editarlos y asignarlos a uno de los tres contratos cuando corresponda.</p><div class="list">'+radioAssignments(legacy,{lines:[]})+'</div></section>':"");
+ $$("[data-radio-contract]").forEach(b=>b.onclick=()=>{radioView.contractId=b.dataset.radioContract;radioView.month="";radio()});
+ $$("[data-radio-month]").forEach(b=>b.onclick=()=>{radioView.month=b.dataset.radioMonth;radio()});
+ $("#radioPrint").onclick=()=>radioPrint(contract,month,monthRows);
+ bindRadio(rows,contract,month);await hydrateMedia("radio")
 }
 function localToday(){return new Date().toLocaleDateString("sv")}
 function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
-function radioItems(rows){return rows.length?rows.map(r=>'<div class="item" data-id="'+r.id+'"><div><h3>'+esc(r.spectacle||r.campaignName||"Campaña radio")+'</h3><div class="item-meta"><span>'+esc(r.station||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>'+esc(r.spotName||"")+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
-function radioForm(r={}){return '<div class="section-title"><h2>'+(r.id?"Editar campaña":"Nueva campaña")+'</h2></div><form id="radioForm" class="form-grid">'+
- venueSelect(r.venue)+input("spectacle","Espectáculo",r.spectacle)+input("station","Emisora",r.station)+input("campaignName","Campaña",r.campaignName)+input("spotName","Nombre de la cuña",r.spotName)+
- input("duration","Duración",r.duration)+input("frequency","Frecuencia / pases",r.frequency)+input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+
- input("timeSlot","Franja horaria",r.timeSlot)+input("contact","Contacto",r.contact)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+selectStatus(r.status)+
+function radioItems(rows){return radioAssignments(rows,{lines:[]})}
+function radioForm(r={},selectedContract=null,selectedMonth=""){
+ const contract=radioContract(r.contractId)||selectedContract||radioContract(radioView.contractId),months=radioMonths(contract),month=r.inventoryMonth||selectedMonth||months[0]||"",line=radioLine(contract,r.lineId)||contract?.lines?.find(l=>radioNum(l.monthly?.[month])>0)||contract?.lines?.[0],legacy=!contract;
+ const contractOpts='<option value="">Sin contrato / histórico</option>'+RADIO_CONTRACTS.map(c=>'<option value="'+esc(c.id)+'" '+(c.id===contract?.id?'selected':'')+'>'+esc(c.venue)+' · '+esc(c.brand)+'</option>').join("");
+ const monthOpts=months.map(m=>'<option value="'+m+'" '+(m===month?'selected':'')+'>'+esc(radioMonthLabel(m))+'</option>').join("");
+ const lineOpts=(contract?.lines||[]).filter(l=>!month||radioNum(l.monthly?.[month])>0).map(l=>'<option value="'+esc(l.id)+'" '+(l.id===line?.id?'selected':'')+'>'+esc(l.station)+' · '+esc(l.program)+' · '+esc(l.unit)+'</option>').join("");
+ return '<div class="section-title"><div><small class="section-kicker">'+(r.id?'Editar':'Nueva')+'</small><h2>Asignación de radio</h2></div></div><form id="radioForm" class="form-grid">'+
+ '<label class="wide">Acuerdo<select name="contractId" id="radioContractSelect">'+contractOpts+'</select></label>'+
+ '<label>Mes de inventario<select name="inventoryMonth" id="radioMonthSelect">'+monthOpts+'</select></label>'+
+ '<label class="wide">Emisora / programa<select name="lineId" id="radioLineSelect">'+lineOpts+'</select></label>'+
+ '<div class="wide radio-form-line" id="radioLineInfo"></div>'+
+ input("spectacle","Espectáculo",r.spectacle)+input("campaignName","Nombre interno / campaña",r.campaignName)+
+ input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+
+ '<label>Planificado<input name="plannedSpots" type="number" min="0" step="1" value="'+esc(r.plannedSpots||"")+'" required></label>'+
+ '<label>Real / certificado<input name="actualSpots" type="number" min="0" step="1" value="'+esc(r.actualSpots||"")+'"></label>'+
+ input("spotName","Nombre de la cuña / pieza",r.spotName)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+
+ materialStatusSelect(r.materialStatus)+selectStatus(r.status)+input("certificateRef","Certificado / referencia",r.certificateRef)+
+ '<div id="radioLegacyFields" class="wide '+(legacy?'':'hidden')+'"><div class="form-grid">'+venueSelect(r.venue)+input("station","Emisora manual",r.station)+input("duration","Duración",r.duration)+input("timeSlot","Franja",r.timeSlot)+'</div></div>'+
+ '<input type="hidden" name="venue" value="'+esc(contract?.venue||r.venue||"")+'"><input type="hidden" name="station" value="'+esc(line?.station||r.station||"")+'"><input type="hidden" name="duration" value="'+esc(line?.duration||r.duration||"")+'"><input type="hidden" name="timeSlot" value="'+esc(line?.timeSlot||r.timeSlot||"")+'"><input type="hidden" name="unit" value="'+esc(line?.unit||r.unit||"cuñas")+'">'+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
- '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'}
+ '<div class="wide radio-form-help">Las cantidades se descuentan del inventario del contrato y mes seleccionados. Para un control semanal exacto, registra cada reparto semanal como una asignación independiente.</div>'+
+ '<div class="wide actions-row"><button class="primary" type="submit">Guardar asignación</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'
+}
 function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' data-ac="spectacle" autocomplete="off"':"")+'></label>'}
 const VENUES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro","Soho City Madrid"];
 function venueSelect(v=""){const values=VENUES;return '<label>Espacio<select name="venue"><option value="">Seleccionar…</option>'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'}
@@ -98,15 +189,44 @@ function formObject(form){return Object.fromEntries(new FormData(form).entries()
 const MAX_UPLOAD_MB=5.5;
 function checkFileSize(file){if(file&&file.size>MAX_UPLOAD_MB*1024*1024)throw new Error("«"+file.name+"» pesa "+(file.size/1048576).toFixed(1)+" MB. El máximo es "+MAX_UPLOAD_MB+" MB: comprímelo (audio en MP3, PDF optimizado) y vuelve a intentarlo.")}
 async function uploadAsset(file,moduleName,existing){if(!file)return existing||"";checkFileSize(file);const k=crypto.randomUUID().replaceAll("-","");const r=await fetch("/api/asset?key="+k+"&module="+moduleName,{method:"PUT",headers:headers({"content-type":file.type||"application/octet-stream"}),body:file});if(!r.ok)throw new Error(await r.text());return k}
-function bindRadio(rows){
- $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm();bindRadioForm(null)};
- $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);$("#radioFormCard").innerHTML=radioForm(r);bindRadioForm(r)});
- $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta campaña?"))return;await api("/api/control?module=radio&id="+b.dataset.delRadio,{method:"DELETE"});say("Campaña archivada");radio()});
- bindRadioForm(null);
+function bindRadio(rows,selectedContract,selectedMonth){
+ $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
+ $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);if(!r)return;$("#radioFormCard").innerHTML=radioForm(r,selectedContract,selectedMonth);bindRadioForm(r,rows,selectedContract,selectedMonth)});
+ $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta asignación?"))return;await api("/api/control?module=radio&id="+b.dataset.delRadio,{method:"DELETE"});say("Asignación archivada");radio()});
+ bindRadioForm(null,rows,selectedContract,selectedMonth)
 }
-function bindRadioForm(existing){
- const f=$("#radioForm"); if(!f)return; $("#cancelRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm();bindRadioForm(null)};
- f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Radio guardada");radio()}catch(err){say(err.message)}}
+function bindRadioForm(existing,rows,selectedContract,selectedMonth){
+ const f=$("#radioForm");if(!f)return;
+ const rebuild=(seed={})=>{$("#radioFormCard").innerHTML=radioForm(seed,radioContract(seed.contractId)||selectedContract,seed.inventoryMonth||selectedMonth);bindRadioForm(existing,rows,radioContract(seed.contractId)||selectedContract,seed.inventoryMonth||selectedMonth)};
+ const refreshLineInfo=()=>{
+   const c=radioContract($("#radioContractSelect")?.value),m=$("#radioMonthSelect")?.value,l=radioLine(c,$("#radioLineSelect")?.value),info=$("#radioLineInfo"),legacy=$("#radioLegacyFields");
+   if(legacy)legacy.classList.toggle("hidden",!!c);
+   if(!c||!l){if(info)info.innerHTML='<span class="muted">Registro libre: no descuenta inventario contractual.</span>';return}
+   const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===m),st=radioLineStats(c,l,m,others);
+   if(info)info.innerHTML='<b>'+esc(l.station)+' · '+esc(l.program)+'</b><span>'+esc(l.duration)+' · '+esc(l.timeSlot)+' · '+radioFmt(st.remaining)+' '+esc(l.unit)+' disponibles antes de esta asignación</span>';
+   for(const [n,v] of [["venue",c.venue],["station",l.station],["duration",l.duration],["timeSlot",l.timeSlot],["unit",l.unit]]){const el=f.elements[n];if(el)el.value=v}
+ };
+ const cs=$("#radioContractSelect"),ms=$("#radioMonthSelect");
+ if(cs)cs.onchange=()=>{const c=radioContract(cs.value);rebuild({...(existing||{}),contractId:c?.id||"",inventoryMonth:radioMonths(c)[0]||""})};
+ if(ms)ms.onchange=()=>rebuild({...(existing||{}),contractId:cs?.value||"",inventoryMonth:ms.value,lineId:""});
+ const ls=$("#radioLineSelect");if(ls)ls.onchange=refreshLineInfo;refreshLineInfo();
+ $("#cancelRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
+ f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{
+   const c=radioContract(data.contractId),l=radioLine(c,data.lineId);data.plannedSpots=radioNum(data.plannedSpots);data.actualSpots=radioNum(data.actualSpots);
+   if(c&&l){
+     if(!data.inventoryMonth||!l.monthly?.[data.inventoryMonth])throw new Error("Ese programa no tiene inventario contratado en el mes seleccionado.");
+     if(data.startDate&&data.startDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de inicio debe estar dentro del mes de inventario.");
+     if(data.endDate&&data.endDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de fin debe estar dentro del mismo mes. Divide la campaña en dos asignaciones si cruza de mes.");
+     if(data.startDate&&data.endDate&&data.startDate>data.endDate)throw new Error("La fecha de fin no puede ser anterior al inicio.");
+     const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===data.inventoryMonth),st=radioLineStats(c,l,data.inventoryMonth,others);
+     if(data.plannedSpots>st.remaining)throw new Error("Supera el inventario disponible: quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+".");
+     data.venue=c.venue;data.station=l.station;data.duration=l.duration;data.timeSlot=l.timeSlot;data.unit=l.unit;data.frequency=data.plannedSpots+" "+l.unit;
+   }
+   const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}
+   if(existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   say("Asignación de radio guardada");radio()
+ }catch(err){say(err.message)}}
 }
 
 const CAMPAIGN_CONFIG={

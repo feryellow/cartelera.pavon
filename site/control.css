@@ -550,3 +550,77 @@ label{color:var(--muted);letter-spacing:.02em}
 :root[data-theme="light"] .wk-day{background:#fff}
 :root[data-theme="light"] .cal-filters select{background:#fff;color:#161616}
 :root[data-theme="light"] .wk-preview span{color:#161616}
+
+
+/* ===== Radio · control contractual ===== */
+.radio-contract-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.radio-contract-tab{display:grid;gap:4px;text-align:left;padding:14px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--cream)}
+.radio-contract-tab small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.radio-contract-tab b{font-size:17px;line-height:1.1}
+.radio-contract-tab span{font-size:11px;color:var(--muted)}
+.radio-contract-tab.on{border-color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow)}
+.radio-contract-tab.on small{color:var(--yellow)}
+.radio-contract-head{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr);gap:18px;align-items:start;margin-bottom:12px}
+.radio-contract-head h2{margin:2px 0 6px}
+.radio-contract-head p{margin:0;color:var(--muted);font-size:12px}
+.radio-contract-note{font-size:12px;line-height:1.55;color:var(--muted);border-left:2px solid var(--yellow);padding-left:12px}
+.radio-months{margin:4px 0 12px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+.radio-months .chip{flex:none}
+.radio-inventory-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 14px}
+.radio-inv-kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:4px}
+.radio-inv-kpi small{text-transform:uppercase;letter-spacing:.1em;color:var(--yellow);font-size:10px;font-weight:800}
+.radio-inv-kpi strong{font-size:24px;line-height:1}
+.radio-inv-kpi strong em{font-size:14px;color:var(--muted);font-style:normal;font-weight:700}
+.radio-inv-kpi span{font-size:12px;color:var(--muted)}
+.radio-main-grid{grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr)}
+.radio-line-table{display:grid;border-top:1px solid var(--line)}
+.radio-line-head,.radio-line-row{display:grid;grid-template-columns:minmax(240px,2fr) repeat(4,minmax(86px,.55fr));gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.radio-line-head{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}
+.radio-line-row>div{display:grid;gap:3px}
+.radio-line-row>div b{font-size:13px}
+.radio-line-row>div span{font-size:11px;color:var(--muted)}
+.radio-line-row>strong{text-align:right;font-size:14px}
+.radio-over{color:#ff786c}
+.radio-form-line{border:1px solid rgba(255,212,0,.28);background:rgba(255,212,0,.05);border-radius:10px;padding:10px 12px;display:grid;gap:3px}
+.radio-form-line b{font-size:12px}
+.radio-form-line span{font-size:11px;color:var(--muted)}
+.radio-form-help{font-size:11px;color:var(--muted);line-height:1.5;padding:10px 12px;border-radius:10px;background:rgba(242,239,230,.035)}
+.radio-assignment h3{margin-top:5px}
+.radio-assignment .item-meta b{color:var(--cream)}
+.radio-weeks{display:grid;gap:7px}
+.radio-week{border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:3px 12px}
+.radio-week>div{display:grid;gap:2px}
+.radio-week small{font-size:9px;letter-spacing:.1em;color:var(--yellow);font-weight:800}
+.radio-week b{font-size:12px}
+.radio-week>span{font-size:11px;color:var(--muted)}
+.radio-week p{grid-column:1/-1;margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+.radio-report-title{margin-top:20px}
+.radio-spectacle-report{display:grid;gap:7px}
+.radio-spectacle-report>div{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0}
+.radio-spectacle-report b{font-size:12px}
+.radio-spectacle-report span{font-size:11px;color:var(--muted);text-align:right}
+.radio-legacy{margin-top:14px}
+:root[data-theme="light"] .radio-contract-tab,:root[data-theme="light"] .radio-inv-kpi{background:#fff;color:#161616}
+:root[data-theme="light"] .radio-contract-tab.on{border-color:#d6b300}
+:root[data-theme="light"] .radio-contract-tab.on small,:root[data-theme="light"] .radio-inv-kpi small,:root[data-theme="light"] .radio-week small{color:#8a6d00}
+:root[data-theme="light"] .radio-form-line{background:#fff9dc;border-color:#e4c84c}
+:root[data-theme="light"] .radio-assignment .item-meta b{color:#161616}
+@media(max-width:980px){
+ .radio-contract-tabs{grid-template-columns:1fr}
+ .radio-contract-head,.radio-main-grid{grid-template-columns:1fr}
+ .radio-line-head{display:none}
+ .radio-line-row{grid-template-columns:1fr repeat(4,minmax(58px,.5fr));gap:7px}
+ .radio-line-row>div{grid-column:1/-1}
+ .radio-line-row>strong{text-align:left}
+ .radio-line-row>strong::before{display:block;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+ .radio-line-row>strong:nth-child(2)::before{content:"Contratado"}
+ .radio-line-row>strong:nth-child(3)::before{content:"Asignado"}
+ .radio-line-row>strong:nth-child(4)::before{content:"Real"}
+ .radio-line-row>strong:nth-child(5)::before{content:"Disponible"}
+}
+@media(max-width:640px){
+ .radio-contract-tab{padding:12px}
+ .radio-inventory-kpis{grid-template-columns:1fr}
+ .radio-line-row{grid-template-columns:repeat(2,1fr)}
+ .radio-line-row>div{grid-column:1/-1}
+}

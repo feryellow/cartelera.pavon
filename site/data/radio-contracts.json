@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-26",
+  "contracts": [
+    {
+      "id": "pavon-kiss-2026-27",
+      "venue": "Gran Teatro Pavón",
+      "provider": "Radio Blanca, S.A.U.",
+      "brand": "KISS FM",
+      "contractNumber": "M26/9001/0006644",
+      "startDate": "2026-10-01",
+      "endDate": "2027-09-30",
+      "source": "Contrato de publicidad Gran Teatro Pavón 2026-2027 + renovación enviada por email",
+      "notes": "KISS FM Madrid: 4 cuñas diarias L-D. Audio digital: 15.000 impresiones mensuales con IP Madrid.",
+      "lines": [
+        {
+          "id": "kiss-madrid-22",
+          "station": "KISS FM Madrid",
+          "program": "Rotación L-D",
+          "timeSlot": "06:00-23:59",
+          "duration": "22\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-10": 124,
+            "2026-11": 120,
+            "2026-12": 124,
+            "2027-01": 124,
+            "2027-02": 112,
+            "2027-03": 124,
+            "2027-04": 120,
+            "2027-05": 124,
+            "2027-06": 120,
+            "2027-07": 124,
+            "2027-08": 124,
+            "2027-09": 120
+          }
+        },
+        {
+          "id": "kiss-digital-madrid",
+          "station": "KISS FM Audio Digital",
+          "program": "Audio digital · IP Madrid",
+          "timeSlot": "Digital",
+          "duration": "—",
+          "unit": "impresiones",
+          "monthly": {
+            "2026-10": 15000,
+            "2026-11": 15000,
+            "2026-12": 15000,
+            "2027-01": 15000,
+            "2027-02": 15000,
+            "2027-03": 15000,
+            "2027-04": 15000,
+            "2027-05": 15000,
+            "2027-06": 15000,
+            "2027-07": 15000,
+            "2027-08": 15000,
+            "2027-09": 15000
+          }
+        }
+      ]
+    },
+    {
+      "id": "principe-kiss-2026",
+      "venue": "Gran Teatro CaixaBank Príncipe Pío",
+      "provider": "Radio Blanca, S.A.U.",
+      "brand": "KISS FM",
+      "contractNumber": "M25/9001/0009482",
+      "startDate": "2025-12-31",
+      "endDate": "2026-12-31",
+      "source": "Contrato PRÍNCIPE PÍO 2026",
+      "notes": "Cuña 20\" en KISS FM Cadena, rotación L-D. Inventario mensual combinado de las matrículas KISS-20181 y KISS-20183.",
+      "lines": [
+        {
+          "id": "kiss-cadena-20",
+          "station": "KISS FM Cadena",
+          "program": "Rotación L-D",
+          "timeSlot": "06:00-05:59",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-01": 102,
+            "2026-02": 92,
+            "2026-03": 102,
+            "2026-04": 98,
+            "2026-05": 103,
+            "2026-06": 98,
+            "2026-07": 101,
+            "2026-08": 103,
+            "2026-09": 98,
+            "2026-10": 102,
+            "2026-11": 99,
+            "2026-12": 101
+          }
+        }
+      ]
+    },
+    {
+      "id": "principe-atresmedia-2026",
+      "venue": "Gran Teatro CaixaBank Príncipe Pío",
+      "provider": "UNIPREX, S.A. / Atresmedia Publicidad",
+      "brand": "Onda Cero · Europa FM · Melodía FM",
+      "contractNumber": "Orden anual 2026",
+      "startDate": "2026-02-01",
+      "endDate": "2026-12-31",
+      "source": "Contrato + óptico GRAN TEATRO PRÍNCIPE PÍO 2026",
+      "notes": "Siete líneas contratadas. Total anual: 1.358 inserciones entre febrero y diciembre de 2026.",
+      "lines": [
+        {
+          "id": "ocr-mas-de-uno-entrada",
+          "station": "Onda Cero Madrid",
+          "program": "Más de Uno (local) · entrada",
+          "timeSlot": "12:20-14:00 · L-V",
+          "duration": "5\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 20,
+            "2026-03": 22,
+            "2026-04": 22,
+            "2026-05": 21,
+            "2026-06": 22,
+            "2026-07": 23,
+            "2026-08": 21,
+            "2026-09": 22,
+            "2026-10": 22,
+            "2026-11": 21,
+            "2026-12": 23
+          }
+        },
+        {
+          "id": "ocr-mas-de-uno-salida",
+          "station": "Onda Cero Madrid",
+          "program": "Más de Uno (local) · salida",
+          "timeSlot": "12:20-14:00 · L-V",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 20,
+            "2026-03": 22,
+            "2026-04": 22,
+            "2026-05": 21,
+            "2026-06": 22,
+            "2026-07": 23,
+            "2026-08": 21,
+            "2026-09": 22,
+            "2026-10": 22,
+            "2026-11": 21,
+            "2026-12": 23
+          }
+        },
+        {
+          "id": "efm-cuerpos-especiales",
+          "station": "Europa FM Madrid",
+          "program": "Cuerpos Especiales",
+          "timeSlot": "07:00-11:00 · L-D",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 15,
+            "2026-03": 15,
+            "2026-04": 15,
+            "2026-05": 15,
+            "2026-06": 15,
+            "2026-07": 15,
+            "2026-08": 15,
+            "2026-09": 15,
+            "2026-10": 15,
+            "2026-11": 15,
+            "2026-12": 15
+          }
+        },
+        {
+          "id": "efm-formula-11-17",
+          "station": "Europa FM Madrid",
+          "program": "Europa Fórmula 11-17 h",
+          "timeSlot": "11:00-17:00 · L-V",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 15,
+            "2026-03": 15,
+            "2026-04": 15,
+            "2026-05": 15,
+            "2026-06": 15,
+            "2026-07": 15,
+            "2026-08": 15,
+            "2026-09": 15,
+            "2026-10": 15,
+            "2026-11": 15,
+            "2026-12": 15
+          }
+        },
+        {
+          "id": "efm-formula-17-19",
+          "station": "Europa FM Madrid",
+          "program": "Fórmula Europa 17-19 h",
+          "timeSlot": "17:00-19:00 · L-V",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 10,
+            "2026-03": 10,
+            "2026-04": 10,
+            "2026-05": 10,
+            "2026-06": 10,
+            "2026-07": 10,
+            "2026-08": 10,
+            "2026-09": 10,
+            "2026-10": 10,
+            "2026-11": 10,
+            "2026-12": 10
+          }
+        },
+        {
+          "id": "melodia-parece-mentira",
+          "station": "Melodía FM Majadahonda",
+          "program": "Parece Mentira",
+          "timeSlot": "07:00-10:00 · L-V",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 20,
+            "2026-03": 20,
+            "2026-04": 20,
+            "2026-05": 20,
+            "2026-06": 20,
+            "2026-07": 20,
+            "2026-08": 20,
+            "2026-09": 20,
+            "2026-10": 20,
+            "2026-11": 20,
+            "2026-12": 20
+          }
+        },
+        {
+          "id": "melodia-formula",
+          "station": "Melodía FM Majadahonda",
+          "program": "Melodía FM Fórmula",
+          "timeSlot": "10:00-20:00 · L-V",
+          "duration": "20\"",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-02": 20,
+            "2026-03": 20,
+            "2026-04": 20,
+            "2026-05": 20,
+            "2026-06": 20,
+            "2026-07": 20,
+            "2026-08": 20,
+            "2026-09": 20,
+            "2026-10": 20,
+            "2026-11": 20,
+            "2026-12": 20
+          }
+        }
+      ]
+    }
+  ]
+}
