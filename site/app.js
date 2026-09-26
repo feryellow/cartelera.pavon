@@ -232,7 +232,7 @@ const CART_VIEWS=[
  {id:"taquilla",name:"Taquilla cerrada",img:"/assets/facade/taquilla.jpg",w:1448,h:1086},
  {id:"lona",name:"Lona + secundarios",img:"/assets/facade/lona.jpg",w:856,h:718},
  {id:"abierta",name:"Taquilla abierta",img:"/assets/facade/abierta.jpg",w:946,h:1381},
- {id:"columna",name:"Columna 1",img:"/assets/columna1.jpg",w:260,h:380}
+ {id:"columna",name:"Columna 1",img:"/assets/columna1.jpg?v=2",w:1086,h:1448}
 ];
 const CART_SLOTS=[
  {key:"taquilla__secundario-1",view:"taquilla",name:"Secundario 1",r:[19.06,40.06,13.54,27.90]},
@@ -245,7 +245,7 @@ const CART_SLOTS=[
  {key:"lona__sec3",view:"lona",name:"Secundario 3 (lona)",r:[65.19,47.77,24.88,16.57]},
  {key:"abierta__taquilla-izq-abierta",view:"abierta",name:"Taquilla izquierda abierta",r:[3.59,15.86,21.04,40.70]},
  {key:"abierta__taquilla-der-abierta",view:"abierta",name:"Taquilla derecha abierta",r:[81.92,16.29,15.75,39.97]},
- {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[64.3,42.8,21.8,24.8]}
+ {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[67.0,39.2,18.1,25.3]}
 ];
 const CART_STATUS=["pendiente","aprobado","en producción","instalado"];
 const cart={loaded:false,view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
