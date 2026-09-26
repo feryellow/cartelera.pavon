@@ -1,4 +1,4 @@
-type Attachment = { filename: string; content: string };
+type Attachment = { filename: string; content: string; content_id?: string; content_type?: string };
 
 // MODO DESARROLLO: mientras Yellow Control esté en pruebas, todos los correos van solo a esta
 // dirección, aunque en Netlify haya otros destinatarios o copias. Para abrir el envío a más
@@ -38,16 +38,20 @@ export function mailConfigured() {
   return Boolean(env("RESEND_API_KEY") && env("PAVON_EMAIL_FROM") && r.to.length);
 }
 
-export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[] }) {
+// to/cc opcionales: destinatarios pedidos para este envío. En modo desarrollo se ignoran y el correo
+// va solo a DEV_RECIPIENT; se devuelven en intendedTo/intendedCc para poder avisar de a quién iría.
+export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[]; to?: string[]; cc?: string[] }) {
   const apiKey = env("RESEND_API_KEY"), from = env("PAVON_EMAIL_FROM");
-  const { to, cc } = mailRecipients();
-  if (!apiKey || !from || !to.length) return { sent: false, configured: false, reason: "email_not_configured" };
+  const base = mailRecipients();
+  const intendedTo = input.to?.length ? input.to : base.to, intendedCc = input.to?.length ? (input.cc || []) : base.cc;
+  const to = base.live ? intendedTo : [DEV_RECIPIENT], cc = base.live ? intendedCc : [];
+  if (!apiKey || !from || !to.length) return { sent: false, configured: false, reason: "email_not_configured", intendedTo, intendedCc };
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
     body: JSON.stringify({ from, to, ...(cc.length ? { cc } : {}), subject: input.subject, html: input.html, attachments: input.attachments || [] }),
   });
-  if (!r.ok) return { sent: false, configured: true, reason: await r.text(), status: r.status };
+  if (!r.ok) return { sent: false, configured: true, reason: await r.text(), status: r.status, intendedTo, intendedCc };
   const data = await r.json();
-  return { sent: true, configured: true, id: data.id || null, to, cc };
+  return { sent: true, configured: true, id: data.id || null, to, cc, intendedTo, intendedCc, live: base.live };
 }

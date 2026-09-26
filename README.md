@@ -4,7 +4,7 @@ Aplicación interna del Gran Teatro Pavón para controlar cartelería, calendari
 
 ## Producción
 
-- Web: https://cartelera-pavon.netlify.app/
+- Web: https://yellow-control.netlify.app/ (antes cartelera-pavon.netlify.app)
 - Código: GitHub `feryellow/cartelera.pavon`
 - Hosting/Functions/Blobs: Netlify
 - La cartelería histórica se conserva en `pavon-carteleria`.
@@ -12,7 +12,7 @@ Aplicación interna del Gran Teatro Pavón para controlar cartelería, calendari
 
 ## Estructura
 
-- `site/index.html`: shell de Pavón Control.
+- `site/index.html`: shell de Yellow Control.
 - `site/app.js`: dashboard, Radio, Publicidad, Intercambiadores, Calendario, Histórico y Usuarios.
 - `site/carteleria.html`: editor visual de cartelería existente, conservado y conectado al nuevo backend.
 - `site/control.css`: interfaz responsive.
@@ -49,7 +49,7 @@ El código usa `@netlify/identity`, pero Netlify Identity debe habilitarse en el
 Después de habilitar Identity:
 1. Crear el primer usuario administrador.
 2. Asignarle el rol `admin`.
-3. Desde Pavón Control → Usuarios, crear/invitar el resto y asignar roles.
+3. Desde Yellow Control → Usuarios, crear/invitar el resto y asignar roles.
 
 Existe compatibilidad temporal con `PAVON_EDIT_KEY` para administración de emergencia, pero no debe sustituir a Identity.
 
