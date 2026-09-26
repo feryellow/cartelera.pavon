@@ -83,6 +83,7 @@ function radioLine(contract,id){return contract?.lines?.find(l=>l.id===id)}
 function radioMonths(contract){return [...new Set((contract?.lines||[]).flatMap(l=>Object.keys(l.monthly||{})))].sort()}
 function radioMonthLabel(m){if(!m)return"—";const [y,mo]=m.split("-").map(Number);return new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^./,x=>x.toUpperCase())}
 function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function radioWeekKey(v){if(!v)return"";const d=new Date(v+"T12:00:00"),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
 function radioFmt(n){return new Intl.NumberFormat("es-ES").format(radioNum(n))}
 function radioRows(rows,contractId,month){return rows.filter(r=>r.contractId===contractId&&r.inventoryMonth===month)}
 function radioLineStats(contract,line,month,rows){
@@ -177,7 +178,7 @@ function radioForm(r={},selectedContract=null,selectedMonth=""){
  '<div id="radioLegacyFields" class="wide '+(legacy?'':'hidden')+'"><div class="form-grid">'+venueSelect(r.venue)+input("station","Emisora manual",r.station)+input("duration","Duración",r.duration)+input("timeSlot","Franja",r.timeSlot)+'</div></div>'+
  (contract?'<input type="hidden" name="venue" value="'+esc(contract.venue||"")+'"><input type="hidden" name="station" value="'+esc(line?.station||"")+'"><input type="hidden" name="duration" value="'+esc(line?.duration||"")+'"><input type="hidden" name="timeSlot" value="'+esc(line?.timeSlot||"")+'"><input type="hidden" name="unit" value="'+esc(line?.unit||"cuñas")+'">':'<input type="hidden" name="unit" value="'+esc(r.unit||"cuñas")+'">')+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
- '<div class="wide radio-form-help">Las cantidades se descuentan del inventario del contrato y mes seleccionados. Para un control semanal exacto, registra cada reparto semanal como una asignación independiente.</div>'+
+ '<div class="wide radio-form-help">Las cantidades se descuentan del inventario del contrato y mes seleccionados. Cada asignación contractual debe quedar dentro de una misma semana (lunes a domingo) para que el control semanal y mensual sea exacto.</div>'+
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar asignación</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'
 }
 function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' data-ac="spectacle" autocomplete="off"':"")+'></label>'}
@@ -219,6 +220,7 @@ function bindRadioForm(existing,rows,selectedContract,selectedMonth){
      if(data.startDate&&data.startDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de inicio debe estar dentro del mes de inventario.");
      if(data.endDate&&data.endDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de fin debe estar dentro del mismo mes. Divide la campaña en dos asignaciones si cruza de mes.");
      if(data.startDate&&data.endDate&&data.startDate>data.endDate)throw new Error("La fecha de fin no puede ser anterior al inicio.");
+     if(data.startDate&&data.endDate&&radioWeekKey(data.startDate)!==radioWeekKey(data.endDate))throw new Error("Para mantener el control semanal exacto, una asignación no puede cruzar de semana. Divide el reparto en dos bloques.");
      const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===data.inventoryMonth),st=radioLineStats(c,l,data.inventoryMonth,others);
      if(data.plannedSpots>st.remaining)throw new Error("Supera el inventario disponible: quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+".");
      data.venue=c.venue;data.station=l.station;data.duration=l.duration;data.timeSlot=l.timeSlot;data.unit=l.unit;data.frequency=data.plannedSpots+" "+l.unit;
