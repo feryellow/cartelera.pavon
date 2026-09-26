@@ -215,6 +215,7 @@ function bindRadioForm(existing,rows,selectedContract,selectedMonth){
  $("#cancelRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{
    const c=radioContract(data.contractId),l=radioLine(c,data.lineId);data.plannedSpots=radioNum(data.plannedSpots);data.actualSpots=radioNum(data.actualSpots);
+   if(c&&!l)throw new Error("Elige una emisora / programa del acuerdo.");
    if(c&&l){
      if(!data.inventoryMonth||!l.monthly?.[data.inventoryMonth])throw new Error("Ese programa no tiene inventario contratado en el mes seleccionado.");
      if(data.startDate&&data.startDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de inicio debe estar dentro del mes de inventario.");
@@ -350,7 +351,7 @@ const SPECTACLES=new Set();
 let spectaclesLoaded=false;
 async function loadSpectacles(){if(spectaclesLoaded)return;spectaclesLoaded=true;try{const r=await fetch("/data/espectaculos.json",{cache:"no-cache"});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.espectaculos||[]).forEach(x=>{const n=typeof x==="string"?x:x?.nombre;if(n&&n.trim())SPECTACLES.add(n.trim())})}}catch{}renderSpectacleList()}
 function learnSpectacles(rows){(rows||[]).forEach(r=>{if(r.spectacle&&r.spectacle.trim())SPECTACLES.add(r.spectacle.trim())});renderSpectacleList()}
-function renderSpectacleList(){if(ac.input&&document.activeElement===ac.input&&ac.input.value)acShow(ac.input)}
+function renderSpectacleList(){if(ac.input&&document.activeElement===ac.input&&!ac.input.disabled)acShow(ac.input)}
 // Desplegable propio: coincidencias desde el principio del título, sin distinguir mayúsculas ni tildes.
 function acNorm(t){return String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/^[¡¿"'“”‘’#\s]+/,"").trim()}
 const ac={box:null,input:null,items:[],idx:-1};
@@ -358,14 +359,18 @@ function acEnsure(){if(ac.box)return ac.box;const b=document.createElement("div"
  b.addEventListener("mousedown",e=>{const o=e.target.closest(".ac-opt");if(!o)return;e.preventDefault();acPick(o.dataset.v)});ac.box=b;return b}
 function acPlace(){if(!ac.box||!ac.input)return;const r=ac.input.getBoundingClientRect(),vh=window.visualViewport?window.visualViewport.height:innerHeight;const below=vh-r.bottom-8,above=r.top-8;const up=below<180&&above>below;const max=Math.max(120,Math.min(320,(up?above:below)-4));Object.assign(ac.box.style,{left:r.left+"px",width:r.width+"px",maxHeight:max+"px",top:up?"auto":(r.bottom+4)+"px",bottom:up?(innerHeight-r.top+4)+"px":"auto"})}
 if(window.visualViewport)visualViewport.addEventListener("resize",()=>acPlace());
-function acShow(inp){ac.input=inp;const q=acNorm(inp.value);const b=acEnsure();if(!q){acHide();return}
- const list=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es"));ac.items=list.filter(n=>acNorm(n).startsWith(q)).slice(0,40);ac.idx=-1;
- b.innerHTML=ac.items.length?ac.items.map((n,i)=>'<div class="ac-opt" role="option" data-i="'+i+'" data-v="'+esc(n)+'"><b>'+esc(n.slice(0,inp.value.trim().length))+'</b>'+esc(n.slice(inp.value.trim().length))+'</div>').join(""):'<div class="ac-empty">No hay espectáculos que empiecen así. Se guardará como lo escribas.</div>';
- b.classList.add("show");acPlace()}
+function acShow(inp){ac.input=inp;const raw=inp.value.trim(),q=acNorm(raw);const b=acEnsure();
+ const list=[...SPECTACLES].sort((a,b)=>a.localeCompare(b,"es"));
+ // Sin texto: lista completa. Con texto: solo los que empiezan así.
+ const items=q?list.filter(n=>acNorm(n).startsWith(q)):list;
+ ac.items=items.slice(0,q?60:400);ac.idx=-1;
+ if(!ac.items.length&&!SPECTACLES.size&&!q){acHide();return}
+ b.innerHTML=ac.items.length?ac.items.map((n,i)=>{const pre=q&&acNorm(n).startsWith(q);return '<div class="ac-opt" role="option" data-i="'+i+'" data-v="'+esc(n)+'">'+(pre?'<b>'+esc(n.slice(0,raw.length))+'</b>'+esc(n.slice(raw.length)):esc(n))+'</div>'}).join(""):'<div class="ac-empty">No hay espectáculos que empiecen así. Se guardará como lo escribas.</div>';
+ b.classList.add("show");b.scrollTop=0;acPlace()}
 function acHide(){if(ac.box)ac.box.classList.remove("show");ac.idx=-1}
 function acPick(v){const inp=ac.input;if(!inp)return;inp.value=v;acHide();ac.picking=true;inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}));ac.picking=false}
 document.addEventListener("input",e=>{const t=e.target;if(t.matches&&t.matches('input[data-ac="spectacle"]')&&!t.disabled){if(ac.picking)return;acShow(t)}});
-document.addEventListener("focusin",e=>{const t=e.target;if(t.matches&&t.matches('input[data-ac="spectacle"]')){loadSpectacles();if(t.value)acShow(t)}});
+document.addEventListener("focusin",e=>{const t=e.target;if(t.matches&&t.matches('input[data-ac="spectacle"]')){loadSpectacles();if(!t.disabled)acShow(t)}});
 document.addEventListener("focusout",e=>{if(e.target===ac.input)setTimeout(acHide,120)});
 document.addEventListener("keydown",e=>{if(!ac.box||!ac.box.classList.contains("show")||e.target!==ac.input)return;const opts=[...ac.box.querySelectorAll(".ac-opt")];
  if(e.key==="Escape"){acHide();return}if(!opts.length)return;

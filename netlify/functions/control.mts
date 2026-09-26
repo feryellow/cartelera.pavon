@@ -3,6 +3,7 @@ import { requireAccess, can } from "./_lib/auth.ts";
 import { appendAudit, listAudit } from "./_lib/audit.ts";
 import { carteleriaStore } from "./_lib/store.ts";
 import { normalizeDate, madridToday } from "./_lib/dates.ts";
+import { validateRadio } from "./_lib/radio.ts";
 import { cleanInput, getRecord, isActive, listRecords, putRecord, validModule } from "./_lib/records.ts";
 
 function json(data: unknown, status=200){ return Response.json(data,{status}); }
@@ -67,6 +68,7 @@ export default async (req: Request) => {
     const clean=cleanInput(moduleName,body);
     const id=crypto.randomUUID(), now=new Date().toISOString();
     const row={id,...clean,createdAt:now,updatedAt:now,createdBy:auth.actor!.email,updatedBy:auth.actor!.email,deletedAt:null};
+    if(moduleName==="radio"){const err=await validateRadio(row,url.origin);if(err)return json({error:err},409);}
     await putRecord(moduleName,id,row);
     await appendAudit({actor:auth.actor!,module:moduleName,elementId:id,action:"create",after:row});
     return json({row},201);
@@ -79,6 +81,7 @@ export default async (req: Request) => {
     let body:any; try{body=await req.json();}catch{return json({error:"Invalid JSON"},400);}
     const clean=cleanInput(moduleName,body);
     const row={...before,...clean,id,updatedAt:new Date().toISOString(),updatedBy:auth.actor!.email};
+    if(moduleName==="radio"){const err=await validateRadio(row,url.origin);if(err)return json({error:err},409);}
     await putRecord(moduleName,id,row);
     await appendAudit({actor:auth.actor!,module:moduleName,elementId:id,action:"update",before,after:row});
     return json({row});
