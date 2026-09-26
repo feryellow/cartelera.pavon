@@ -51,7 +51,7 @@ export default async (req: Request) => {
 
   // 3) Correo
   const items = slots.map((s: any, i: number) => ({ name: SLOT_NAMES[s.key], title: after.schedule[s.key]?.title || "", cid: photos[s.key] ? `foto${i}` : undefined }));
-  const appUrl = (Netlify.env.get("URL") || "https://cartelera-pavon.netlify.app").replace(/\/$/, "");
+  const appUrl = (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, "");
   const rcp = mailRecipients();
   const html = renderMontaje({ date, by: auth.actor!.email, note, items, appUrl, devRecipient: rcp.live ? "" : rcp.to[0], intendedTo: to, intendedCc: cc });
   const result: any = await sendPavonMail({ subject: `Montaje realizado · ${montajeTitle(items)} · Gran Teatro Pavón`, html, attachments, to, cc });

@@ -82,7 +82,7 @@ export default async(req?:Request)=>{
   const shouldSend=forced || (!(digestAlready as any)?.sent && (pending.length>0 || current.length>0));
 
   if(shouldSend){
-    const appUrl=(Netlify.env.get("URL")||"https://cartelera-pavon.netlify.app").replace(/\/$/,"");
+    const appUrl=(Netlify.env.get("URL")||"https://yellow-control.netlify.app").replace(/\/$/,"");
     // Próximos 7 días desde el calendario (campañas, montajes, entregas e hitos).
     const until=new Date(day+"T12:00:00Z");until.setUTCDate(until.getUTCDate()+6);const last=until.toISOString().slice(0,10);
     let upcoming:any[]=[];

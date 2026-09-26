@@ -1,6 +1,6 @@
 {
   "name": "Yellow Control",
-  "short_name": "Yellow",
+  "short_name": "Yellow Control",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#131313",
   "icons": [
     {
-      "src": "/yellow-app-icon-180.png",
+      "src": "/yellow-app-icon-180.png?v=2",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/yellow-app-icon-512.png",
+      "src": "/yellow-app-icon-512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
