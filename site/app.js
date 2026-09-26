@@ -413,10 +413,10 @@ const CART_VIEWS=[
  {id:"columna",name:"Columna 1",img:"/assets/columna1.jpg?v=2",w:1086,h:1448}
 ];
 const CART_SLOTS=[
- {key:"taquilla__secundario-1",view:"taquilla",name:"Secundario 1",r:[19.06,40.06,13.54,27.90]},
+ {key:"taquilla__secundario-1",view:"taquilla",name:"Columna 2",r:[19.06,40.06,13.54,27.90]},
  {key:"taquilla__taquilla-izq",view:"taquilla",name:"Taquilla izquierda cerrada",r:[35.77,40.79,11.67,26.89]},
  {key:"taquilla__taquilla-der",view:"taquilla",name:"Taquilla derecha cerrada",r:[50.97,40.70,11.05,26.98]},
- {key:"taquilla__secundario-2",view:"taquilla",name:"Secundario 2",r:[66.02,40.06,12.50,27.81]},
+ {key:"taquilla__secundario-2",view:"taquilla",name:"Columna 3",r:[66.02,40.06,12.50,27.81]},
  {key:"lona__lona",view:"lona",name:"Lona",r:[19.16,9.75,64.25,29.39]},
  {key:"lona__sec1",view:"lona",name:"Secundario 1 (lona)",r:[12.38,47.63,26.05,16.57]},
  {key:"lona__sec2",view:"lona",name:"Secundario 2 (lona)",r:[38.90,47.77,25.12,16.43]},
