@@ -37,7 +37,7 @@ function statusBadge(v){const s=(v||"activo").toLowerCase();return '<span class=
 function pageHead(title,sub,actions=""){const home=state.route==="dashboard"?"":'<a class="btn back-home" href="#dashboard">← Inicio</a>';const m=navMeta(state.route),photo=ROUTE_PHOTOS[state.route];return '<div class="page-banner'+(photo?' has-photo':'')+'"'+(photo?' style="--photo:url('+photo+')"':'')+'><div class="page-banner-txt">'+(m?.small?'<small>'+esc(m.small)+'</small>':'')+'<h1>'+esc(title)+'</h1><p>'+esc(sub||"")+'</p></div></div><div class="page-actions actions-row">'+home+actions+"</div>"}
 async function blobUrl(assetKey,moduleName){if(!assetKey)return null;if(state.assetUrls.has(assetKey))return state.assetUrls.get(assetKey);const r=await fetch("/api/asset?key="+encodeURIComponent(assetKey)+"&module="+moduleName,{headers:headers()});if(!r.ok)return null;const b=await r.blob(),u=URL.createObjectURL(b);state.assetUrls.set(assetKey,u);return u}
 function routeName(){return (location.hash||"#dashboard").slice(1).split("?")[0]||"dashboard"}
-async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}state.route=nextRoute;if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
+async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}state.route=nextRoute;if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
 async function dashboard(){
@@ -291,7 +291,7 @@ async function cartLoad(){
 
 async function carteleria(){
  if(!cart.loaded||!cart.dirty.size)await cartLoad();
- const q=new URLSearchParams((location.hash.split("?")[1])||"");const v=q.get("vista");if(v&&cartView(v))cart.view=v;
+ const q=new URLSearchParams((location.hash.split("?")[1])||"");const v=q.get("vista");if(v&&cartView(v))cart.view=v;const sop=q.get("soporte");if(sop&&cartSlot(sop)){cart.view=cartSlot(sop).view;cart.sel=sop;history.replaceState(null,"","#carteleria")}
  if(!cart.sel||cartSlot(cart.sel).view!==cart.view)cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;
  const edit=canEditCart();
  const withImg=CART_SLOTS.filter(s=>cart.img[s.key]).length;
@@ -458,20 +458,187 @@ async function archivo(){
  app.innerHTML=pageHead("Archivo / Histórico","Cambios y campañas finalizadas")+(finished.length?'<section class="card" style="margin-bottom:14px"><div class="section-title"><h2>Campañas finalizadas / archivadas</h2><span class="badge">'+finished.length+'</span></div><div class="list">'+finished.map(r=>'<div class="item"><div><h3>'+esc(r.module)+' · '+esc(r.title)+'</h3><div class="item-meta"><span>'+esc(r.place)+'</span><span>'+fdate(r.from)+' → '+fdate(r.to)+'</span></div></div></div>').join("")+'</div></section>':'')+'<div class="card"><div class="section-title"><h2>Auditoría</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Elemento</th><th>Usuario</th></tr></thead><tbody>'+(d.rows||[]).map(r=>'<tr><td>'+new Date(r.at).toLocaleString("es-ES")+'</td><td>'+esc(modLabel(r.module))+'</td><td>'+esc(actLabel(r.action))+'</td><td>'+esc(r.elementId||"")+'</td><td>'+esc(r.actor?.email||"")+'</td></tr>').join("")+'</tbody></table></div></div>';
 }
 
-let calCursor=new Date();
+// ===================== CALENDARIO =====================
+const HITO_TYPES=["Estreno","Rueda de prensa","Pase gráfico","Entrevista / medios","Reunión","Cierre de edición","Evento","Otro"];
+const HITO_REMINDERS=[["","Por defecto"],["none","Sin aviso"],["15m","15 minutos antes"],["1h","1 hora antes"],["1d","1 día antes"],["2d","2 días antes"]];
+const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito"};
+const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aaa296",entrega:"#ff6b5e",hito:"#7fb8ff"};
+const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
+const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
+let calCursor=new Date(),calEvents=[],calWeekOffset=0,calView=calLS.get("yc-cal-view","semana"),calMods=new Set(),calVenue="";
+const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const evTag=e=>e.kind==="hito"?e.action:(KIND_LABEL[e.kind]||e.action);
+const calCanHito=()=>roles().some(r=>r==="admin"||r==="gestion");
+const calFiltered=(mods=calMods)=>calEvents.filter(e=>(!mods.size||mods.has(e.moduleKey))&&(!calVenue||e.venue===calVenue));
+function weekRange(off){const t=new Date();t.setHours(0,0,0,0);const mon=new Date(t);mon.setDate(t.getDate()-((t.getDay()+6)%7)+off*7);return [...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d})}
+const weekTitle=days=>days[0].toLocaleDateString("es-ES",{day:"numeric",month:"long"})+" – "+days[6].toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
 async function calendario(){
- const d=await api("/api/calendar-data");
- const events=d.events||[];renderCalendar(events);
+ const d=await api("/api/calendar-data");calEvents=d.events||[];renderCalendar();
+ const ev=new URLSearchParams(location.hash.split("?")[1]||"").get("ev");
+ if(ev){history.replaceState(null,"","#calendario");const e=calEvents.find(x=>x.id===ev);if(e)calDetail(e);else say("Ese evento ya no está en el calendario")}
 }
-function renderCalendar(events){
- const y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7;
- const month=calCursor.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
- let cells='<div class="weekday">Lunes</div><div class="weekday">Martes</div><div class="weekday">Miércoles</div><div class="weekday">Jueves</div><div class="weekday">Viernes</div><div class="weekday">Sábado</div><div class="weekday">Domingo</div>';
- for(let i=0;i<offset;i++)cells+='<div class="day empty"></div>';
- for(let d=1;d<=days;d++){const iso=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),ev=events.filter(e=>e.date===iso);cells+='<div class="day '+(ev.length?"has-events":"")+'"><div class="day-number">'+d+'</div>'+ev.map(e=>'<div class="event"><strong>'+esc(e.module)+' · '+esc(e.title)+'</strong><span>'+esc(e.action)+' · '+esc(e.location||"")+'</span><span>'+esc(e.status||"")+'</span></div>').join("")+"</div>"}
- app.innerHTML=pageHead("Calendario","Se alimenta automáticamente de Cartelería, Radio, Taxis, Intercambiadores y Home Ticket")+'<div class="card"><div class="calendar-toolbar"><button id="prevMonth">‹</button><strong>'+esc(month)+'</strong><button id="nextMonth">›</button></div><div class="calendar-grid">'+cells+"</div></div>";
- $("#prevMonth").onclick=()=>{calCursor=new Date(y,m-1,1);calendario()};$("#nextMonth").onclick=()=>{calCursor=new Date(y,m+1,1);calendario()};
+function calEvBtn(e,wide){
+ return '<button type="button" class="event k-'+e.kind+(e.auto?" auto":" manual")+(wide?" wide":"")+'" data-ev="'+esc(e.id)+'">'+
+  '<em>'+esc(evTag(e))+(e.moduleKey==="hitos"?"":" · "+esc(e.module))+'</em><strong>'+esc((e.time?e.time+" · ":"")+e.title)+'</strong>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</button>'}
+function renderCalendar(){
+ const today=localToday(),ev=calFiltered();
+ const mods=CAL_MODS.filter(([k])=>k==="hitos"||k==="carteleria"||canRoute(k));
+ const filters='<div class="cal-filters"><div class="chip-row"><button type="button" class="chip'+(calMods.size?"":" on")+'" data-mod="">Todo</button>'+mods.map(([k,l])=>'<button type="button" class="chip'+(calMods.has(k)?" on":"")+'" data-mod="'+k+'">'+l+'</button>').join("")+'</div>'+
+  '<select id="calVenue" aria-label="Filtrar por espacio"><option value="">Todos los espacios</option>'+VENUES.map(v=>'<option'+(v===calVenue?" selected":"")+'>'+esc(v)+'</option>').join("")+'</select></div>';
+ const views='<div class="seg" role="tablist"><button type="button" data-view="semana" class="'+(calView==="semana"?"on":"")+'">Semana</button><button type="button" data-view="mes" class="'+(calView==="mes"?"on":"")+'">Mes</button></div>';
+ let body="",label="";
+ if(calView==="semana"){
+  const days=weekRange(calWeekOffset);label=weekTitle(days);
+  body='<div class="wk-list">'+days.map(d=>{const iso=isoOf(d),de=ev.filter(e=>e.date===iso);
+   return '<div class="wk-day'+(iso===today?" today":"")+(de.length?"":" empty")+'"><div class="wk-head"><b>'+esc(cap(d.toLocaleDateString("es-ES",{weekday:"long"})))+'</b><span>'+d.getDate()+' '+esc(d.toLocaleDateString("es-ES",{month:"short"}))+'</span>'+(iso===today?'<i>Hoy</i>':'')+'</div>'+
+    (de.length?de.map(e=>calEvBtn(e,true)).join(""):'<div class="wk-none">Sin fechas</div>')+'</div>'}).join("")+'</div>';
+ }else{
+  const y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),n=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7;
+  label=cap(calCursor.toLocaleDateString("es-ES",{month:"long",year:"numeric"}));
+  let cells=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(x=>'<div class="weekday">'+x+'</div>').join("");
+  for(let i=0;i<offset;i++)cells+='<div class="day empty"></div>';
+  for(let d=1;d<=n;d++){const iso=isoOf(new Date(y,m,d)),de=ev.filter(e=>e.date===iso),wd=new Date(y,m,d).toLocaleDateString("es-ES",{weekday:"long"});
+   cells+='<div class="day'+(de.length?" has-events":"")+(iso===today?" today":"")+'"><div class="day-number"><span class="day-wd">'+esc(wd)+' </span>'+d+'</div>'+de.map(e=>calEvBtn(e)).join("")+'</div>'}
+  body='<div class="calendar-grid">'+cells+'</div>'+(ev.some(e=>e.date.startsWith(y+"-"+String(m+1).padStart(2,"0")))?'':'<div class="notice" style="margin-top:10px">No hay fechas este mes con estos filtros.</div>');
+ }
+ app.innerHTML=pageHead("Calendario","Campañas, montajes, entregas e hitos de comunicación de todos los espacios",
+  '<button type="button" id="calSub">Suscribirme</button><button type="button" id="calWeek">Compartir semana</button>'+(calCanHito()?'<button type="button" class="primary" id="calNewHito">+ Nuevo hito</button>':''))+
+  '<div id="calPanel"></div>'+
+  '<div class="card cal-card">'+filters+
+  '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
+  '<div class="cal-legend">'+Object.entries(KIND_LABEL).map(([k,v])=>'<span class="k-'+k+'"><i></i>'+v+'</span>').join("")+'<span class="lg-auto"><i></i>Automático · se edita en su sección</span><span class="lg-manual"><i></i>Hito · se edita aquí</span></div>'+
+  body+'</div>';
+ const move=dir=>{if(calView==="semana")calWeekOffset+=dir;else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+dir,1);renderCalendar()};
+ $("#calPrev").onclick=()=>move(-1);$("#calNext").onclick=()=>move(1);
+ $("#calToday").onclick=()=>{calWeekOffset=0;calCursor=new Date();renderCalendar()};
+ $$(".seg [data-view]").forEach(b=>b.onclick=()=>{calView=b.dataset.view;calLS.set("yc-cal-view",calView);renderCalendar()});
+ $$(".cal-filters [data-mod]").forEach(b=>b.onclick=()=>{const k=b.dataset.mod;if(!k)calMods.clear();else if(calMods.has(k))calMods.delete(k);else calMods.add(k);renderCalendar()});
+ $("#calVenue").onchange=e=>{calVenue=e.target.value;renderCalendar()};
+ $(".cal-card").addEventListener("click",e=>{const b=e.target.closest("[data-ev]");if(!b)return;const x=calEvents.find(y=>y.id===b.dataset.ev);if(x)calDetail(x)});
+ $("#calSub").onclick=()=>calSubscribe();$("#calWeek").onclick=()=>calWeekPanel();
+ if(calCanHito())$("#calNewHito").onclick=()=>calHitoForm({date:localToday()});
 }
+function calPanel(html){const p=$("#calPanel");if(!p)return;p.innerHTML=html?'<section class="card cal-panel">'+html+'</section>':"";if(html)p.scrollIntoView({behavior:"smooth",block:"start"})}
+// Detalle corto de un evento con acceso a su ficha
+function calDetail(e){
+ const when=cap(new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+(e.time?" · "+e.time:"");
+ const rows=[["Cuándo",when],["Dónde",e.location],["Espacio",e.venue&&e.location.indexOf(e.venue)<0?e.venue:""],["Responsable",e.responsable],["Estado",e.status],["Notas",e.notes]].filter(r=>r[1]);
+ const canOpen=e.kind==="hito"||canRoute(e.moduleKey);
+ calPanel('<div class="section-title"><div><small class="section-kicker">'+esc(evTag(e))+' · '+esc(e.module)+'</small><h2>'+esc(e.title)+'</h2></div><button type="button" class="ghost" id="dtClose">Cerrar</button></div>'+
+  '<span class="badge '+(e.auto?"":"ok")+' cal-origin">'+(e.auto?"Automático · se edita en "+esc(e.module):"Hito manual · editable aquí")+'</span>'+
+  '<dl class="cal-dl">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl>'+
+  (canOpen?'<div class="actions-row"><button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button></div>':''));
+ $("#dtClose").onclick=()=>calPanel("");
+ if(canOpen)$("#dtOpen").onclick=()=>calOpen(e);
+}
+function calOpen(e){
+ if(e.kind==="hito"){api("/api/control?module=hitos").then(d=>{const r=(d.rows||[]).find(x=>x.id===e.recordId);calHitoForm(r||{})}).catch(x=>say(x.message));return}
+ if(e.moduleKey==="carteleria"){location.hash="#carteleria?soporte="+encodeURIComponent(e.slotKey||"");return}
+ location.hash="#"+e.moduleKey+"?edit="+encodeURIComponent(e.recordId||"");
+}
+function openEditFromHash(){const p=new URLSearchParams(location.hash.split("?")[1]||"");const id=p.get("edit");if(!id)return;
+ const sel=["campaign","radio","ht","revista"].map(k=>'[data-edit-'+k+'="'+CSS.escape(id)+'"]').join(",");const b=document.querySelector(sel);
+ if(b){const sp=b.closest(".space-panel,.ht-space,.mag-month");if(sp&&sp.style.display==="none")sp.style.display="";const item=b.closest(".item,.mag-cell,.space-panel,.ht-space");
+  if(item){item.classList.add("flash");setTimeout(()=>item.classList.remove("flash"),2600)}b.click();(item||b).scrollIntoView({behavior:"smooth",block:"center"})}
+ else say("No se ha encontrado el registro (puede estar archivado)");
+ history.replaceState(null,"",location.hash.split("?")[0])}
+function calHitoForm(r={}){
+ const edit=calCanHito(),dis=edit?"":" disabled";
+ calPanel('<div class="section-title"><div><small class="section-kicker">Hito de comunicación</small><h2>'+(r.id?esc(r.title||"Hito"):"Nuevo hito")+'</h2></div><button type="button" class="ghost" id="hitoClose">Cerrar</button></div>'+
+  '<form id="hitoForm" class="form-grid"><label>Tipo<select name="type"'+dis+'>'+HITO_TYPES.map(t=>'<option'+(t===r.type?" selected":"")+'>'+t+'</option>').join("")+'</select></label>'+venueSelect(r.venue).replace("<select",'<select'+dis)+
+  '<label class="wide">Título<input name="title" value="'+esc(r.title||"")+'" placeholder="Ej.: Estreno de We Will Rock You"'+dis+' required></label>'+
+  '<label class="wide">Proyecto / espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" value="'+esc(r.spectacle||"")+'"'+dis+'></label>'+
+  '<label>Fecha<input type="date" name="date" value="'+esc(r.date||"")+'"'+dis+' required></label><label>Hora<input type="time" name="time" value="'+esc(r.time||"")+'"'+dis+'></label>'+
+  '<label>Lugar<input name="place" value="'+esc(r.place||"")+'" placeholder="Sala, medio, dirección…"'+dis+'></label><label>Responsable<input name="responsable" value="'+esc(r.responsable||"")+'"'+dis+'></label>'+
+  '<label>Contacto<input name="contact" value="'+esc(r.contact||"")+'" placeholder="Periodista, medio, teléfono…"'+dis+'></label>'+
+  '<label>Aviso<select name="reminder"'+dis+'>'+HITO_REMINDERS.map(([v,l])=>'<option value="'+v+'"'+(v===(r.reminder||"")?" selected":"")+'>'+l+'</option>').join("")+'</select></label>'+
+  '<label class="wide">Notas<textarea name="notes"'+dis+'>'+esc(r.notes||"")+'</textarea></label>'+
+  '<p class="cart-legacy wide" style="margin:0">El aviso llega a quien esté suscrito al calendario. Por defecto: una hora antes si tiene hora; si no, el día anterior a las 9:00.</p>'+
+  (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Archivar</button>':'')+'</div>':'')+'</form>');
+ $("#hitoClose").onclick=()=>calPanel("");
+ if(!edit)return;
+ $("#hitoForm").onsubmit=async ev=>{ev.preventDefault();const data=formObject(ev.target);try{
+  if(r.id)await api("/api/control?module=hitos&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+  else await api("/api/control?module=hitos",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+  say("Hito guardado");if(data.date){const [yy,mm,dd]=data.date.split("-").map(Number);calCursor=new Date(yy,mm-1,1);const w0=weekRange(0)[0];calWeekOffset=Math.floor((new Date(yy,mm-1,dd)-w0)/(7*864e5))}calendario()}catch(e){say(e.message)}};
+ if(r.id)$("#hitoDel").onclick=async()=>{if(!confirm("¿Archivar este hito?"))return;try{await api("/api/control?module=hitos&id="+r.id,{method:"DELETE"});say("Hito archivado");calendario()}catch(e){say(e.message)}};
+}
+// Suscripción: enlace privado, con filtro opcional por módulo o por espacio
+let calSubScope="all";
+async function calSubscribe(){
+ try{const d=await api("/api/calendar.ics?link=1");
+  const scopes=[["all","Todo"],["m:carteleria","Solo Cartelería"],["m:hitos","Solo hitos"],...VENUES.map(v=>["v:"+v,v])];
+  const withScope=u=>{if(calSubScope==="all")return u;const [k,val]=[calSubScope.slice(0,1),calSubScope.slice(2)];return u+"&"+k+"="+encodeURIComponent(val)};
+  const https=withScope(d.https),webcal=withScope(d.webcal);
+  const g="https://calendar.google.com/calendar/r?cid="+encodeURIComponent(webcal),o="https://outlook.live.com/calendar/0/addfromweb?url="+encodeURIComponent(https)+"&name="+encodeURIComponent("Yellow Control");
+  calPanel('<div class="section-title"><div><small class="section-kicker">Suscripción</small><h2>Añadir a tu calendario</h2></div><button type="button" class="ghost" id="subClose">Cerrar</button></div>'+
+   '<p class="muted" style="margin:0 0 12px">Las fechas aparecerán en tu calendario y se actualizarán solas. Entregas y montajes avisan el día antes a las 9:00; los hitos, según el aviso que tengan.</p>'+
+   '<label class="cal-scope">Qué incluir<select id="subScope">'+scopes.map(([v,l])=>'<option value="'+esc(v)+'"'+(v===calSubScope?" selected":"")+'>'+esc(l)+'</option>').join("")+'</select></label>'+
+   '<div class="actions-row cal-sub"><a class="btn primary" href="'+esc(webcal)+'">iPhone / Mac</a><a class="btn" href="'+esc(g)+'" target="_blank" rel="noopener">Google Calendar</a><a class="btn" href="'+esc(o)+'" target="_blank" rel="noopener">Outlook</a><button type="button" id="subCopy">Copiar enlace</button>'+(roles().includes("admin")?'<button type="button" class="danger" id="subReset">Regenerar enlace</button>':'')+'</div>'+
+   '<p class="cart-legacy" style="margin-top:10px">El enlace es privado: quien lo tenga puede ver el calendario. No lo publiques. Puedes suscribirte a varios (por ejemplo, uno por teatro).</p>');
+  $("#subClose").onclick=()=>calPanel("");
+  $("#subScope").onchange=e=>{calSubScope=e.target.value;calSubscribe()};
+  $("#subCopy").onclick=async()=>{try{await navigator.clipboard.writeText(https);say("Enlace copiado")}catch{prompt("Copia el enlace:",https)}};
+  const rs=$("#subReset");if(rs)rs.onclick=async()=>{if(!confirm("Se creará un enlace nuevo y los anteriores dejarán de funcionar en todos los calendarios suscritos. ¿Continuar?"))return;await api("/api/calendar.ics",{method:"POST"});say("Enlace regenerado");calSubscribe()};
+ }catch(e){say(e.message)}
+}
+// Compartir semana: imagen vertical o PDF A4, de lunes a domingo, con módulos a elegir
+let calShareMods=null;
+function calWeekPanel(){
+ const avail=CAL_MODS.filter(([k])=>calEvents.some(e=>e.moduleKey===k));
+ if(!calShareMods)calShareMods=new Set(calMods.size?[...calMods]:avail.map(([k])=>k));
+ const days=weekRange(calWeekOffset),from=isoOf(days[0]),to=isoOf(days[6]),title=weekTitle(days);
+ const ev=calFiltered(calShareMods).filter(e=>e.date>=from&&e.date<=to);
+ calPanel('<div class="section-title"><div><small class="section-kicker">Compartir semana</small><h2>'+esc(title)+'</h2></div><button type="button" class="ghost" id="wkClose">Cerrar</button></div>'+
+  '<div class="chip-row" style="margin-bottom:8px"><span class="chip-label">Semana</span>'+[["-1","Anterior"],["0","Esta"],["1","Próxima"],["2","Dentro de dos"]].map(([o,l])=>'<button type="button" class="chip'+(calWeekOffset===+o?" on":"")+'" data-o="'+o+'">'+l+'</button>').join("")+'</div>'+
+  '<div class="chip-row" style="margin-bottom:12px"><span class="chip-label">Incluir</span>'+(avail.length?avail.map(([k,l])=>'<button type="button" class="chip'+(calShareMods.has(k)?" on":"")+'" data-sm="'+k+'"><span class="dot"></span>'+l+'</button>').join(""):'<span class="muted">Aún no hay fechas</span>')+'</div>'+
+  (calVenue?'<p class="cart-legacy" style="margin:0 0 10px">Solo '+esc(calVenue)+' (filtro activo en el calendario).</p>':'')+
+  '<div class="wk-preview">'+(ev.length?days.map(d=>{const de=ev.filter(e=>e.date===isoOf(d));return de.length?'<div><b>'+esc(cap(d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric"})))+'</b>'+de.map(e=>'<span class="k-'+e.kind+'"><i></i>'+esc((e.time?e.time+" · ":"")+evTag(e)+" · "+e.title)+'</span>').join("")+'</div>':""}).join(""):'<div class="notice">No hay fechas esta semana con esta selección.</div>')+'</div>'+
+  '<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="wkShare">Imagen vertical</button><button type="button" id="wkPdf">PDF A4</button></div>'+
+  '<p class="cart-legacy" style="margin-top:8px">En el móvil, «Imagen vertical» abre el menú de compartir (WhatsApp, correo…). En el ordenador se descarga.</p>');
+ $("#wkClose").onclick=()=>calPanel("");
+ $$("#calPanel [data-o]").forEach(c=>c.onclick=()=>{calWeekOffset=+c.dataset.o;if(calView==="semana")renderCalendar();calWeekPanel()});
+ $$("#calPanel [data-sm]").forEach(c=>c.onclick=()=>{const k=c.dataset.sm;calShareMods.has(k)?calShareMods.delete(k):calShareMods.add(k);calWeekPanel()});
+ $("#wkShare").onclick=()=>calWeekExport(days,ev,title);$("#wkPdf").onclick=()=>calWeekPdf(days,ev,title);
+}
+function calWeekCanvas(days,ev,title){
+ const W=1080,pad=64,ROW=92,DAY=78;const rows=[];days.forEach(d=>{const de=ev.filter(e=>e.date===isoOf(d));if(de.length){rows.push({day:d});de.forEach(e=>rows.push({e}))}});
+ const content=rows.reduce((a,r)=>a+(r.day?DAY:ROW+(r.e.location?22:0)),0);
+ const H=Math.max(1350,300+content+140);
+ const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+ g.fillStyle="#131313";g.fillRect(0,0,W,H);g.fillStyle="#FFD400";g.fillRect(0,0,W,12);
+ g.textBaseline="top";g.font="400 76px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,64);
+ g.font="700 34px 'Plus Jakarta Sans', Arial";g.fillStyle="#F2EFE6";g.fillText("Semana · "+title,pad,160);
+ g.font="600 22px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText(ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:""),pad,210);
+ let y=280;if(!rows.length){g.fillStyle="#aaa296";g.font="600 30px 'Plus Jakarta Sans', Arial";g.fillText("Sin fechas esta semana",pad,y)}
+ const clip=(t,max)=>{if(g.measureText(t).width<=max)return t;while(t.length&&g.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
+ for(const r of rows){if(r.day){y+=14;g.font="400 40px Anton, Impact, sans-serif";g.fillStyle="#F2EFE6";g.fillText(r.day.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),pad,y);y+=DAY-14;continue}
+  const e=r.e,h=ROW-20+(e.location?22:0);g.fillStyle=KIND_COLOR[e.kind]||"#FFD400";g.fillRect(pad,y,7,h);
+  g.font="800 19px 'Plus Jakarta Sans', Arial";g.fillText((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),pad+26,y+2);
+  g.font="700 29px 'Plus Jakarta Sans', Arial";g.fillStyle="#F2EFE6";g.fillText(clip((e.time?e.time+"  ":"")+e.title,W-pad*2-30),pad+26,y+28);
+  if(e.location){g.font="500 21px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText(clip(e.location,W-pad*2-30),pad+26,y+66)}
+  y+=ROW+(e.location?22:0)}
+ g.font="600 18px 'Plus Jakarta Sans', Arial";g.fillStyle="#6b665d";g.fillText("Yellow Media · generado el "+new Date().toLocaleDateString("es-ES"),pad,H-60);
+ return c}
+async function calWeekExport(days,ev,title){
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calWeekCanvas(days,ev,title);const blob=await new Promise(r=>c.toBlob(r,"image/png"));const name="Yellow_semana_"+isoOf(days[0])+".png";const file=new File([blob],name,{type:"image/png"});
+  const touch=matchMedia("(pointer:coarse)").matches;
+  if(touch&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Semana · "+title});return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  say("Imagen descargada")}catch(e){if(e&&e.name==="AbortError")return;say(e.message||"No se ha podido exportar")}}
+// PDF A4: documento imprimible en claro, legible en papel y en pantalla
+function calWeekPdf(days,ev,title){
+ const w=window.open("","_blank");if(!w){say("Permite las ventanas emergentes para generar el PDF");return}
+ const body=days.map(d=>{const de=ev.filter(e=>e.date===isoOf(d));return '<section><h2>'+esc(cap(d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})))+'</h2>'+
+  (de.length?de.map(e=>'<div class="ev" style="border-color:'+(KIND_COLOR[e.kind]||"#FFD400")+'"><small>'+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+(e.responsable?'<span>Responsable: '+esc(e.responsable)+'</span>':'')+'</div>').join(""):'<p class="none">Sin fechas</p>')+'</section>'}).join("");
+ w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Yellow Control · Semana '+esc(title)+'</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font:13px/1.35 "Plus Jakarta Sans",Arial,sans-serif;color:#131313;margin:0}'+
+  'header{border-top:6px solid #FFD400;padding-top:10px;margin-bottom:14px}header h1{font:400 30px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0}header p{margin:4px 0 0;color:#555}'+
+  'section{break-inside:avoid;margin:0 0 10px;padding-top:8px;border-top:1px solid #ddd}h2{font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}'+
+  '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
+  '<header><h1>YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
+ w.document.close()}
 
 async function admin(){
  if(!roles().includes("admin"))throw new Error("Acceso reservado a administración");

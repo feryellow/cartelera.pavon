@@ -10,9 +10,9 @@ export type Actor = {
 
 const ROLE_ACCESS: Record<string, { read: string[]; write: string[] }> = {
   admin: { read: ["*"], write: ["*"] },
-  gestion: { read: ["dashboard","carteleria","calendario","radio","publicidad","taxis","intercambiadores","hometicket","revistas","archivo","avisos"], write: ["carteleria","radio","publicidad","taxis","intercambiadores","hometicket","revistas","avisos"] },
-  carteleria: { read: ["dashboard","carteleria","calendario","archivo"], write: ["carteleria"] },
-  consulta: { read: ["dashboard","carteleria","calendario","archivo"], write: [] },
+  gestion: { read: ["dashboard","carteleria","calendario","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","archivo","avisos"], write: ["carteleria","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","avisos"] },
+  carteleria: { read: ["dashboard","carteleria","calendario","hitos","archivo"], write: ["carteleria"] },
+  consulta: { read: ["dashboard","carteleria","calendario","hitos","archivo"], write: [] },
 };
 
 function keyActor(req: Request): Actor | null {
