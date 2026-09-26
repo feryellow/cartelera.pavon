@@ -285,19 +285,24 @@ function htCurrent(list){const t=localToday(),live=list.filter(r=>(r.status||"")
  const next=live.filter(r=>r.startDate&&r.startDate>t).sort((a,b)=>a.startDate.localeCompare(b.startDate))[0];
  const last=[...list].sort((a,b)=>String(b.endDate||b.startDate||"").localeCompare(String(a.endDate||a.startDate||"")))[0];
  return {cur:act||next||last||null,next:act&&next?next:null}}
+let htView=(()=>{try{return localStorage.getItem("yc-ht-view")||""}catch{return""}})();
 async function homeTicket(){
  const d=await api("/api/control?module=hometicket"),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
  const htSpaces=[...HOME_TICKET_SPACES,...new Set(rows.map(r=>r.venue).filter(v=>v&&!HOME_TICKET_SPACES.includes(v)))];
  const slot=(v,p)=>{const list=rows.filter(r=>r.venue===v&&r.position===p.key),{cur,next}=htCurrent(list);
   return '<div class="ht-slot'+(cur?"":" empty")+'"><div class="ht-slot-head"><b>'+p.name+'</b><span>'+p.size+'</span></div>'+
-   (cur?'<div class="media-preview ht-thumb" data-asset="'+esc(cur.assetKey||"")+'" data-module="hometicket" data-kind="image"></div><h3>'+esc(cur.spectacle||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(cur.startDate)+' → '+fdate(cur.endDate)+'</span>'+statusBadge(cur.materialStatus||"pendiente")+'</div>'+(next?'<p class="ht-next">Después: <b>'+esc(next.spectacle||"")+'</b> desde '+fdate(next.startDate)+'</p>':'')+
+   (cur?'<div class="ht-body">'+(cur.assetKey?'<div class="media-preview ht-thumb" data-asset="'+esc(cur.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'')+'<div class="ht-info"><h3>'+esc(cur.spectacle||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(cur.startDate)+' → '+fdate(cur.endDate)+'</span>'+statusBadge(cur.materialStatus||"pendiente")+'</div>'+(next?'<p class="ht-next">Después: <b>'+esc(next.spectacle||"")+'</b> desde '+fdate(next.startDate)+'</p>':'')+'</div></div>'+
     '<div class="item-actions"><button type="button" data-edit-ht="'+cur.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button></div>'
    :'<p class="muted">Sin pieza.</p><div class="item-actions"><button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button></div>')+'</div>'};
- const grouped=htSpaces.map((v,i)=>{const mine=rows.filter(r=>r.venue===v);return '<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">'+String(i+1).padStart(2,"0")+' · Home Ticket</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
+ const editId=new URLSearchParams(location.hash.split("?")[1]||"").get("edit"),editRow=editId&&rows.find(r=>r.id===editId);
+ if(editRow)htView=editRow.venue;if(!htSpaces.includes(htView))htView=htSpaces[0];
+ const tabs='<div class="chip-row ht-tabs">'+htSpaces.map(v=>{const n=rows.filter(r=>r.venue===v&&activeNow(r)).length;return '<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(n?' <span class="ht-count">'+n+'</span>':'')+'</button>'}).join("")+'</div>';
+ const v=htView,mine=rows.filter(r=>r.venue===v);
+ const grouped='<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
   '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div><div class="ht-slots">'+HT_POS.map(p=>slot(v,p)).join("")+'</div>'+
-  (mine.length?'<details class="ht-history"><summary>Historial ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+'</div>'}).join("");
- app.innerHTML=pageHead("Home Ticket","Tres huecos por espacio: Superior, Inferior y XL")+moduleKpis(rows,"Piezas activas")+'<section class="card">'+grouped+'</section>';
- htChips(rows);
+  (mine.length?'<details class="ht-history"><summary>Historial ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+'</div>';
+ app.innerHTML=pageHead("Home Ticket","Tres huecos por espacio: Superior, Inferior y XL")+moduleKpis(rows,"Piezas activas")+'<section class="card">'+tabs+grouped+'</section>';
+ $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=b.dataset.htTab;try{localStorage.setItem("yc-ht-view",htView)}catch{}homeTicket()});
  const panelOf=v=>$('[data-ht-panel="'+CSS.escape(v)+'"]');
  const open=(v,html,bind)=>{$$(".ht-panel").forEach(x=>x.innerHTML="");const p=panelOf(v);p.innerHTML='<div class="ht-form card">'+html+'</div>';bind(p);p.scrollIntoView({behavior:"smooth",block:"start"})};
  $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r),()=>bindHTForm(r))});

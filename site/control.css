@@ -680,3 +680,16 @@ label{color:var(--muted);letter-spacing:.02em}
 .ht-all-row em:empty{display:none}
 @media (max-width:520px){.ht-all-row{grid-template-columns:1fr}.ht-all-row em{grid-column:auto}}
 :root[data-theme="light"] .ht-slot{background:#fff}
+.ht-tabs{margin-bottom:14px}
+.ht-count{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:rgba(242,239,230,.14);font-size:11px;line-height:18px;text-align:center}
+.chip.on .ht-count{background:rgba(0,0,0,.15)}
+.ht-body{display:flex;flex-direction:column;gap:6px}
+.ht-info{min-width:0}
+@media (max-width:760px){
+ .ht-body{flex-direction:row;gap:12px;align-items:flex-start}
+ .ht-thumb{flex:none;width:84px;margin-top:0}
+ .ht-thumb img{width:84px;max-height:110px;object-fit:cover}
+ .ht-slot{padding:10px 12px}
+ .ht-slot .item-actions{padding-top:2px}
+ .ht-space .section-title{flex-wrap:wrap;gap:8px}
+}
