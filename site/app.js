@@ -227,7 +227,7 @@ const SPECTACLES=new Set();
 let spectaclesLoaded=false;
 async function loadSpectacles(){if(spectaclesLoaded)return;spectaclesLoaded=true;try{const r=await fetch("/data/espectaculos.json",{cache:"no-cache"});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.espectaculos||[]).forEach(x=>{const n=typeof x==="string"?x:x?.nombre;if(n&&n.trim())SPECTACLES.add(n.trim())})}}catch{}renderSpectacleList()}
 function learnSpectacles(rows){(rows||[]).forEach(r=>{if(r.spectacle&&r.spectacle.trim())SPECTACLES.add(r.spectacle.trim())});renderSpectacleList()}
-function renderSpectacleList(){}
+function renderSpectacleList(){if(ac.input&&document.activeElement===ac.input&&ac.input.value)acShow(ac.input)}
 // Desplegable propio: coincidencias desde el principio del título, sin distinguir mayúsculas ni tildes.
 function acNorm(t){return String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/^[¡¿"'“”‘’#\s]+/,"").trim()}
 const ac={box:null,input:null,items:[],idx:-1};
@@ -549,7 +549,7 @@ function calHitoForm(r={}){
  calPanel('<div class="section-title"><div><small class="section-kicker">Hito de comunicación</small><h2>'+(r.id?esc(r.title||"Hito"):"Nuevo hito")+'</h2></div><button type="button" class="ghost" id="hitoClose">Cerrar</button></div>'+
   '<form id="hitoForm" class="form-grid"><label>Tipo<select name="type"'+dis+'>'+HITO_TYPES.map(t=>'<option'+(t===r.type?" selected":"")+'>'+t+'</option>').join("")+'</select></label>'+venueSelect(r.venue).replace("<select",'<select'+dis)+
   '<label class="wide">Título<input name="title" value="'+esc(r.title||"")+'" placeholder="Ej.: Estreno de We Will Rock You"'+dis+' required></label>'+
-  '<label class="wide">Proyecto / espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" value="'+esc(r.spectacle||"")+'"'+dis+'></label>'+
+  '<label class="wide">Proyecto / espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" placeholder="Empieza a escribir y elige de la lista" value="'+esc(r.spectacle||"")+'"'+dis+'></label>'+
   '<label>Fecha<input type="date" name="date" value="'+esc(r.date||"")+'"'+dis+' required></label><label>Hora<input type="time" name="time" value="'+esc(r.time||"")+'"'+dis+'></label>'+
   '<label>Lugar<input name="place" value="'+esc(r.place||"")+'" placeholder="Sala, medio, dirección…"'+dis+'></label><label>Responsable<input name="responsable" value="'+esc(r.responsable||"")+'"'+dis+'></label>'+
   '<label>Contacto<input name="contact" value="'+esc(r.contact||"")+'" placeholder="Periodista, medio, teléfono…"'+dis+'></label>'+
@@ -557,7 +557,7 @@ function calHitoForm(r={}){
   '<label class="wide">Notas<textarea name="notes"'+dis+'>'+esc(r.notes||"")+'</textarea></label>'+
   '<p class="cart-legacy wide" style="margin:0">El aviso llega a quien esté suscrito al calendario. Por defecto: una hora antes si tiene hora; si no, el día anterior a las 9:00.</p>'+
   (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Archivar</button>':'')+'</div>':'')+'</form>');
- $("#hitoClose").onclick=()=>calPanel("");
+ $("#hitoClose").onclick=()=>calPanel("");loadSpectacles();
  if(!edit)return;
  $("#hitoForm").onsubmit=async ev=>{ev.preventDefault();const data=formObject(ev.target);try{
   if(r.id)await api("/api/control?module=hitos&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
