@@ -2,11 +2,13 @@ import type { Config } from "@netlify/functions";
 import { requireAccess } from "./_lib/auth.ts";
 import { controlStore } from "./_lib/store.ts";
 import { getContacts, EMAIL, type Contact } from "./_lib/contacts.ts";
+import { mailRecipients, DEV_RECIPIENT } from "./_lib/mailer.ts";
 
 export default async (req: Request) => {
   if (req.method === "GET") {
     const auth = await requireAccess(req, "carteleria", false); if (auth.response) return auth.response;
-    return Response.json({ contacts: await getContacts() });
+    const live = mailRecipients().live;
+    return Response.json({ contacts: await getContacts(), live, devRecipient: live ? "" : DEV_RECIPIENT });
   }
   if (req.method === "PUT") {
     const auth = await requireAccess(req, "admin", true); if (auth.response) return auth.response;
