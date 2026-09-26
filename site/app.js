@@ -159,7 +159,7 @@ function localToday(){return new Date().toLocaleDateString("sv")}
 function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
 function radioItems(rows){return radioAssignments(rows,{lines:[]})}
 function radioForm(r={},selectedContract=null,selectedMonth=""){
- const contract=radioContract(r.contractId)||selectedContract||radioContract(radioView.contractId),months=radioMonths(contract),month=r.inventoryMonth||selectedMonth||months[0]||"",line=radioLine(contract,r.lineId)||contract?.lines?.find(l=>radioNum(l.monthly?.[month])>0)||contract?.lines?.[0],legacy=!contract;
+ const contract=(r.id&&!r.contractId)?null:(radioContract(r.contractId)||selectedContract||radioContract(radioView.contractId)),months=radioMonths(contract),month=r.inventoryMonth||selectedMonth||months[0]||"",line=radioLine(contract,r.lineId)||contract?.lines?.find(l=>radioNum(l.monthly?.[month])>0)||contract?.lines?.[0],legacy=!contract;
  const contractOpts='<option value="">Sin contrato / histórico</option>'+RADIO_CONTRACTS.map(c=>'<option value="'+esc(c.id)+'" '+(c.id===contract?.id?'selected':'')+'>'+esc(c.venue)+' · '+esc(c.brand)+'</option>').join("");
  const monthOpts=months.map(m=>'<option value="'+m+'" '+(m===month?'selected':'')+'>'+esc(radioMonthLabel(m))+'</option>').join("");
  const lineOpts=(contract?.lines||[]).filter(l=>!month||radioNum(l.monthly?.[month])>0).map(l=>'<option value="'+esc(l.id)+'" '+(l.id===line?.id?'selected':'')+'>'+esc(l.station)+' · '+esc(l.program)+' · '+esc(l.unit)+'</option>').join("");
@@ -170,12 +170,12 @@ function radioForm(r={},selectedContract=null,selectedMonth=""){
  '<div class="wide radio-form-line" id="radioLineInfo"></div>'+
  input("spectacle","Espectáculo",r.spectacle)+input("campaignName","Nombre interno / campaña",r.campaignName)+
  input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+
- '<label>Planificado<input name="plannedSpots" type="number" min="0" step="1" value="'+esc(r.plannedSpots||"")+'" required></label>'+
+ '<label>Planificado<input name="plannedSpots" type="number" min="0" step="1" value="'+esc(r.plannedSpots||"")+'" '+(contract?'required':'')+'></label>'+
  '<label>Real / certificado<input name="actualSpots" type="number" min="0" step="1" value="'+esc(r.actualSpots||"")+'"></label>'+
  input("spotName","Nombre de la cuña / pieza",r.spotName)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+
  materialStatusSelect(r.materialStatus)+selectStatus(r.status)+input("certificateRef","Certificado / referencia",r.certificateRef)+
  '<div id="radioLegacyFields" class="wide '+(legacy?'':'hidden')+'"><div class="form-grid">'+venueSelect(r.venue)+input("station","Emisora manual",r.station)+input("duration","Duración",r.duration)+input("timeSlot","Franja",r.timeSlot)+'</div></div>'+
- '<input type="hidden" name="venue" value="'+esc(contract?.venue||r.venue||"")+'"><input type="hidden" name="station" value="'+esc(line?.station||r.station||"")+'"><input type="hidden" name="duration" value="'+esc(line?.duration||r.duration||"")+'"><input type="hidden" name="timeSlot" value="'+esc(line?.timeSlot||r.timeSlot||"")+'"><input type="hidden" name="unit" value="'+esc(line?.unit||r.unit||"cuñas")+'">'+
+ (contract?'<input type="hidden" name="venue" value="'+esc(contract.venue||"")+'"><input type="hidden" name="station" value="'+esc(line?.station||"")+'"><input type="hidden" name="duration" value="'+esc(line?.duration||"")+'"><input type="hidden" name="timeSlot" value="'+esc(line?.timeSlot||"")+'"><input type="hidden" name="unit" value="'+esc(line?.unit||"cuñas")+'">':'<input type="hidden" name="unit" value="'+esc(r.unit||"cuñas")+'">')+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
  '<div class="wide radio-form-help">Las cantidades se descuentan del inventario del contrato y mes seleccionados. Para un control semanal exacto, registra cada reparto semanal como una asignación independiente.</div>'+
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar asignación</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'
@@ -197,7 +197,7 @@ function bindRadio(rows,selectedContract,selectedMonth){
 }
 function bindRadioForm(existing,rows,selectedContract,selectedMonth){
  const f=$("#radioForm");if(!f)return;
- const rebuild=(seed={})=>{$("#radioFormCard").innerHTML=radioForm(seed,radioContract(seed.contractId)||selectedContract,seed.inventoryMonth||selectedMonth);bindRadioForm(existing,rows,radioContract(seed.contractId)||selectedContract,seed.inventoryMonth||selectedMonth)};
+ const rebuild=(seed={})=>{const c=seed.contractId?radioContract(seed.contractId):null;$("#radioFormCard").innerHTML=radioForm(seed,c,seed.inventoryMonth||selectedMonth);bindRadioForm(existing,rows,c,seed.inventoryMonth||selectedMonth)};
  const refreshLineInfo=()=>{
    const c=radioContract($("#radioContractSelect")?.value),m=$("#radioMonthSelect")?.value,l=radioLine(c,$("#radioLineSelect")?.value),info=$("#radioLineInfo"),legacy=$("#radioLegacyFields");
    if(legacy)legacy.classList.toggle("hidden",!!c);
@@ -207,8 +207,9 @@ function bindRadioForm(existing,rows,selectedContract,selectedMonth){
    for(const [n,v] of [["venue",c.venue],["station",l.station],["duration",l.duration],["timeSlot",l.timeSlot],["unit",l.unit]]){const el=f.elements[n];if(el)el.value=v}
  };
  const cs=$("#radioContractSelect"),ms=$("#radioMonthSelect");
- if(cs)cs.onchange=()=>{const c=radioContract(cs.value);rebuild({...(existing||{}),contractId:c?.id||"",inventoryMonth:radioMonths(c)[0]||""})};
- if(ms)ms.onchange=()=>rebuild({...(existing||{}),contractId:cs?.value||"",inventoryMonth:ms.value,lineId:""});
+ const snapshot=()=>({...existing,...formObject(f)});
+ if(cs)cs.onchange=()=>{const c=radioContract(cs.value);rebuild({...snapshot(),contractId:c?.id||"",inventoryMonth:radioMonths(c)[0]||"",lineId:""})};
+ if(ms)ms.onchange=()=>rebuild({...snapshot(),contractId:cs?.value||"",inventoryMonth:ms.value,lineId:""});
  const ls=$("#radioLineSelect");if(ls)ls.onchange=refreshLineInfo;refreshLineInfo();
  $("#cancelRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{
