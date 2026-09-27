@@ -37,7 +37,7 @@ function statusBadge(v){const s=(v||"activo").toLowerCase();return '<span class=
 function pageHead(title,sub,actions=""){const home=state.route==="dashboard"?"":'<a class="btn back-home" href="#dashboard">← Inicio</a>';const m=navMeta(state.route),photo=ROUTE_PHOTOS[state.route];return '<div class="page-banner'+(photo?' has-photo':'')+'"'+(photo?' style="--photo:url('+photo+')"':'')+'><div class="page-banner-txt">'+(m?.small?'<small>'+esc(m.small)+'</small>':'')+'<h1>'+esc(title)+'</h1><p>'+esc(sub||"")+'</p></div></div><div class="page-actions actions-row">'+home+actions+"</div>"}
 async function blobUrl(assetKey,moduleName){if(!assetKey)return null;if(state.assetUrls.has(assetKey))return state.assetUrls.get(assetKey);const r=await fetch("/api/asset?key="+encodeURIComponent(assetKey)+"&module="+moduleName,{headers:headers()});if(!r.ok)return null;const b=await r.blob(),u=URL.createObjectURL(b);state.assetUrls.set(assetKey,u);return u}
 function routeName(){return (location.hash||"#dashboard").slice(1).split("?")[0]||"dashboard"}
-async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}state.route=nextRoute;if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
+async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}if(nextRoute==="hometicket"&&state.route!=="hometicket")htView="";state.route=nextRoute;if(!canRoute(state.route))state.route="dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
 async function dashboard(){
@@ -285,7 +285,7 @@ function htCurrent(list){const t=localToday(),live=list.filter(r=>(r.status||"")
  const next=live.filter(r=>r.startDate&&r.startDate>t).sort((a,b)=>a.startDate.localeCompare(b.startDate))[0];
  const last=[...list].sort((a,b)=>String(b.endDate||b.startDate||"").localeCompare(String(a.endDate||a.startDate||"")))[0];
  return {cur:act||next||last||null,next:act&&next?next:null}}
-let htView=(()=>{try{return localStorage.getItem("yc-ht-view")||""}catch{return""}})();
+let htView="";
 async function homeTicket(){
  const d=await api("/api/control?module=hometicket"),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
  const htSpaces=[...HOME_TICKET_SPACES,...new Set(rows.map(r=>r.venue).filter(v=>v&&!HOME_TICKET_SPACES.includes(v)))];
@@ -295,14 +295,14 @@ async function homeTicket(){
     '<div class="item-actions"><button type="button" data-edit-ht="'+cur.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button></div>'
    :'<p class="muted">Sin pieza.</p><div class="item-actions"><button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button></div>')+'</div>'};
  const editId=new URLSearchParams(location.hash.split("?")[1]||"").get("edit"),editRow=editId&&rows.find(r=>r.id===editId);
- if(editRow)htView=editRow.venue;if(!htSpaces.includes(htView))htView=htSpaces[0];
+ if(editRow)htView=editRow.venue;if(htView&&!htSpaces.includes(htView))htView="";
  const tabs='<div class="chip-row ht-tabs">'+htSpaces.map(v=>{const n=rows.filter(r=>r.venue===v&&activeNow(r)).length;return '<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(n?' <span class="ht-count">'+n+'</span>':'')+'</button>'}).join("")+'</div>';
  const v=htView,mine=rows.filter(r=>r.venue===v);
- const grouped='<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
+ const grouped=!v?'':'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
   '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div><div class="ht-slots">'+HT_POS.map(p=>slot(v,p)).join("")+'</div>'+
   (mine.length?'<details class="ht-history"><summary>Historial ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+'</div>';
  app.innerHTML=pageHead("Home Ticket","Tres huecos por espacio: Superior, Inferior y XL")+moduleKpis(rows,"Piezas activas")+'<section class="card">'+tabs+grouped+'</section>';
- $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=b.dataset.htTab;try{localStorage.setItem("yc-ht-view",htView)}catch{}homeTicket()});
+ $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=htView===b.dataset.htTab?"":b.dataset.htTab;homeTicket()});
  const panelOf=v=>$('[data-ht-panel="'+CSS.escape(v)+'"]');
  const open=(v,html,bind)=>{$$(".ht-panel").forEach(x=>x.innerHTML="");const p=panelOf(v);p.innerHTML='<div class="ht-form card">'+html+'</div>';bind(p);p.scrollIntoView({behavior:"smooth",block:"start"})};
  $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r),()=>bindHTForm(r))});
@@ -896,5 +896,9 @@ async function admin(){
  $("#newUserForm").onsubmit=async e=>{e.preventDefault();const v=formObject(e.currentTarget);await api("/api/admin-users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(v)});say("Usuario creado");admin()};
 }
 
-(async()=>{if(await authenticate())route();if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{})})();
+(async()=>{if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
+// Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
+function ycServiceWorker(){let had=!!navigator.serviceWorker.controller;
+ navigator.serviceWorker.register("/sw.js").then(r=>{const up=()=>r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")up()});setInterval(up,15*60*1000)}).catch(()=>{});
+ navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!had){had=true;return}if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';b.querySelector("button").onclick=()=>location.reload();document.body.appendChild(b)})}
 })();

@@ -693,3 +693,6 @@ label{color:var(--muted);letter-spacing:.02em}
  .ht-slot .item-actions{padding-top:2px}
  .ht-space .section-title{flex-wrap:wrap;gap:8px}
 }
+.ht-tabs:last-child{margin-bottom:0}
+.yc-update{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:300;display:flex;gap:12px;align-items:center;padding:10px 12px 10px 16px;border-radius:14px;background:#111;color:#f2efe6;border:1px solid rgba(255,212,0,.5);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;max-width:calc(100% - 32px)}
+.yc-update button{flex:none}
