@@ -89,6 +89,9 @@ export default async (req: Request) => {
 
   // Recuperar un registro quitado (botón «Deshacer» y lista de quitados en Archivo)
   if (req.method === "PATCH") {
+    // Una sola página por revista y mes: no se recupera si ya hay otra activa en ese hueco
+    if(moduleName==="revistas"){const clash=(await listRecords("revistas")).find((r:any)=>r.id!==id&&r.magazine===before.magazine&&r.month===before.month);
+      if(clash)return json({error:`Ya hay una página de ${before.magazine} en ese mes. Quita esa primero si quieres recuperar esta.`},409);}
     const row={...before,deletedAt:null,updatedAt:new Date().toISOString(),updatedBy:auth.actor!.email};
     await putRecord(moduleName,id,row);
     await appendAudit({actor:auth.actor!,module:moduleName,elementId:id,action:"restore",before,after:row});

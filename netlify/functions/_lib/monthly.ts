@@ -54,9 +54,18 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: [...cart.sort((a, b) => a.detail.localeCompare(b.detail)), ...mont.sort((a, b) => String(a.date).localeCompare(String(b.date)))] });
 
   // Home Ticket
+  // Home Ticket: los cinco espacios, en orden; los que no tuvieron piezas aparecen como «sin piezas»
+  const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Gran Castillo de Pedraza", "Abono Teatro"];
+  const POS_ORDER = ["HT Superior · 520 × 420", "HT Inferior · 520 × 420", "Home Ticket XL · 520 × 856"];
   const ht = (await listRecords("hometicket")).filter(overlaps);
-  sections.push({ key: "hometicket", name: "Home Ticket", lines: ht.sort((a, b) => String(a.venue).localeCompare(String(b.venue)) || String(a.position).localeCompare(String(b.position)))
-    .map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}`, img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+  const htVenues = [...HT_VENUES, ...new Set(ht.map((r) => r.venue).filter((v) => v && !HT_VENUES.includes(v)))];
+  const htLines: Line[] = [];
+  for (const v of htVenues) {
+    const mine = ht.filter((r) => r.venue === v).sort((a, b) => POS_ORDER.indexOf(a.position) - POS_ORDER.indexOf(b.position));
+    if (!mine.length) { htLines.push({ title: short(v), detail: "Sin piezas este mes" }); continue; }
+    mine.forEach((r) => htLines.push({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}`, img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined }));
+  }
+  sections.push({ key: "hometicket", name: "Home Ticket", lines: htLines });
 
   // Radio: por contrato (contratado / asignado / certificado) y registros sin contrato
   const radio = await listRecords("radio");
