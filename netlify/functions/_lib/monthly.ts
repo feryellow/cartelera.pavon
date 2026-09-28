@@ -32,10 +32,14 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   // Cartelería: soportes con cartel durante el mes + montajes confirmados
   const state: any = await carteleriaStore().get("state", { type: "json" }) || {};
   const cart: Line[] = [];
-  for (const [key, v] of Object.entries(state.schedule || {}) as any) {
+  for (const key of new Set([...Object.keys(state.slots || {}), ...Object.keys(state.schedule || {})])) {
+    const v: any = (state.schedule || {})[key] || {};
     const inst = v?.installDate || "", rem = v?.removeDate || "";
-    if (!v?.title || !inst || inst > last || (rem && rem < first)) continue;
-    cart.push({ title: v.title, detail: `${SLOT_NAMES[key] || key} · ${inst >= first ? "instalado el " + fmt(inst) : "desde " + fmt(inst)}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: state.slots?.[key]?.hasImage ? { kind: "cart", key } : undefined });
+    // Cuenta todo soporte con cartel durante el mes, tenga o no fecha de instalación apuntada
+    const hasImg = !!state.slots?.[key]?.hasImage;
+    if ((!v?.title && !hasImg) || (inst && inst > last) || (rem && rem < first)) continue;
+    const when = inst ? (inst >= first ? "instalado el " + fmt(inst) : "desde " + fmt(inst)) : "en fachada";
+    cart.push({ title: v?.title || "Cartel sin título", detail: `${SLOT_NAMES[key] || key} · ${when}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: hasImg ? { kind: "cart", key } : undefined });
   }
   const mont: Line[] = [];
   const list = await controlStore().list({ prefix: "montaje_" });
