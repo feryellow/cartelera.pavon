@@ -87,6 +87,14 @@ export default async (req: Request) => {
     return json({row});
   }
 
+  // Recuperar un registro quitado (botón «Deshacer» y lista de quitados en Archivo)
+  if (req.method === "PATCH") {
+    const row={...before,deletedAt:null,updatedAt:new Date().toISOString(),updatedBy:auth.actor!.email};
+    await putRecord(moduleName,id,row);
+    await appendAudit({actor:auth.actor!,module:moduleName,elementId:id,action:"restore",before,after:row});
+    return json({ok:true,row});
+  }
+
   if (req.method === "DELETE") {
     const row={...before,deletedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:auth.actor!.email};
     await putRecord(moduleName,id,row);
