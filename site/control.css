@@ -710,3 +710,51 @@ body.identity-flow-active .app-shell{visibility:hidden}
 .home-tile.locked::before{background:linear-gradient(to top,rgba(12,8,4,.94),rgba(12,8,4,.62))}
 .home-tile.locked .tile-ico,.home-tile.locked .tile-txt{opacity:.72}
 .tile-lock{position:absolute;top:10px;right:10px;z-index:2;display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.18);font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+
+/* ===== Revistas: hoja de contactos en miniatura ===== */
+.mag-head,.mag-month{grid-template-columns:132px repeat(3,minmax(0,1fr))}
+.mag-month{padding:12px 0;align-items:center}
+.mag-cover{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-rows:auto auto auto;justify-items:center;gap:4px;padding:6px;border-radius:10px;text-align:center;min-width:0;transition:background .15s ease,transform .15s ease}
+.mag-cover:hover{background:rgba(242,239,230,.05)}
+.mag-cover:active{transform:scale(.97)}
+.mag-cover:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.mag-img{display:block;width:78px;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:#211d18;border:1px solid var(--line);box-shadow:0 6px 16px rgba(0,0,0,.35);margin:0}
+.mag-img img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover;border:0!important;border-radius:0!important;display:block}
+.mag-cover.empty .mag-img{display:grid;place-items:center;background:transparent;border:1px dashed rgba(242,239,230,.22);box-shadow:none}
+.mag-cover.empty .mag-img i{font-style:normal;font-size:22px;color:var(--muted)}
+.mag-cover.empty:hover .mag-img{border-color:var(--yellow)}
+.mag-cover.empty:hover .mag-img i{color:var(--yellow)}
+.mag-name{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.mag-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.mag-dot.ok{background:#8fd18f}.mag-dot.warn{background:#ff8a65}
+.mag-show{font-size:11px;line-height:1.25;color:var(--cream);max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mag-cover.empty .mag-show{color:var(--muted)}
+@media (min-width:1100px){.mag-img{width:92px}}
+@media(max-width:700px){
+ .mag-head{display:none}
+ .mag-month{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:12px 0 8px}
+ .mag-label{grid-column:1/-1;padding:0 2px 4px}
+ .mag-img{width:72px}
+}
+.mag-sheet{position:fixed;inset:0;z-index:250;display:grid;place-items:center;padding:20px;background:rgba(10,9,8,.72);backdrop-filter:blur(6px);animation:magFade .18s ease}
+.mag-sheet-box{position:relative;width:min(760px,100%);max-height:calc(100vh - 40px);overflow:auto;display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:20px;padding:20px;border-radius:16px;background:var(--panel);border:1px solid rgba(255,212,0,.3);box-shadow:0 24px 60px rgba(0,0,0,.5);animation:magUp .22s cubic-bezier(.2,.8,.2,1)}
+.mag-sheet-x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;font-size:22px;line-height:1;border-radius:50%}
+.mag-sheet-img{display:grid;place-items:center;min-height:200px;border-radius:10px;overflow:hidden;background:#211d18}
+.mag-sheet-img img{width:100%;height:auto;display:block}
+.mag-sheet-info h2{margin:4px 0 6px;font-size:20px;line-height:1.2}
+.mag-sheet-info p{margin:0 0 8px}
+.mag-sheet-notes{white-space:pre-wrap;font-size:13px;color:var(--muted)}
+.mag-sheet-info .actions-row{margin-top:14px}
+@media(max-width:700px){
+ .mag-sheet{place-items:end center;padding:0}
+ .mag-sheet-box{grid-template-columns:1fr;border-radius:18px 18px 0 0;max-height:92vh;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+ .mag-sheet-img{max-height:52vh}.mag-sheet-img img{max-height:52vh;width:auto;margin:0 auto}
+}
+@keyframes magFade{from{opacity:0}to{opacity:1}}
+@keyframes magUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+body.sheet-open{overflow:hidden}
+:root[data-theme="light"] .mag-img{background:#f1efe9}
+:root[data-theme="light"] .mag-show{color:#161616}
+:root[data-theme="light"] .mag-sheet-box{background:#fff}
+:root[data-theme="light"] .mag-sheet-img{background:#f1efe9}
+.mag-calendar>.chip-row{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:24px}
