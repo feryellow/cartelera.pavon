@@ -918,7 +918,16 @@ async function admin(){
 
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
-function ycServiceWorker(){let had=!!navigator.serviceWorker.controller;
- navigator.serviceWorker.register("/sw.js").then(r=>{const up=()=>r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")up()});setInterval(up,15*60*1000)}).catch(()=>{});
- navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!had){had=true;return}if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';b.querySelector("button").onclick=()=>location.reload();document.body.appendChild(b)})}
+// Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
+const YC_VERSION="yellow-control-v28";
+function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
+ b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
+ b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
+// Comprueba en el servidor si se ha publicado otra versión: al abrir, al volver a la app, al cambiar de sección y cada minuto.
+async function ycCheckVersion(){try{const r=await fetch("/sw.js?check="+Date.now(),{cache:"no-store"});if(!r.ok)return;const m=(await r.text()).match(/yellow-control-v\d+/);if(m&&m[0]!==YC_VERSION)ycShowUpdate()}catch{}}
+function ycServiceWorker(){
+ navigator.serviceWorker.register("/sw.js").then(r=>{const up=()=>r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")up()})}).catch(()=>{})}
+ycCheckVersion();setInterval(ycCheckVersion,60*1000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")ycCheckVersion()});
+window.addEventListener("focus",ycCheckVersion);window.addEventListener("hashchange",ycCheckVersion);
 })();
