@@ -15,6 +15,19 @@
   <link rel="stylesheet" href="/control.css">
 </head>
 <body>
+  <div id="identityActionGate" class="gate hidden">
+    <div class="login-card identity-action-card">
+      <div class="brand-lockup"><img src="/yellow-app-icon-180.png?v=3" alt="Somos Yellow"><div><strong>YELLOW CONTROL</strong><span>Yellow Media</span></div></div>
+      <h1 id="identityActionTitle">Crear contraseña</h1>
+      <p id="identityActionInfo" class="muted">Completa tu acceso a Yellow Control.</p>
+      <form id="identityActionForm" class="stack">
+        <label>Nueva contraseña<input id="identityPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Repite la contraseña<input id="identityPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button id="identityActionSubmit" class="primary" type="submit">Guardar contraseña y entrar</button>
+      </form>
+      <div id="identityActionError" class="error"></div>
+    </div>
+  </div>
   <div id="loginGate" class="gate hidden">
     <div class="login-card">
       <div class="brand-lockup"><img src="/yellow-app-icon-180.png?v=3" alt="Somos Yellow"><div><strong>YELLOW CONTROL</strong><span>Yellow Media</span></div></div>
@@ -60,6 +73,8 @@
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
+  <script>window.ycIdentityReady=new Promise(resolve=>window.ycResolveIdentity=resolve)</script>
+  <script type="module" src="/identity-flow.js"></script>
   <script src="/app.js" defer></script>
 </body>
 </html>
