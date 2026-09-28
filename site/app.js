@@ -896,7 +896,7 @@ async function admin(){
  $("#newUserForm").onsubmit=async e=>{e.preventDefault();const v=formObject(e.currentTarget);await api("/api/admin-users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(v)});say("Usuario creado");admin()};
 }
 
-(async()=>{if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
+(async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 function ycServiceWorker(){let had=!!navigator.serviceWorker.controller;
  navigator.serviceWorker.register("/sw.js").then(r=>{const up=()=>r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")up()});setInterval(up,15*60*1000)}).catch(()=>{});
