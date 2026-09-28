@@ -4,7 +4,12 @@ const state={actor:null,route:"dashboard",editing:null,assetUrls:new Map()};
 const gate=$("#loginGate"), app=$("#app"), toast=$("#toast");
 const key=()=>{try{return sessionStorage.getItem("pavon_edit_key")||""}catch{return""}};
 const headers=(extra={})=>({...extra,...(key()?{"x-edit-key":key()}:{})});
-function say(msg){toast.textContent=msg;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2200)}
+let toastTimer=0;
+function say(msg){clearTimeout(toastTimer);toast.classList.remove("undo");toast.textContent=msg;toast.classList.add("show");toastTimer=setTimeout(()=>toast.classList.remove("show"),2200)}
+// Aviso con «Deshacer» tras quitar un registro: lo recupera durante unos segundos.
+function sayUndo(msg,url,after){clearTimeout(toastTimer);toast.innerHTML='<span>'+esc(msg)+'</span><button type="button">Deshacer</button>';toast.classList.add("show","undo");
+ toast.querySelector("button").onclick=async()=>{clearTimeout(toastTimer);try{await api(url,{method:"PATCH"});say("Recuperado");after&&after()}catch(e){say(e.message)}};
+ toastTimer=setTimeout(()=>toast.classList.remove("show","undo"),8000)}
 async function api(url,opts={}){opts.headers=headers(opts.headers||{});const r=await fetch(url,opts);let data=null;const ct=r.headers.get("content-type")||"";if(ct.includes("json")){try{data=await r.json()}catch{}}else{try{data=await r.text()}catch{}}if(!r.ok)throw Object.assign(new Error(data?.error||data||("HTTP "+r.status)),{status:r.status,data});return data}
 function roles(){return state.actor?.roles||[]}
 function has(role){return roles().includes("admin")||roles().includes(role)}
@@ -16,8 +21,8 @@ const ROUTE_PHOTOS={carteleria:"/assets/tiles/carteleria.jpg",revistas:"/assets/
 function icon(route,cls="nav-ico"){return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[route]||"")+'</svg>'}
 function navMeta(route){const a=$('#mainNav [data-route="'+route+'"]');return a?{href:a.dataset.href||a.getAttribute("href")||("#"+route),small:a.querySelector("small")?.textContent||"",name:a.querySelector("b")?.textContent||""}:null}
 $$("#mainNav a").forEach(a=>{if(!a.dataset.href)a.dataset.href=a.getAttribute("href")||"";if(!a.querySelector("svg"))a.insertAdjacentHTML("afterbegin",icon(a.dataset.route))});
-const MODULE_LABELS={avisos:"Avisos",carteleria:"Cartelería",radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas de Teatros",publicidad:"Publicidad",usuarios:"Usuarios",admin:"Usuarios"};
-const ACTION_LABELS={create:"creado",update:"editado",archive:"archivado",save:"guardado",image_replace:"imagen cambiada",image_delete:"imagen quitada",role_change:"rol cambiado",user_create:"usuario creado",user_disable:"usuario desactivado",user_enable:"usuario activado",email_sent:"correo enviado",email_pending:"correo pendiente",digest_sent:"resumen enviado",digest_pending:"resumen pendiente"};
+const MODULE_LABELS={avisos:"Avisos",hitos:"Comunicación",carteleria:"Cartelería",radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas de Teatros",publicidad:"Publicidad",usuarios:"Usuarios",admin:"Usuarios"};
+const ACTION_LABELS={create:"creado",update:"editado",archive:"quitado",restore:"recuperado",save:"guardado",image_replace:"imagen cambiada",image_delete:"imagen quitada",role_change:"rol cambiado",user_create:"usuario creado",user_disable:"usuario desactivado",user_enable:"usuario activado",email_sent:"correo enviado",email_pending:"correo pendiente",digest_sent:"resumen enviado",digest_pending:"resumen pendiente"};
 function modLabel(m){return MODULE_LABELS[m]||m||""}
 function actLabel(a){return ACTION_LABELS[a]||a||""}
 function prettyKey(k=""){const cs=CART_SLOTS.find(x=>x.key===k);if(cs)return cs.name;const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
@@ -116,7 +121,7 @@ function radioLineTable(contract,month,rows){
 }
 function radioAssignments(rows,contract){
  if(!rows.length)return '<div class="notice">Todavía no hay asignaciones para este mes. El inventario está disponible para repartir entre espectáculos.</div>';
- return rows.slice().sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||""))).map(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas";return '<div class="item radio-assignment" data-id="'+r.id+'"><div><div class="item-meta"><span class="badge">'+esc(l?.station||r.station||"Radio")+'</span><span>'+esc(l?.program||"")+'</span></div><h3>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span><b>'+radioFmt(r.plannedSpots)+'</b> '+esc(unit)+' planificadas</span>'+(radioNum(r.actualSpots)?'<span><b>'+radioFmt(r.actualSpots)+'</b> reales</span>':'')+'<span>'+esc(r.spotName||"Sin nombre de cuña")+'</span>'+statusBadge(r.materialStatus||r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Archivar</button></div></div>'}).join("")
+ return rows.slice().sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||""))).map(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas";return '<div class="item radio-assignment" data-id="'+r.id+'"><div><div class="item-meta"><span class="badge">'+esc(l?.station||r.station||"Radio")+'</span><span>'+esc(l?.program||"")+'</span></div><h3>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span><b>'+radioFmt(r.plannedSpots)+'</b> '+esc(unit)+' planificadas</span>'+(radioNum(r.actualSpots)?'<span><b>'+radioFmt(r.actualSpots)+'</b> reales</span>':'')+'<span>'+esc(r.spotName||"Sin nombre de cuña")+'</span>'+statusBadge(r.materialStatus||r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Quitar</button></div></div>'}).join("")
 }
 function radioWeekPanel(rows,month,contract){
  const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),weeks=[];let d=1;
@@ -221,7 +226,7 @@ async function uploadAsset(file,moduleName,existing){if(!file)return existing||"
 function bindRadio(rows,selectedContract,selectedMonth){
  $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
  $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);if(!r)return;$("#radioFormCard").innerHTML=radioForm(r,selectedContract,selectedMonth);bindRadioForm(r,rows,selectedContract,selectedMonth)});
- $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta asignación?"))return;await api("/api/control?module=radio&id="+b.dataset.delRadio,{method:"DELETE"});say("Asignación archivada");radio()});
+ $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta asignación?"))return;const _u="/api/control?module=radio&id="+b.dataset.delRadio;await api(_u,{method:"DELETE"});sayUndo("Asignación quitada",_u,()=>radio());radio()});
  bindRadioForm(null,rows,selectedContract,selectedMonth)
 }
 function bindRadioForm(existing,rows,selectedContract,selectedMonth){
@@ -274,9 +279,9 @@ async function campaigns(moduleName){
  $("#newCampaign").onclick=()=>{$("#campaignFormCard").innerHTML=campaignForm(moduleName);bindCampaignForm(null,moduleName)};
  bindCampaignRows(rows,moduleName);bindCampaignForm(null,moduleName);await hydrateMedia(moduleName);
 }
-function campaignItems(rows,moduleName){return rows.length?rows.map(r=>'<div class="item"><div><h3>'+esc(r.spectacle||r.campaignName||"Campaña")+'</h3><div class="item-meta">'+(r.venue?'<span class="badge">'+esc(r.venue)+'</span>':'')+'<span>'+esc(r.location||r.support||"")+'</span><span>'+esc(r.provider||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="'+moduleName+'" data-kind="image"></div></div><div class="item-actions"><button data-edit-campaign="'+r.id+'">Editar</button><button class="danger" data-del-campaign="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
+function campaignItems(rows,moduleName){return rows.length?rows.map(r=>'<div class="item"><div><h3>'+esc(r.spectacle||r.campaignName||"Campaña")+'</h3><div class="item-meta">'+(r.venue?'<span class="badge">'+esc(r.venue)+'</span>':'')+'<span>'+esc(r.location||r.support||"")+'</span><span>'+esc(r.provider||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span>'+statusBadge(r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="'+moduleName+'" data-kind="image"></div></div><div class="item-actions"><button data-edit-campaign="'+r.id+'">Editar</button><button class="danger" data-del-campaign="'+r.id+'">Quitar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
 function campaignForm(moduleName,r={}){const cfg=CAMPAIGN_CONFIG[moduleName];return '<div class="section-title"><h2>'+(r.id?"Editar campaña":"Nueva campaña")+'</h2></div><form id="campaignForm" class="form-grid">'+venueSelect(r.venue)+input("spectacle","Espectáculo / campaña",r.spectacle)+input("campaignName","Nombre interno",r.campaignName)+[["support","Soporte / formato"],["location",cfg.location],["provider",cfg.provider],["format","Pieza / formato"]].filter(([n])=>!(cfg.hide||[]).includes(n)).map(([n,l])=>input(n,l,r[n])).join("")+input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto",r.contact)+selectStatus(r.status)+'<label class="wide">Creatividad<input id="campaignAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Condiciones / acuerdo<textarea name="agreement">'+esc(r.agreement||"")+'</textarea></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelCampaign">Limpiar</button></div></form>'}
-function bindCampaignRows(rows,moduleName){$$("[data-edit-campaign]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editCampaign);if(!r)return;$("#campaignFormCard").innerHTML=campaignForm(moduleName,r);bindCampaignForm(r,moduleName)});$$("[data-del-campaign]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta campaña?"))return;await api("/api/control?module="+moduleName+"&id="+b.dataset.delCampaign,{method:"DELETE"});say("Campaña archivada");campaigns(moduleName)})}
+function bindCampaignRows(rows,moduleName){$$("[data-edit-campaign]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editCampaign);if(!r)return;$("#campaignFormCard").innerHTML=campaignForm(moduleName,r);bindCampaignForm(r,moduleName)});$$("[data-del-campaign]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta campaña?"))return;const _u="/api/control?module="+moduleName+"&id="+b.dataset.delCampaign;await api(_u,{method:"DELETE"});sayUndo("Campaña quitada",_u,()=>campaigns(moduleName));campaigns(moduleName)})}
 function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)return;$("#cancelCampaign").onclick=()=>{$("#campaignFormCard").innerHTML=campaignForm(moduleName);bindCampaignForm(null,moduleName)};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#campaignAsset")?.files?.[0];try{const assetKey=await uploadAsset(file,moduleName,existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(existing?.id)await api("/api/control?module="+moduleName+"&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module="+moduleName,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Campaña guardada");campaigns(moduleName)}catch(err){say(err.message)}}}
 
 const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro"];
@@ -310,20 +315,20 @@ async function homeTicket(){
  $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r),()=>bindHTForm(r))});
  $$("[data-new-ht]").forEach(b=>b.onclick=()=>{const [v,pos]=b.dataset.newHt.split("|");open(v,htForm({venue:v,position:pos}),()=>bindHTForm(null))});
  $$("[data-ht-all]").forEach(b=>b.onclick=()=>{const v=b.dataset.htAll;open(v,htAllForm(v),()=>bindHTAll(v))});
- $$("[data-del-ht]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta pieza?"))return;await api("/api/control?module=hometicket&id="+b.dataset.delHt,{method:"DELETE"});say("Pieza archivada");homeTicket()});
+ $$("[data-del-ht]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+b.dataset.delHt;await api(_u,{method:"DELETE"});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()});
  await hydrateMedia("hometicket");
 }
-function htItems(rows){return rows.length?[...rows].sort((a,b)=>String(b.startDate||"").localeCompare(String(a.startDate||""))).map(r=>'<div class="item"><div><h3>'+esc((HT_POS.find(p=>p.key===r.position)||{name:r.position||"Home Ticket"}).name)+' · '+esc(r.spectacle||"")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>Material: '+esc(r.materialStatus||"sin indicar")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+statusBadge(r.status)+'</div></div><div class="item-actions"><button data-edit-ht="'+r.id+'">Editar</button><button class="danger" data-del-ht="'+r.id+'">Archivar</button></div></div>').join(""):'<div class="notice">Todavía no hay piezas cargadas para este Home Ticket.</div>'}
+function htItems(rows){return rows.length?[...rows].sort((a,b)=>String(b.startDate||"").localeCompare(String(a.startDate||""))).map(r=>'<div class="item"><div><h3>'+esc((HT_POS.find(p=>p.key===r.position)||{name:r.position||"Home Ticket"}).name)+' · '+esc(r.spectacle||"")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>Material: '+esc(r.materialStatus||"sin indicar")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+statusBadge(r.status)+'</div></div><div class="item-actions"><button data-edit-ht="'+r.id+'">Editar</button><button class="danger" data-del-ht="'+r.id+'">Quitar</button></div></div>').join(""):'<div class="notice">Todavía no hay piezas cargadas para este Home Ticket.</div>'}
 function htForm(r={}){const pos=HT_POS.find(p=>p.key===r.position)||HT_POS[0];
  return '<div class="section-title"><div><small class="section-kicker">'+esc(venueShort(r.venue||""))+' · '+pos.name+' · '+pos.size+'</small><h2>'+(r.id?"Editar pieza":"Nueva pieza")+'</h2></div><button type="button" class="ghost" id="cancelHT">Cerrar</button></div>'+
   '<form id="htForm" class="form-grid"><input type="hidden" name="venue" value="'+esc(r.venue||"")+'"><input type="hidden" name="position" value="'+esc(pos.key)+'">'+
   '<label class="wide">Espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" placeholder="Empieza a escribir y elige de la lista" value="'+esc(r.spectacle||"")+'" required></label>'+
   input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+
   '<label class="wide">Creatividad'+(r.assetKey?' (deja vacío para mantener la actual)':'')+'<input id="htAsset" type="file" accept="image/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
-  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Archivar</button>':'')+'</div></form>'}
+  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Quitar</button>':'')+'</div></form>'}
 function htSaving(f,on){const b=f.querySelector('button[type="submit"]');if(b){b.disabled=on;b.textContent=on?"Guardando…":"Guardar"}}
 function bindHTForm(existing){const f=$("#htForm");if(!f)return;$("#cancelHT").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
- const del=f.querySelector("[data-del-ht]");if(del)del.onclick=async()=>{if(!confirm("¿Archivar esta pieza?"))return;await api("/api/control?module=hometicket&id="+del.dataset.delHt,{method:"DELETE"});say("Pieza archivada");homeTicket()};
+ const del=f.querySelector("[data-del-ht]");if(del)del.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+del.dataset.delHt;await api(_u,{method:"DELETE"});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()};
  f.onsubmit=async e=>{e.preventDefault();if(f.dataset.busy)return;f.dataset.busy="1";htSaving(f,true);const data=formObject(f),file=$("#htAsset")?.files?.[0];
   if(data.startDate&&data.endDate&&data.endDate<data.startDate){say("La fecha de fin no puede ser anterior al inicio");delete f.dataset.busy;htSaving(f,false);return}
   try{if(!existing)data.status="activo";const assetKey=await uploadAsset(file,"hometicket",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}
@@ -366,7 +371,7 @@ async function revistas(){
  $$("[data-add-revista]").forEach(b=>b.onclick=()=>{const [magazine,month]=b.dataset.addRevista.split("|");openForm({magazine,month})});
  $$("[data-edit-revista]").forEach(b=>b.onclick=()=>openForm(rows.find(x=>x.id===b.dataset.editRevista)));
  $$("[data-mag-open]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.magOpen);if(r)magSheet(r,openForm)});
- $$("[data-del-revista]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta página?"))return;await api("/api/control?module=revistas&id="+b.dataset.delRevista,{method:"DELETE"});say("Página archivada");revistas()});
+ $$("[data-del-revista]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta página?"))return;const _u="/api/control?module=revistas&id="+b.dataset.delRevista;await api(_u,{method:"DELETE"});sayUndo("Página quitada",_u,()=>revistas());revistas()});
  bindRevistaForm(null,rows);await hydrateMedia("revistas");
 }
 function magSheet(r,openForm){
@@ -376,12 +381,12 @@ function magSheet(r,openForm){
   '<div class="mag-sheet-img">'+(r.assetKey?'<span class="muted">Cargando…</span>':'<span class="muted">Sin imagen</span>')+'</div>'+
   '<div class="mag-sheet-info"><small class="section-kicker">'+esc(r.magazine||"")+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
   '<div class="item-meta"><span class="badge '+(done?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+(r.contact?'<span>'+esc(r.contact)+'</span>':'')+'</div>'+(r.notes?'<p class="mag-sheet-notes">'+esc(r.notes)+'</p>':'')+
-  '<div class="actions-row"><button type="button" class="primary" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-sheet-del>Archivar</button></div></div></div>';
+  '<div class="actions-row"><button type="button" class="primary" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-sheet-del>Quitar</button></div></div></div>';
  document.body.appendChild(el);document.body.classList.add("sheet-open");
  const close=()=>{el.remove();document.body.classList.remove("sheet-open");document.removeEventListener("keydown",esc_)};const esc_=e=>{if(e.key==="Escape")close()};document.addEventListener("keydown",esc_);
  el.onclick=e=>{if(e.target===el)close()};el.querySelector(".mag-sheet-x").onclick=close;
  el.querySelector("[data-edit-revista]").onclick=()=>{close();openForm(r)};
- el.querySelector("[data-sheet-del]").onclick=async()=>{if(!confirm("¿Archivar esta página?"))return;await api("/api/control?module=revistas&id="+r.id,{method:"DELETE"});close();say("Página archivada");revistas()};
+ el.querySelector("[data-sheet-del]").onclick=async()=>{if(!confirm("¿Quitar esta página?"))return;const _u="/api/control?module=revistas&id="+r.id;await api(_u,{method:"DELETE"});close();sayUndo("Página quitada",_u,()=>revistas());revistas()};
  if(r.assetKey)blobUrl(r.assetKey,"revistas").then(u=>{const box=el.querySelector(".mag-sheet-img");if(box)box.innerHTML=u?'<img src="'+u+'" alt="'+esc(r.spectacle||"Página")+'">':'<span class="muted">Sin imagen</span>'});
 }
 function revistaForm(r={}){const monthOpts=[];const now=new Date();for(let i=-1;i<=12;i++){const m=monthKey(new Date(now.getFullYear(),now.getMonth()+i,1));monthOpts.push(m)}if(r.month&&!monthOpts.includes(r.month))monthOpts.unshift(r.month);
@@ -715,13 +720,29 @@ function bindMailTest(){const out=$("#mailResult");if(!out)return;
 
 async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 
+// Archivo: toda la publicidad de cada mes y los registros quitados, con opción de recuperarlos.
+let arMonth="";
 async function archivo(){
- const auditP=api("/api/control?module=audit&limit=250");
- const modules=(roles().includes("admin")||roles().includes("gestion"))?["radio","taxis","intercambiadores","hometicket","revistas"]:[];
- const results=await Promise.all([auditP,...modules.map(m=>api("/api/control?module="+m+"&includeDeleted=1"))]);
- const d=results[0],finished=[];
- modules.forEach((m,i)=>{(results[i+1].rows||[]).filter(r=>r.deletedAt||(r.status||"").toLowerCase()==="finalizado").forEach(r=>finished.push({module:modLabel(m),title:r.spectacle||r.campaignName||r.position||"Registro",place:r.magazine||r.station||r.location||r.venue||"",from:r.startDate,to:r.endDate}))});
- app.innerHTML=pageHead("Archivo / Histórico","Cambios y campañas finalizadas")+(finished.length?'<section class="card" style="margin-bottom:14px"><div class="section-title"><h2>Campañas finalizadas / archivadas</h2><span class="badge">'+finished.length+'</span></div><div class="list">'+finished.map(r=>'<div class="item"><div><h3>'+esc(r.module)+' · '+esc(r.title)+'</h3><div class="item-meta"><span>'+esc(r.place)+'</span><span>'+fdate(r.from)+' → '+fdate(r.to)+'</span></div></div></div>').join("")+'</div></section>':'')+'<div class="card"><div class="section-title"><h2>Auditoría</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Elemento</th><th>Usuario</th></tr></thead><tbody>'+(d.rows||[]).map(r=>'<tr><td>'+new Date(r.at).toLocaleString("es-ES")+'</td><td>'+esc(modLabel(r.module))+'</td><td>'+esc(actLabel(r.action))+'</td><td>'+esc(r.elementId||"")+'</td><td>'+esc(r.actor?.email||"")+'</td></tr>').join("")+'</tbody></table></div></div>';
+ const q=new URLSearchParams(location.hash.split("?")[1]||"").get("mes");if(q&&/^\d{4}-\d{2}$/.test(q))arMonth=q;
+ const now=new Date(),cur=monthKey(now);if(!arMonth)arMonth=cur;
+ const months=[...Array(7)].map((_,i)=>monthKey(new Date(now.getFullYear(),now.getMonth()-i,1)));if(!months.includes(arMonth))months.push(arMonth);
+ const admin=roles().includes("admin"),edit=admin||roles().includes("gestion");
+ const mods=edit?["radio","taxis","intercambiadores","hometicket","revistas","hitos"]:[];
+ const [sum,...lists]=await Promise.all([api("/api/monthly?mes="+arMonth),...mods.map(m=>api("/api/control?module="+m+"&includeDeleted=1").catch(()=>({rows:[]})))]);
+ const lim=new Date(Date.now()-120*864e5).toISOString();
+ const removed=[];mods.forEach((m,i)=>(lists[i].rows||[]).filter(r=>r.deletedAt&&r.deletedAt>lim).forEach(r=>removed.push({m,r})));removed.sort((a,b)=>b.r.deletedAt.localeCompare(a.r.deletedAt));
+ const short=m=>{const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","");return t.charAt(0).toUpperCase()+t.slice(1)+" "+String(y).slice(2)};
+ const chips='<div class="chip-row ar-months">'+months.map(m=>'<button type="button" class="chip'+(m===arMonth?" on":"")+'" data-ar="'+m+'">'+short(m)+(m===cur?' · en curso':'')+'</button>').join("")+'</div>';
+ const kpis='<div class="kpi-row">'+sum.totals.map(t=>kpi(t.value,t.label)).join("")+'</div>';
+ const cards='<div class="ar-grid">'+sum.sections.map(sec=>'<section class="card ar-card'+(sec.lines.length?'':' empty')+'"><div class="section-title"><div><small class="section-kicker">'+esc(sec.name)+'</small></div><span class="badge">'+sec.lines.length+'</span></div>'+
+  (sec.lines.length?'<ul class="ar-list">'+sec.lines.map(l=>'<li><b>'+esc(l.title)+'</b><span>'+esc(l.detail||"")+'</span></li>').join("")+'</ul>':'<p class="muted" style="margin:0">Sin registros este mes.</p>')+'</section>').join("")+'</div>';
+ const rem=removed.length?'<details class="card ar-removed"><summary>Registros quitados ('+removed.length+')</summary><p class="muted" style="margin:6px 0 10px">Lo que se ha quitado en los últimos cuatro meses. Puedes recuperarlo.</p><div class="list">'+removed.map(({m,r})=>'<div class="item"><div><h3>'+esc(modLabel(m))+' · '+esc(r.spectacle||r.title||r.campaignName||"Registro")+'</h3><div class="item-meta">'+(r.magazine?'<span>'+esc(r.magazine)+' · '+esc(monthLabel(r.month||""))+'</span>':'')+(r.venue?'<span>'+esc(r.venue)+'</span>':'')+'<span>Quitado el '+fdate(r.deletedAt.slice(0,10))+'</span></div></div><div class="item-actions"><button type="button" data-restore="'+m+'|'+r.id+'">Recuperar</button></div></div>').join("")+'</div></details>':'';
+ app.innerHTML=pageHead("Archivo","Toda la publicidad de cada mes: fachada, Home Ticket, radio, taxis, intercambiadores, revistas y comunicación",admin?'<button type="button" id="arSend">Enviar resumen por correo</button>':'')+
+  chips+'<h2 class="ar-title">'+esc(sum.label)+(arMonth===cur?' <em>mes en curso</em>':'')+'</h2>'+kpis+cards+rem+
+  '<p class="cart-legacy" style="margin-top:14px">El día 1 de cada mes a las 9:00 llega por correo el resumen del mes anterior.</p>';
+ $$("[data-ar]").forEach(b=>b.onclick=()=>{arMonth=b.dataset.ar;history.replaceState(null,"","#archivo");archivo()});
+ $$("[data-restore]").forEach(b=>b.onclick=async()=>{const [m,id]=b.dataset.restore.split("|");try{await api("/api/control?module="+m+"&id="+id,{method:"PATCH"});say("Recuperado");archivo()}catch(e){say(e.message)}});
+ const sb=$("#arSend");if(sb)sb.onclick=async()=>{sb.disabled=true;sb.textContent="Enviando…";try{const r=await api("/api/monthly?mes="+arMonth,{method:"POST"});say(r.sent?"Resumen enviado a "+(r.to||[]).join(", "):"No se ha enviado: "+(r.reason||"revisa el correo"))}catch(e){say(e.message)}finally{sb.disabled=false;sb.textContent="Enviar resumen por correo"}};
 }
 
 // ===================== CALENDARIO =====================
@@ -822,14 +843,14 @@ function calHitoForm(r={}){
   '<label>Aviso<select name="reminder"'+dis+'>'+HITO_REMINDERS.map(([v,l])=>'<option value="'+v+'"'+(v===(r.reminder||"")?" selected":"")+'>'+l+'</option>').join("")+'</select></label>'+
   '<label class="wide">Notas<textarea name="notes"'+dis+'>'+esc(r.notes||"")+'</textarea></label>'+
   '<p class="cart-legacy wide" style="margin:0">El aviso llega a quien esté suscrito al calendario. Por defecto: una hora antes si tiene hora; si no, el día anterior a las 9:00.</p>'+
-  (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Archivar</button>':'')+'</div>':'')+'</form>');
+  (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Quitar</button>':'')+'</div>':'')+'</form>');
  $("#hitoClose").onclick=()=>calPanel("");loadSpectacles();
  if(!edit)return;
  $("#hitoForm").onsubmit=async ev=>{ev.preventDefault();const data=formObject(ev.target);try{
   if(r.id)await api("/api/control?module=hitos&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   else await api("/api/control?module=hitos",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   say("Hito guardado");if(data.date){const [yy,mm,dd]=data.date.split("-").map(Number);calCursor=new Date(yy,mm-1,1);const w0=weekRange(0)[0];calWeekOffset=Math.floor((new Date(yy,mm-1,dd)-w0)/(7*864e5))}calendario()}catch(e){say(e.message)}};
- if(r.id)$("#hitoDel").onclick=async()=>{if(!confirm("¿Archivar este hito?"))return;try{await api("/api/control?module=hitos&id="+r.id,{method:"DELETE"});say("Hito archivado");calendario()}catch(e){say(e.message)}};
+ if(r.id)$("#hitoDel").onclick=async()=>{if(!confirm("¿Quitar este hito?"))return;try{const _u="/api/control?module=hitos&id="+r.id;await api(_u,{method:"DELETE"});sayUndo("Hito quitado",_u,()=>calendario());calendario()}catch(e){say(e.message)}};
 }
 // Suscripción: enlace privado, con filtro opcional por módulo o por espacio
 let calSubScope="all";
@@ -919,7 +940,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v28";
+const YC_VERSION="yellow-control-v29";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

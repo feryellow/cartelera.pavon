@@ -6,7 +6,7 @@ import { listRecords } from "./records.ts";
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const weekKey = (iso: string) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
 
-async function loadContracts(origin: string) {
+export async function loadContracts(origin: string) {
   const r = await fetch(new URL("/data/radio-contracts.json", origin), { headers: { "cache-control": "no-cache" } });
   if (!r.ok) throw new Error("No se ha podido leer el inventario contractual de Radio");
   const d: any = await r.json();
