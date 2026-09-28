@@ -17,11 +17,9 @@ function quickRead(s: MonthSummary) {
 export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
   const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   let n = 0;
-  // Fachada: si hay fotos reales del montaje se envían solo esas; si no, carteles en miniatura pequeña
-  for (const sec of s.sections) if (sec.key === "carteleria" && sec.lines.some((l) => l.wide && l.img)) sec.lines.forEach((l) => { if (!l.wide) delete l.img; });
   for (const sec of s.sections) for (const l of sec.lines) {
     if (!l.img || n >= 36) continue;
-    const b64 = await thumbBase64(l.img, l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400);
+    const b64 = l.img.kind === "facade" ? await thumbBase64(l.img) : await thumbBase64(l.img, l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400);
     if (!b64) continue;
     const cid = `img${n++}@yc`; (l as any).cid = cid;
     attachments.push({ filename: `imagen-${n}.jpg`, content: b64, content_id: cid, content_type: "image/jpeg" });
@@ -56,7 +54,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     const withImg = sec.lines.filter((l) => (l as any).cid), noImg = sec.lines.filter((l) => !(l as any).cid);
     return `
   <tr><td class="yw-pad" style="padding:26px 32px 0;">
-    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${sec.lines.filter((l) => !l.empty).length}</div>
+    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${e((sec.count || String(sec.lines.filter((l) => !l.empty).length)).toUpperCase())}</div>
     <div style="height:2px; background:${Y}; margin-top:6px;"></div>
   </td></tr>
   ${!sec.lines.length ? `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>` : (withImg.length ? grid(withImg) : "") + noImg.map(textRow).join("")}`}).join("");

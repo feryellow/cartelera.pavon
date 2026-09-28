@@ -2,12 +2,13 @@ import { carteleriaStore, controlStore } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { SLOT_NAMES } from "./calendar.ts";
 import { loadContracts } from "./radio.ts";
+import { FACADE_VIEWS, FACADE_SLOTS } from "./facade.ts";
 
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
 export type Line = { title: string; detail: string; date?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean };
-export type Section = { key: string; name: string; lines: Line[]; note?: string };
+export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
@@ -42,17 +43,22 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     const slot = SLOT_NAMES[key] || key;
     cart.push({ title: v?.title || slot, detail: `${v?.title ? slot + " · " : ""}${when}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: hasImg ? { kind: "cart", key } : undefined, small: true });
   }
-  const mont: Line[] = [];
+  // Último montaje del mes: si tiene fotos reales, esas son la imagen de la fachada
+  let lastMont: any = null;
   const list = await controlStore().list({ prefix: "montaje_" });
   for (const b of list.blobs) {
     const r: any = await controlStore().get(b.key, { type: "json" });
     if (!r?.date || r.date < first || r.date > last) continue;
-    const names = (r.slots || []).map((k: string) => SLOT_NAMES[k] || k).join(", ");
-    const ph = Object.values(r.photos || {}) as string[];
-    if (ph.length) ph.forEach((k, i) => mont.push({ title: `Montaje · ${fmt(r.date)}`, detail: SLOT_NAMES[(r.slots || []).find((s: string) => r.photos[s] === k)] || names, date: r.date, img: { kind: "asset", key: k }, wide: true }));
-    else mont.push({ title: `Montaje confirmado · ${fmt(r.date)}`, detail: names, date: r.date });
+    if (!lastMont || String(r.createdAt || r.date) > String(lastMont.createdAt || lastMont.date)) lastMont = r;
   }
-  sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: [...cart.sort((a, b) => a.detail.localeCompare(b.detail)), ...mont.sort((a, b) => String(a.date).localeCompare(String(b.date)))] });
+  const facade: Line[] = [];
+  const photos = lastMont ? Object.entries(lastMont.photos || {}) as [string, string][] : [];
+  if (photos.length) photos.forEach(([slot, k]) => facade.push({ title: SLOT_NAMES[slot] || slot, detail: `Foto del montaje · ${fmt(lastMont.date)}`, img: { kind: "asset", key: k }, wide: true }));
+  else for (const v of FACADE_VIEWS) {
+    const withPoster = FACADE_SLOTS.filter((x) => x.view === v.id && state.slots?.[x.key]?.hasImage).length;
+    if (withPoster) facade.push({ title: v.name, detail: `${withPoster} ${withPoster === 1 ? "cartel" : "carteles"}${lastMont ? " · último montaje el " + fmt(lastMont.date) : ""}`, img: { kind: "facade", key: v.id }, wide: true });
+  }
+  sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: facade, count: `${cart.length} ${cart.length === 1 ? "soporte" : "soportes"}` });
 
   // Home Ticket
   // Home Ticket: los cinco espacios, en orden; los que no tuvieron piezas aparecen como «sin piezas»
