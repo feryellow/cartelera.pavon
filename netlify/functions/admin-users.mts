@@ -15,7 +15,7 @@ export default async(req:Request)=>{
   if(req.method==="GET"){
     try{
       const users=await admin.listUsers();
-      return Response.json({users:users.map((u:any)=>({id:u.id,email:u.email,name:u.name||u.userMetadata?.full_name||"",roles:u.roles||[],disabled:disabled!.includes(u.id)}))});
+      return Response.json({users:users.map((u:any)=>({id:u.id,email:u.email,name:u.name||u.userMetadata?.full_name||"",roles:Array.isArray(u.appMetadata?.roles)?u.appMetadata.roles:(u.roles||[]),disabled:disabled!.includes(u.id)}))});
     }catch(e:any){return Response.json({error:e?.message||"Identity no está habilitado"},{status:503});}
   }
 
@@ -25,8 +25,7 @@ export default async(req:Request)=>{
     if(!email.includes("@")||!allowedRoles.includes(role))return Response.json({error:"Datos no válidos"},{status:400});
     try{
       const password=crypto.randomUUID()+crypto.randomUUID();
-      const user=await admin.createUser({email,password});
-      await admin.updateUser(user.id,{role});
+      const user=await admin.createUser({email,password,data:{app_metadata:{roles:[role]}}});
       try{await requestPasswordRecovery(email);}catch{}
       await appendAudit({actor:auth.actor!,module:"admin",elementId:user.id,action:"user_create",after:{email,role}});
       return Response.json({ok:true,user:{id:user.id,email,roles:[role]},recoveryRequested:true},{status:201});
@@ -37,9 +36,11 @@ export default async(req:Request)=>{
     const id=String(body.id||""), role=String(body.role||"");
     if(!id||!allowedRoles.includes(role))return Response.json({error:"Datos no válidos"},{status:400});
     try{
-      const user=await admin.updateUser(id,{role});
+      const current=await admin.getUser(id);
+      const appMetadata={...(current.appMetadata||{}),roles:[role]};
+      const user=await admin.updateUser(id,{app_metadata:appMetadata});
       await appendAudit({actor:auth.actor!,module:"admin",elementId:id,action:"role_change",after:{role}});
-      return Response.json({ok:true,user:{id:user.id,email:user.email,roles:user.roles}});
+      return Response.json({ok:true,user:{id:user.id,email:user.email,roles:Array.isArray(user.appMetadata?.roles)?user.appMetadata.roles:user.roles}});
     }catch(e:any){return Response.json({error:e?.message||"No se pudo cambiar el rol"},{status:400});}
   }
 
