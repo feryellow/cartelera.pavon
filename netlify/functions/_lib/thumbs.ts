@@ -21,8 +21,14 @@ async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
 
 // Encaja la imagen entera (sin recortar) en un marco de proporción fija con fondo claro,
 // para que se vea la pieza completa y la cuadrícula del correo quede regular.
+// Versión de la imagen: si el cartel de un soporte cambia, cambia la versión y no se reutiliza
+// la miniatura antigua (la clave del soporte es siempre la misma).
+async function version(ref: ImgRef) {
+  const meta: any = ref.kind === "asset" ? await assetStore().get(`meta_${ref.key}`, { type: "json" }) : await carteleriaStore().get(`imagemeta_${ref.key}`, { type: "json" });
+  return String(meta?.updatedAt || meta?.size || "0").replace(/[^0-9A-Za-z]/g, "");
+}
 export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string> {
-  const cacheKey = `thumbf_${ref.kind}_${ref.key}_${w}x${h}`;
+  const cacheKey = `thumbv_${ref.kind}_${ref.key}_${await version(ref).catch(() => "0")}_${w}x${h}`;
   try { const c = await controlStore().get(cacheKey, { type: "text" }); if (c) return c; } catch {}
   try {
     const bytes = await rawBytes(ref); if (!bytes) return "";
