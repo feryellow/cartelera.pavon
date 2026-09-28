@@ -1,9 +1,10 @@
 import { Jimp } from "jimp";
 import { assetStore, carteleriaStore, controlStore } from "./store.ts";
+import { facadeComposite, facadeVersion } from "./facade.ts";
 
 // Miniaturas JPEG pequeñas para incrustar en los correos (cid:). Se guardan en caché para no
 // recalcularlas cada mes. Devuelve base64 o "" si la imagen no existe o no se puede leer.
-export type ImgRef = { kind: "asset" | "cart"; key: string };
+export type ImgRef = { kind: "asset" | "cart" | "facade"; key: string };
 
 async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
   if (ref.kind === "asset") {
@@ -24,6 +25,7 @@ async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
 // Versión de la imagen: si el cartel de un soporte cambia, cambia la versión y no se reutiliza
 // la miniatura antigua (la clave del soporte es siempre la misma).
 async function version(ref: ImgRef) {
+  if (ref.kind === "facade") return facadeVersion(ref.key);
   const meta: any = ref.kind === "asset" ? await assetStore().get(`meta_${ref.key}`, { type: "json" }) : await carteleriaStore().get(`imagemeta_${ref.key}`, { type: "json" });
   return String(meta?.updatedAt || meta?.size || "0").replace(/[^0-9A-Za-z]/g, "");
 }
@@ -31,6 +33,11 @@ export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string
   const cacheKey = `thumbv_${ref.kind}_${ref.key}_${await version(ref).catch(() => "0")}_${w}x${h}`;
   try { const c = await controlStore().get(cacheKey, { type: "text" }); if (c) return c; } catch {}
   try {
+    if (ref.kind === "facade") {
+      const buf = await facadeComposite(ref.key, (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, ""), 912);
+      if (!buf) return "";
+      const b64 = buf.toString("base64"); try { await controlStore().set(cacheKey, b64); } catch {} return b64;
+    }
     const bytes = await rawBytes(ref); if (!bytes) return "";
     const img = await Jimp.read(Buffer.from(bytes));
     img.scaleToFit({ w, h });
