@@ -5,7 +5,8 @@ import { loadContracts } from "./radio.ts";
 
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
-export type Line = { title: string; detail: string; date?: string };
+import type { ImgRef } from "./thumbs.ts";
+export type Line = { title: string; detail: string; date?: string; img?: ImgRef; wide?: boolean };
 export type Section = { key: string; name: string; lines: Line[]; note?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
 
@@ -34,7 +35,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   for (const [key, v] of Object.entries(state.schedule || {}) as any) {
     const inst = v?.installDate || "", rem = v?.removeDate || "";
     if (!v?.title || !inst || inst > last || (rem && rem < first)) continue;
-    cart.push({ title: v.title, detail: `${SLOT_NAMES[key] || key} · ${inst >= first ? "instalado el " + fmt(inst) : "desde " + fmt(inst)}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst });
+    cart.push({ title: v.title, detail: `${SLOT_NAMES[key] || key} · ${inst >= first ? "instalado el " + fmt(inst) : "desde " + fmt(inst)}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: state.slots?.[key]?.hasImage ? { kind: "cart", key } : undefined });
   }
   const mont: Line[] = [];
   const list = await controlStore().list({ prefix: "montaje_" });
@@ -42,14 +43,16 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     const r: any = await controlStore().get(b.key, { type: "json" });
     if (!r?.date || r.date < first || r.date > last) continue;
     const names = (r.slots || []).map((k: string) => SLOT_NAMES[k] || k).join(", ");
-    mont.push({ title: `Montaje confirmado · ${fmt(r.date)}`, detail: `${names}${Object.keys(r.photos || {}).length ? " · " + Object.keys(r.photos).length + " foto(s)" : ""}`, date: r.date });
+    const ph = Object.values(r.photos || {}) as string[];
+    if (ph.length) ph.forEach((k, i) => mont.push({ title: `Montaje · ${fmt(r.date)}`, detail: SLOT_NAMES[(r.slots || []).find((s: string) => r.photos[s] === k)] || names, date: r.date, img: { kind: "asset", key: k }, wide: true }));
+    else mont.push({ title: `Montaje confirmado · ${fmt(r.date)}`, detail: names, date: r.date });
   }
   sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: [...cart.sort((a, b) => a.detail.localeCompare(b.detail)), ...mont.sort((a, b) => String(a.date).localeCompare(String(b.date)))] });
 
   // Home Ticket
   const ht = (await listRecords("hometicket")).filter(overlaps);
   sections.push({ key: "hometicket", name: "Home Ticket", lines: ht.sort((a, b) => String(a.venue).localeCompare(String(b.venue)) || String(a.position).localeCompare(String(b.position)))
-    .map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}` })) });
+    .map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}`, img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
 
   // Radio: por contrato (contratado / asignado / certificado) y registros sin contrato
   const radio = await listRecords("radio");
@@ -74,12 +77,12 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   // Taxis e intercambiadores
   for (const [m, name] of [["taxis", "Taxis"], ["intercambiadores", "Intercambiadores"]] as const) {
     const rows = (await listRecords(m)).filter(overlaps);
-    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · ") })) });
+    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
   }
 
   // Revistas: una página por revista y mes
   const rev = (await listRecords("revistas")).filter((r) => r.month === month);
-  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: [r.magazine, short(r.venue)].filter(Boolean).join(" · ") })) });
+  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: [r.magazine, short(r.venue)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
 
   // Comunicación: notas de prensa, ruedas de prensa, estrenos… (hitos del Calendario)
   const hitos = (await listRecords("hitos")).filter((r) => r.date >= first && r.date <= last).sort((a, b) => String(a.date).localeCompare(String(b.date)));
