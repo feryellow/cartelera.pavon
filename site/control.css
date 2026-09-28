@@ -758,3 +758,4 @@ body.sheet-open{overflow:hidden}
 :root[data-theme="light"] .mag-sheet-box{background:#fff}
 :root[data-theme="light"] .mag-sheet-img{background:#f1efe9}
 .mag-calendar>.chip-row{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:24px}
+.yc-update{left:16px;right:16px;transform:none;margin:0 auto;max-width:520px;justify-content:space-between}.yc-update span{flex:1;min-width:0}
