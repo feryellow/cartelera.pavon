@@ -1,4 +1,5 @@
-import type { MonthSummary } from "./monthly.ts";
+import type { MonthSummary, Line } from "./monthly.ts";
+import { thumbBase64 } from "./thumbs.ts";
 // Correo de resumen mensual con la base de la plantilla Somos Yellow.
 const e = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] as string));
 const Y = "#f4c300";
@@ -12,17 +13,52 @@ function quickRead(s: MonthSummary) {
   return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (top.length ? ` Más presencia: ${top.join(", ")}.` : "") + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; faltan los certificados de emisión." : "");
 }
 
+// Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
+export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
+  const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
+  let n = 0;
+  for (const sec of s.sections) for (const l of sec.lines) {
+    if (!l.img || n >= 36) continue;
+    const b64 = await thumbBase64(l.img, l.wide ? 432 : 300, l.wide ? 324 : 400);
+    if (!b64) continue;
+    const cid = `img${n++}@yc`; (l as any).cid = cid;
+    attachments.push({ filename: `imagen-${n}.jpg`, content: b64, content_id: cid, content_type: "image/jpeg" });
+  }
+  return { html: renderMonthly(s, o), attachments };
+}
+
 export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
   const base = o.appUrl.replace(/\/$/, "");
   const kpis = s.totals.filter((x) => x.value > 0).slice(0, 6);
   const kpiRows: string[] = [];
   for (let i = 0; i < kpis.length; i += 3) kpiRows.push(`<tr>${kpis.slice(i, i + 3).map((k) => `<td width="33%" valign="top" style="padding:0 10px 12px 0;"><div style="font-size:24px; font-weight:800; color:#111111; line-height:1;">${k.value.toLocaleString("es-ES")}</div><div style="font-size:11px; color:#555555; margin-top:4px;">${e(k.label)}</div></td>`).join("")}</tr>`);
-  const sections = s.sections.map((sec) => `
+  const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`;
+  // Cuadrícula de miniaturas: 3 por fila (2 si son fotos apaisadas de montaje)
+  // Cuadrícula regular: carteles 3 por fila (3:4) y fotos de montaje 2 por fila (4:3)
+  const grid = (items: Line[]) => {
+    const block = (list: Line[], per: number) => {
+      const cw = Math.floor(456 / per), iw = cw - 12, rows: string[] = [];
+      for (let i = 0; i < list.length; i += per) {
+        const chunk = list.slice(i, i + per);
+        const pct = per === 2 ? 50 : 33;
+        rows.push(`<tr>${chunk.map((l) => `<td width="${pct}%" valign="top" style="width:${pct}%; padding:0 10px 18px 0;">
+          <img src="cid:${e((l as any).cid)}" width="${iw}" height="${per === 2 ? Math.round(iw * 0.75) : Math.round(iw * 4 / 3)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">
+          <div style="font-size:12px; font-weight:800; color:#111111; margin-top:7px; line-height:1.3;">${e(l.title)}</div>
+          <div style="font-size:11px; color:#666666; margin-top:2px; line-height:1.4;">${e(l.detail || "")}</div></td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
+      }
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%;">${rows.join("")}</table>`;
+    };
+    const posters = items.filter((l) => !l.wide), photos = items.filter((l) => l.wide);
+    return `<tr><td class="yw-pad" style="padding:16px 32px 0;">${posters.length ? block(posters, 3) : ""}${photos.length ? `${posters.length ? '<div style="font-size:10px; font-weight:bold; letter-spacing:0.04em; color:#777777; margin:2px 0 10px;">FOTOS DEL MONTAJE</div>' : ""}${block(photos, 2)}` : ""}</td></tr>`;
+  };
+  const sections = s.sections.map((sec) => {
+    const withImg = sec.lines.filter((l) => (l as any).cid), noImg = sec.lines.filter((l) => !(l as any).cid);
+    return `
   <tr><td class="yw-pad" style="padding:26px 32px 0;">
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${sec.lines.length}</div>
     <div style="height:2px; background:${Y}; margin-top:6px;"></div>
   </td></tr>
-  ${sec.lines.length ? sec.lines.map((l, i) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`).join("") : `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>`}`).join("");
+  ${!sec.lines.length ? `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>` : (withImg.length ? grid(withImg) : "") + noImg.map(textRow).join("")}`}).join("");
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
 <title>Resumen de publicidad · ${e(s.label)}</title>
