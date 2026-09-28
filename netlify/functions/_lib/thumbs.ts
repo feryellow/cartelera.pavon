@@ -19,15 +19,18 @@ async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
   return bytes;
 }
 
-// Recorta a proporción fija (cover) para que la cuadrícula del correo sea regular.
+// Encaja la imagen entera (sin recortar) en un marco de proporción fija con fondo claro,
+// para que se vea la pieza completa y la cuadrícula del correo quede regular.
 export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string> {
-  const cacheKey = `thumbc_${ref.kind}_${ref.key}_${w}x${h}`;
+  const cacheKey = `thumbf_${ref.kind}_${ref.key}_${w}x${h}`;
   try { const c = await controlStore().get(cacheKey, { type: "text" }); if (c) return c; } catch {}
   try {
     const bytes = await rawBytes(ref); if (!bytes) return "";
     const img = await Jimp.read(Buffer.from(bytes));
-    img.cover({ w, h });
-    const out = await img.getBuffer("image/jpeg", { quality: 74 });
+    img.scaleToFit({ w, h });
+    const frame = new Jimp({ width: w, height: h, color: 0xf3f3f1ff });
+    frame.composite(img, Math.round((w - img.bitmap.width) / 2), Math.round((h - img.bitmap.height) / 2));
+    const out = await frame.getBuffer("image/jpeg", { quality: 78 });
     const b64 = Buffer.from(out).toString("base64");
     try { await controlStore().set(cacheKey, b64); } catch {}
     return b64;
