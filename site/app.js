@@ -355,16 +355,34 @@ async function revistas(){
  // meses con registros fuera del rango visible también se muestran
  rows.forEach(r=>{if(r.month&&!months.includes(r.month))months.push(r.month)});months.sort();
  const find=(mag,m)=>rows.find(r=>r.magazine===mag&&r.month===m);
- const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<div class="mag-cell empty"><small>'+esc(mag)+'</small><button type="button" data-add-revista="'+esc(mag)+'|'+m+'">+ Añadir</button></div>';
-  return '<div class="mag-cell"><small>'+esc(mag)+'</small><div class="mag-thumb media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></div><b>'+esc(r.spectacle||"Sin espectáculo")+'</b>'+(r.venue?'<span class="mag-venue">'+esc(r.venue)+'</span>':'')+'<div class="item-meta"><span class="badge '+(["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase())?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+'</div><div class="item-actions"><button type="button" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-del-revista="'+r.id+'">Archivar</button></div></div>'};
+ const done=r=>["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase());
+ // Miniatura por revista y mes; al tocarla se abre la ficha con la página en grande
+ const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<button type="button" class="mag-cover empty" data-add-revista="'+esc(mag)+'|'+m+'"><span class="mag-img"><i>+</i></span><span class="mag-name">'+esc(mag)+'</span><span class="mag-show">Sin página</span></button>';
+  return '<button type="button" class="mag-cover" data-mag-open="'+r.id+'"><span class="mag-img media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></span><span class="mag-name"><i class="mag-dot '+(done(r)?"ok":"warn")+'"></i>'+esc(mag)+'</span><span class="mag-show">'+esc(r.spectacle||"Sin espectáculo")+'</span></button>'};
  const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(m)+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
  app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">+ Nueva página</button>')+moduleKpis(rows,"Páginas este mes")+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
  magChips(months,cur);const openForm=r=>{$("#revistasFormCard").innerHTML=revistaForm(r);bindRevistaForm(r&&r.id?r:null,rows)};
  $("#newRevista").onclick=()=>openForm({month:cur});
  $$("[data-add-revista]").forEach(b=>b.onclick=()=>{const [magazine,month]=b.dataset.addRevista.split("|");openForm({magazine,month})});
  $$("[data-edit-revista]").forEach(b=>b.onclick=()=>openForm(rows.find(x=>x.id===b.dataset.editRevista)));
+ $$("[data-mag-open]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.magOpen);if(r)magSheet(r,openForm)});
  $$("[data-del-revista]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Archivar esta página?"))return;await api("/api/control?module=revistas&id="+b.dataset.delRevista,{method:"DELETE"});say("Página archivada");revistas()});
  bindRevistaForm(null,rows);await hydrateMedia("revistas");
+}
+function magSheet(r,openForm){
+ const old=$("#magSheet");if(old)old.remove();const done=["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase());
+ const el=document.createElement("div");el.id="magSheet";el.className="mag-sheet";
+ el.innerHTML='<div class="mag-sheet-box" role="dialog" aria-label="Página de revista"><button type="button" class="ghost mag-sheet-x" aria-label="Cerrar">×</button>'+
+  '<div class="mag-sheet-img">'+(r.assetKey?'<span class="muted">Cargando…</span>':'<span class="muted">Sin imagen</span>')+'</div>'+
+  '<div class="mag-sheet-info"><small class="section-kicker">'+esc(r.magazine||"")+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
+  '<div class="item-meta"><span class="badge '+(done?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+(r.contact?'<span>'+esc(r.contact)+'</span>':'')+'</div>'+(r.notes?'<p class="mag-sheet-notes">'+esc(r.notes)+'</p>':'')+
+  '<div class="actions-row"><button type="button" class="primary" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-sheet-del>Archivar</button></div></div></div>';
+ document.body.appendChild(el);document.body.classList.add("sheet-open");
+ const close=()=>{el.remove();document.body.classList.remove("sheet-open");document.removeEventListener("keydown",esc_)};const esc_=e=>{if(e.key==="Escape")close()};document.addEventListener("keydown",esc_);
+ el.onclick=e=>{if(e.target===el)close()};el.querySelector(".mag-sheet-x").onclick=close;
+ el.querySelector("[data-edit-revista]").onclick=()=>{close();openForm(r)};
+ el.querySelector("[data-sheet-del]").onclick=async()=>{if(!confirm("¿Archivar esta página?"))return;await api("/api/control?module=revistas&id="+r.id,{method:"DELETE"});close();say("Página archivada");revistas()};
+ if(r.assetKey)blobUrl(r.assetKey,"revistas").then(u=>{const box=el.querySelector(".mag-sheet-img");if(box)box.innerHTML=u?'<img src="'+u+'" alt="'+esc(r.spectacle||"Página")+'">':'<span class="muted">Sin imagen</span>'});
 }
 function revistaForm(r={}){const monthOpts=[];const now=new Date();for(let i=-1;i<=12;i++){const m=monthKey(new Date(now.getFullYear(),now.getMonth()+i,1));monthOpts.push(m)}if(r.month&&!monthOpts.includes(r.month))monthOpts.unshift(r.month);
  return '<div class="section-title"><h2>'+(r.id?"Editar página":"Nueva página")+'</h2></div><form id="revistaForm" class="form-grid">'+venueSelect(r.venue)+'<label>Revista<select name="magazine">'+MAGAZINES.map(x=>'<option '+(x===r.magazine?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label><label>Mes<select name="month">'+monthOpts.map(m=>'<option value="'+m+'" '+(m===(r.month||monthKey(now))?"selected":"")+'>'+esc(monthLabel(m))+'</option>').join("")+'</select></label>'+input("spectacle","Espectáculo anunciado",r.spectacle)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto de la revista",r.contact)+'<label class="wide">Cartel / página<input id="revistaAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRevista">Limpiar</button></div></form>'}
@@ -787,7 +805,7 @@ function calOpen(e){
  location.hash="#"+e.moduleKey+"?edit="+encodeURIComponent(e.recordId||"");
 }
 function openEditFromHash(){const p=new URLSearchParams(location.hash.split("?")[1]||"");const id=p.get("edit");if(!id)return;
- const sel=["campaign","radio","ht","revista"].map(k=>'[data-edit-'+k+'="'+CSS.escape(id)+'"]').join(",");const b=document.querySelector(sel);
+ const sel=["campaign","radio","ht","revista"].map(k=>'[data-edit-'+k+'="'+CSS.escape(id)+'"]').join(",")+',[data-mag-open="'+CSS.escape(id)+'"]';const b=document.querySelector(sel);
  if(b){const sp=b.closest(".space-panel,.ht-space,.mag-month");if(sp&&sp.style.display==="none")sp.style.display="";const dt=b.closest("details");if(dt)dt.open=true;const item=b.closest(".item,.mag-cell,.space-panel,.ht-space");
   if(item){item.classList.add("flash");setTimeout(()=>item.classList.remove("flash"),2600)}b.click();(item||b).scrollIntoView({behavior:"smooth",block:"center"})}
  else say("No se ha encontrado el registro (puede estar archivado)");
