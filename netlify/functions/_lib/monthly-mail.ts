@@ -17,9 +17,11 @@ function quickRead(s: MonthSummary) {
 export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
   const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   let n = 0;
+  // Fachada: si hay fotos reales del montaje se envían solo esas; si no, carteles en miniatura pequeña
+  for (const sec of s.sections) if (sec.key === "carteleria" && sec.lines.some((l) => l.wide && l.img)) sec.lines.forEach((l) => { if (!l.wide) delete l.img; });
   for (const sec of s.sections) for (const l of sec.lines) {
     if (!l.img || n >= 36) continue;
-    const b64 = await thumbBase64(l.img, l.wide ? 432 : 300, l.wide ? 324 : 400);
+    const b64 = await thumbBase64(l.img, l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400);
     if (!b64) continue;
     const cid = `img${n++}@yc`; (l as any).cid = cid;
     attachments.push({ filename: `imagen-${n}.jpg`, content: b64, content_id: cid, content_type: "image/jpeg" });
@@ -33,29 +35,28 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   const kpiRows: string[] = [];
   for (let i = 0; i < kpis.length; i += 3) kpiRows.push(`<tr>${kpis.slice(i, i + 3).map((k) => `<td width="33%" valign="top" style="padding:0 10px 12px 0;"><div style="font-size:24px; font-weight:800; color:#111111; line-height:1;">${k.value.toLocaleString("es-ES")}</div><div style="font-size:11px; color:#555555; margin-top:4px;">${e(k.label)}</div></td>`).join("")}</tr>`);
   const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`;
-  // Cuadrícula de miniaturas: 3 por fila (2 si son fotos apaisadas de montaje)
-  // Cuadrícula regular: carteles 3 por fila (3:4) y fotos de montaje 2 por fila (4:3)
+  // Cuadrículas: carteles de fachada 4 por fila (cuadradas y pequeñas), resto 3 por fila (3:4),
+  // fotos de montaje 2 por fila (4:3)
   const grid = (items: Line[]) => {
-    const block = (list: Line[], per: number) => {
-      const cw = Math.floor(456 / per), iw = cw - 12, rows: string[] = [];
+    const block = (list: Line[], per: number, ratio: number, cap: number) => {
+      const pct = Math.floor(100 / per), iw = Math.floor(456 / per) - 10, rows: string[] = [];
       for (let i = 0; i < list.length; i += per) {
         const chunk = list.slice(i, i + per);
-        const pct = per === 2 ? 50 : 33;
-        rows.push(`<tr>${chunk.map((l) => `<td width="${pct}%" valign="top" style="width:${pct}%; padding:0 10px 18px 0;">
-          <img src="cid:${e((l as any).cid)}" width="${iw}" height="${per === 2 ? Math.round(iw * 0.75) : Math.round(iw * 4 / 3)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">
-          <div style="font-size:12px; font-weight:800; color:#111111; margin-top:7px; line-height:1.3;">${e(l.title)}</div>
-          <div style="font-size:11px; color:#666666; margin-top:2px; line-height:1.4;">${e(l.detail || "")}</div></td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
+        rows.push(`<tr>${chunk.map((l) => `<td width="${pct}%" valign="top" style="width:${pct}%; padding:0 10px 14px 0;">
+          <img src="cid:${e((l as any).cid)}" width="${iw}" height="${Math.round(iw * ratio)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">
+          <div style="font-size:${cap}px; font-weight:800; color:#111111; margin-top:6px; line-height:1.3;">${e(l.title)}</div>
+          ${l.detail ? `<div style="font-size:${cap - 1}px; color:#666666; margin-top:2px; line-height:1.35;">${e(l.detail)}</div>` : ""}</td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
       }
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%;">${rows.join("")}</table>`;
     };
-    const posters = items.filter((l) => !l.wide), photos = items.filter((l) => l.wide);
-    return `<tr><td class="yw-pad" style="padding:16px 32px 0;">${posters.length ? block(posters, 3) : ""}${photos.length ? `${posters.length ? '<div style="font-size:10px; font-weight:bold; letter-spacing:0.04em; color:#777777; margin:2px 0 10px;">FOTOS DEL MONTAJE</div>' : ""}${block(photos, 2)}` : ""}</td></tr>`;
+    const small = items.filter((l) => l.small), posters = items.filter((l) => !l.wide && !l.small), photos = items.filter((l) => l.wide);
+    return `<tr><td class="yw-pad" style="padding:16px 32px 0;">${small.length ? block(small, 4, 1, 11) : ""}${posters.length ? block(posters, 3, 4 / 3, 12) : ""}${photos.length ? block(photos, 2, 0.75, 12) : ""}</td></tr>`;
   };
   const sections = s.sections.map((sec) => {
     const withImg = sec.lines.filter((l) => (l as any).cid), noImg = sec.lines.filter((l) => !(l as any).cid);
     return `
   <tr><td class="yw-pad" style="padding:26px 32px 0;">
-    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${sec.lines.length}</div>
+    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${sec.lines.filter((l) => !l.empty).length}</div>
     <div style="height:2px; background:${Y}; margin-top:6px;"></div>
   </td></tr>
   ${!sec.lines.length ? `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>` : (withImg.length ? grid(withImg) : "") + noImg.map(textRow).join("")}`}).join("");

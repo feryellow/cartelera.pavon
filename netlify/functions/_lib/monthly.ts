@@ -6,7 +6,7 @@ import { loadContracts } from "./radio.ts";
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
-export type Line = { title: string; detail: string; date?: string; img?: ImgRef; wide?: boolean };
+export type Line = { title: string; detail: string; date?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean };
 export type Section = { key: string; name: string; lines: Line[]; note?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
 
@@ -39,7 +39,8 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     const hasImg = !!state.slots?.[key]?.hasImage;
     if ((!v?.title && !hasImg) || (inst && inst > last) || (rem && rem < first)) continue;
     const when = inst ? (inst >= first ? "instalado el " + fmt(inst) : "desde " + fmt(inst)) : "en fachada";
-    cart.push({ title: v?.title || "Cartel sin título", detail: `${SLOT_NAMES[key] || key} · ${when}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: hasImg ? { kind: "cart", key } : undefined });
+    const slot = SLOT_NAMES[key] || key;
+    cart.push({ title: v?.title || slot, detail: `${v?.title ? slot + " · " : ""}${when}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: hasImg ? { kind: "cart", key } : undefined, small: true });
   }
   const mont: Line[] = [];
   const list = await controlStore().list({ prefix: "montaje_" });
@@ -62,7 +63,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const htLines: Line[] = [];
   for (const v of htVenues) {
     const mine = ht.filter((r) => r.venue === v).sort((a, b) => POS_ORDER.indexOf(a.position) - POS_ORDER.indexOf(b.position));
-    if (!mine.length) { htLines.push({ title: short(v), detail: "Sin piezas este mes" }); continue; }
+    if (!mine.length) { htLines.push({ title: short(v), detail: "Sin piezas este mes", empty: true }); continue; }
     mine.forEach((r) => htLines.push({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}`, img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined }));
   }
   sections.push({ key: "hometicket", name: "Home Ticket", lines: htLines });
