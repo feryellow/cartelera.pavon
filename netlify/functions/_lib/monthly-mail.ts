@@ -32,8 +32,26 @@ export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; tes
 export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
   const base = o.appUrl.replace(/\/$/, "");
   const kpis = s.totals.filter((x) => typeof x.value === "string" || x.value > 0).slice(0, 6);
+  // Comprobantes en tarjetas, dos por fila (una por fila en el móvil), como el modelo de Fer:
+  // cuñas, fachada del Pavón, páginas en revistas de teatro y Home Tickets completos
+  const T = Object.fromEntries(s.totals.map((x) => [x.label, x]));
+  const cards: { big: string; label: string; note?: string; text?: boolean }[] = [];
+  const cu = T["cuñas certificadas"] || T["cuñas asignadas"];
+  if (cu && Number(cu.value)) cards.push({ big: Number(cu.value).toLocaleString("es-ES"), label: cu.label });
+  const fa = T["Fachada Pavón"];
+  if (fa) cards.push(fa.value === "Completa" ? { big: "Fachada Pavón", label: "", note: "Todos los soportes con cartel", text: true } : { big: String(fa.value).replace("/", " de "), label: "soportes de la fachada Pavón con cartel" });
+  const rv = T["páginas en revistas de teatro"];
+  if (rv && Number(rv.value)) cards.push({ big: String(rv.value), label: Number(rv.value) === 1 ? "página en revistas de teatro" : "páginas en revistas de teatro" });
+  const htc = T["Home Ticket"];
+  if (htc && Number(htc.value)) { const done = parseInt(String(htc.note || "0"), 10) || 0; cards.push({ big: String(done), label: done === 1 ? "Home Ticket completo" : "Home Tickets completos", note: `de ${htc.value} ${Number(htc.value) === 1 ? "teatro" : "teatros"} con Home Ticket` }); }
+  const tx = T["campañas en taxis e intercambiadores"];
+  if (tx && Number(tx.value)) cards.push({ big: String(tx.value), label: "campañas en taxis e intercambiadores" });
+  const card = (c: typeof cards[number]) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efeb; border-radius:10px;"><tr><td style="padding:16px 16px 18px;">
+      ${c.text ? `<div style="font-size:18px; font-weight:800; color:#111111; line-height:1.2;">${e(c.big)}</div>` : `<div style="font-size:44px; font-weight:800; color:#111111; line-height:1; letter-spacing:-0.02em;">${e(c.big)}</div>`}
+      ${c.label ? `<div style="font-size:15px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${e(c.label)}</div>` : ""}
+      ${c.note ? `<div style="font-size:12px; color:#555555; margin-top:4px; line-height:1.35;">${e(c.note)}</div>` : ""}</td></tr></table>`;
   const kpiRows: string[] = [];
-  for (let i = 0; i < kpis.length; i += 3) kpiRows.push(`<tr>${kpis.slice(i, i + 3).map((k) => `<td width="33%" valign="top" style="padding:0 10px 12px 0;"><div style="font-size:24px; font-weight:800; color:#111111; line-height:1;">${e(typeof k.value === "number" ? k.value.toLocaleString("es-ES") : k.value)}</div><div style="font-size:11px; font-weight:bold; color:#111111; margin-top:5px;">${e(k.label)}</div>${k.note ? `<div style="font-size:11px; color:#666666; margin-top:1px;">${e(k.note)}</div>` : ""}</td>`).join("")}</tr>`);
+  for (let i = 0; i < cards.length; i += 2) kpiRows.push(`<tr>${cards.slice(i, i + 2).map((c, j) => `<td width="50%" valign="top" class="yw-stack yw-kpi" style="width:50%; padding:0 ${j ? 0 : 6}px 12px ${j ? 6 : 0}px;">${card(c)}</td>`).join("")}${cards.slice(i, i + 2).length < 2 ? `<td width="50%" class="yw-stack" style="width:50%;"></td>` : ""}</tr>`);
   const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`;
   // Cuadrículas: carteles de fachada 4 por fila (cuadradas y pequeñas), resto 3 por fila (3:4),
   // fotos de montaje 2 por fila (4:3)
@@ -108,6 +126,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   @media only screen and (max-width: 560px) {
     .yw-container { width: 100% !important; max-width: 100% !important; }
     .yw-stack { display: block !important; width: 100% !important; text-align: left !important; }
+    .yw-kpi { padding-left: 0 !important; padding-right: 0 !important; }
     .yw-stack-right { display: block !important; width: 100% !important; text-align: left !important; padding-top: 12px !important; }
     .yw-pad { padding-left: 20px !important; padding-right: 20px !important; }
     .yw-title { font-size: 19px !important; }
@@ -142,7 +161,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES</div>
     <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">Resumen de ${e(s.label.toLowerCase())}</div>
   </td></tr>
-  ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:6px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f1;"><tr><td style="padding:14px 16px 2px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${kpiRows.join("")}</table></td></tr></table></td></tr>` : ""}
+  ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:8px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">${kpiRows.join("")}</table></td></tr>` : ""}
   <tr><td class="yw-pad" style="padding:16px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="yw-dark-block" style="background:#111111;"><tr><td style="padding:20px 20px;">
       <table role="presentation" cellpadding="0" cellspacing="0"><tr>
