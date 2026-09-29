@@ -874,7 +874,7 @@ function calDetail(e){
   '<span class="badge '+(e.auto?"":"ok")+' cal-origin">'+(e.auto?"Automático · se edita en "+esc(e.module):"Hito manual · editable aquí")+'</span>'+
   (e.assetKey?'<div class="media-preview hito-thumb" data-asset="'+esc(e.assetKey)+'" data-module="hitos" data-kind="image"></div>':'')+
   '<dl class="cal-dl">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl>'+
-  ((canOpen||(/^https?:\\/\\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\\/\\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">Ver newsletter / informe</a>':'')+'</div>':''));
+  ((canOpen||(/^https?:\/\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\/\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">Ver newsletter / informe</a>':'')+'</div>':''));
  $("#dtClose").onclick=()=>calPanel("");
  if(canOpen)$("#dtOpen").onclick=()=>calOpen(e);
  if(e.assetKey)hydrateMedia("hitos");
