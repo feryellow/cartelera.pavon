@@ -547,7 +547,7 @@ label{color:var(--muted);letter-spacing:.02em}
 :root[data-theme="light"] .event{color:#161616}
 :root[data-theme="light"] .event.auto{background:#faf9f6}
 :root[data-theme="light"] .event.manual{background:#eef5ff;border-color:#b9d4f5}
-:root[data-theme="light"] .event em{filter:brightness(.7)}
+:root[data-theme="light"] .event em{color:color-mix(in srgb,var(--k,var(--gold)) 70%,#000)}
 :root[data-theme="light"] .wk-day{background:#fff}
 :root[data-theme="light"] .cal-filters select{background:#fff;color:#161616}
 :root[data-theme="light"] .wk-preview span{color:#161616}
@@ -778,3 +778,11 @@ body.sheet-open{overflow:hidden}
 .ar-removed{margin-top:14px}
 .ar-removed summary{cursor:pointer;font-weight:800}
 .imp-row{display:flex;gap:12px;align-items:flex-start;cursor:pointer}.imp-row input{margin-top:4px;width:18px;height:18px;accent-color:var(--yellow);flex:none}.imp-row.dup{opacity:.6}
+
+/* Recintos: franja y etiqueta con su color de marca */
+.event{border-left-color:var(--vd,var(--k,var(--gold)))!important}
+:root[data-theme="light"] .event{border-left-color:var(--v,var(--k,var(--gold)))!important}
+.vchip{display:inline-block!important;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:4px;margin-right:5px;line-height:1.5;vertical-align:1px}
+.event em .vchip{font-size:8.5px}
+.vchip[style*="#1E1E1E"]{box-shadow:inset 0 0 0 1px #FFD968}
+.cal-venues{flex-wrap:wrap;gap:6px 14px}.cal-venues span{display:inline-flex;align-items:center}

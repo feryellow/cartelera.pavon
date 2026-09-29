@@ -828,6 +828,23 @@ async function importar(){
 const HITO_TYPES=["Estreno","Nota de prensa","Newsletter","Rueda de prensa","Pase gráfico","Entrevista / medios","Reunión","Cierre de edición","Evento","Otro"];
 const HITO_REMINDERS=[["","Por defecto"],["none","Sin aviso"],["15m","15 minutos antes"],["1h","1 hora antes"],["1d","1 día antes"],["2d","2 días antes"]];
 const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito"};
+// Identidad por recinto: color de franja (claro / oscuro) y etiqueta con siglas en sus colores de marca
+const VENUE_STYLE={
+ "Gran Teatro Pavón":{tag:"PAVÓN",bg:"#1E1E1E",fg:"#FFD968",line:"#1E1E1E",dark:"#FFD968"},
+ "Gran Teatro CaixaBank Príncipe Pío":{tag:"P. PÍO",bg:"#1F5FBF",fg:"#FFFFFF",line:"#1F5FBF",dark:"#5B93EA"},
+ "Teatro Serrano":{tag:"SERRANO",bg:"#1E8C5A",fg:"#FFFFFF",line:"#1E8C5A",dark:"#4CC08A"},
+ "Gran Castillo de Pedraza":{tag:"CASTILLO",bg:"#7A4E2D",fg:"#FFFFFF",line:"#7A4E2D",dark:"#C08A5C"},
+ "Abono Teatro":{tag:"ABT",bg:"#B32745",fg:"#FFCD35",line:"#B32745",dark:"#E0506E"},
+ "Soho City Madrid":{tag:"SOHO",bg:"#1B2A4A",fg:"#C9A24B",line:"#1B2A4A",dark:"#C9A24B"}};
+const VENUE_NONE={tag:"YM",bg:"#6b665d",fg:"#FFFFFF",line:"#8a8478",dark:"#aaa296"};
+// El título manda cuando la campaña es de otro recinto (p. ej. la cuña de Abonoteatro va en el contrato de Príncipe Pío)
+const venueOf=e=>{const t=String(e&&e.title||"").toLowerCase();if(/abono ?teatro/.test(t))return "Abono Teatro";if(/\bpav[oó]n\b/.test(t)&&!(e.venue in VENUE_STYLE&&e.venue==="Gran Teatro Pavón"))return "Gran Teatro Pavón";return e&&e.venue||""};
+const venueStyle=e=>VENUE_STYLE[venueOf(e)]||VENUE_NONE;
+// Plataforma de la newsletter (se deduce del lugar, las notas o el enlace)
+const nlPlatform=e=>{if(!e||!/newsletter/i.test(e.action||""))return null;const t=((e.location||"")+" "+(e.notes||"")+" "+(e.link||"")).toLowerCase();
+ if(/brevo|sendinblue|sendibt/.test(t))return{tag:"BREVO",bg:"#0B996E",fg:"#FFFFFF"};if(/mailchimp|mailchi\.mp|list-manage/.test(t))return{tag:"MAILCHIMP",bg:"#FFE01B",fg:"#241C15"};return null};
+const venueChip=(e,cls="vchip")=>{const v=venueStyle(e),nl=nlPlatform(e);return '<i class="'+cls+'" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</i>'+(nl?'<i class="'+cls+'" style="background:'+nl.bg+';color:'+nl.fg+'">'+nl.tag+'</i>':'')};
+const venueLegend=list=>{const seen=[...new Set(list.map(e=>VENUE_STYLE[venueOf(e)]?venueOf(e):""))];return seen.map(v=>[v||"Interno / otros",VENUE_STYLE[v]||VENUE_NONE])};
 const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aaa296",entrega:"#ff6b5e",hito:"#7fb8ff"};
 const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
 const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
@@ -845,9 +862,9 @@ async function calendario(){
  const ev=new URLSearchParams(location.hash.split("?")[1]||"").get("ev");
  if(ev){history.replaceState(null,"","#calendario");const e=calEvents.find(x=>x.id===ev);if(e)calDetail(e);else say("Ese evento ya no está en el calendario")}
 }
-function calEvBtn(e,wide){
- return '<button type="button" class="event k-'+e.kind+(e.auto?" auto":" manual")+(wide?" wide":"")+'" data-ev="'+esc(e.id)+'">'+
-  '<em>'+esc(evTag(e))+(e.moduleKey==="hitos"?"":" · "+esc(e.module))+'</em><strong>'+esc((e.time?e.time+" · ":"")+e.title)+'</strong>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</button>'}
+function calEvBtn(e,wide){const v=venueStyle(e);
+ return '<button type="button" class="event k-'+e.kind+(e.auto?" auto":" manual")+(wide?" wide":"")+'" data-ev="'+esc(e.id)+'" style="--v:'+v.line+';--vd:'+v.dark+'">'+
+  '<em>'+venueChip(e)+esc(evTag(e))+(e.moduleKey==="hitos"?"":" · "+esc(e.module))+'</em><strong>'+esc((e.time?e.time+" · ":"")+e.title)+'</strong>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</button>'}
 function renderCalendar(){
  const today=localToday(),ev=calFiltered();
  const mods=CAL_MODS.filter(([k])=>k==="hitos"||k==="carteleria"||canRoute(k));
@@ -874,7 +891,7 @@ function renderCalendar(){
   '<div id="calPanel"></div>'+
   '<div class="card cal-card">'+filters+
   '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
-  '<div class="cal-legend">'+Object.entries(KIND_LABEL).map(([k,v])=>'<span class="k-'+k+'"><i></i>'+v+'</span>').join("")+'<span class="lg-auto"><i></i>Automático · se edita en su sección</span><span class="lg-manual"><i></i>Hito · se edita aquí</span></div>'+
+  '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Interno / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div>'+
   body+'</div>';
  const move=dir=>{if(calView==="semana")calWeekOffset+=dir;else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+dir,1);renderCalendar()};
  $("#calPrev").onclick=()=>move(-1);$("#calNext").onclick=()=>move(1);
@@ -986,8 +1003,9 @@ function calWeekCanvas(days,ev,title,logo){
  let y=280;if(!rows.length){g.fillStyle="#aaa296";g.font="600 30px 'Plus Jakarta Sans', Arial";g.fillText("Sin fechas esta semana",pad,y)}
  const clip=(t,max)=>{if(g.measureText(t).width<=max)return t;while(t.length&&g.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
  for(const r of rows){if(r.day){y+=14;g.font="400 40px Anton, Impact, sans-serif";g.fillStyle="#F2EFE6";g.fillText(r.day.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),pad,y);y+=DAY-14;continue}
-  const e=r.e,h=ROW-20+(e.location?22:0);g.fillStyle=KIND_COLOR[e.kind]||"#FFD400";g.fillRect(pad,y,7,h);
-  g.font="800 19px 'Plus Jakarta Sans', Arial";g.fillText((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),pad+26,y+2);
+  const e=r.e,h=ROW-20+(e.location?22:0),vs=venueStyle(e);g.fillStyle=vs.dark;g.fillRect(pad,y,7,h);
+  g.font="800 17px 'Plus Jakarta Sans', Arial";let cx=pad+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const tw=g.measureText(ch.tag).width+16;g.fillStyle=ch.bg;g.fillRect(cx,y,tw,24);if(ch===vs&&vs.bg==="#1E1E1E"){g.strokeStyle=vs.fg;g.lineWidth=1.5;g.strokeRect(cx+.75,y+.75,tw-1.5,22.5)}g.fillStyle=ch.fg;g.fillText(ch.tag,cx+8,y+4);cx+=tw+8}
+  g.font="800 19px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),cx+4,y+2);
   g.font="700 29px 'Plus Jakarta Sans', Arial";g.fillStyle="#F2EFE6";g.fillText(clip((e.time?e.time+"  ":"")+e.title,W-pad*2-30),pad+26,y+28);
   if(e.location){g.font="500 21px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText(clip(e.location,W-pad*2-30),pad+26,y+66)}
   y+=ROW+(e.location?22:0)}
@@ -1003,11 +1021,11 @@ async function calWeekExport(days,ev,title){
 function calWeekPdf(days,ev,title){
  const w=window.open("","_blank");if(!w){say("Permite las ventanas emergentes para generar el PDF");return}
  const body=days.map(d=>{const de=ev.filter(e=>e.date===isoOf(d));return '<section><h2>'+esc(cap(d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})))+'</h2>'+
-  (de.length?de.map(e=>'<div class="ev" style="border-color:'+(KIND_COLOR[e.kind]||"#FFD400")+'"><small>'+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+(e.responsable?'<span>Responsable: '+esc(e.responsable)+'</span>':'')+'</div>').join(""):'<p class="none">Sin fechas</p>')+'</section>'}).join("");
+  (de.length?de.map(e=>'<div class="ev" style="border-color:'+venueStyle(e).line+'"><small>'+venueChip(e,"vc")+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+(e.responsable?'<span>Responsable: '+esc(e.responsable)+'</span>':'')+'</div>').join(""):'<p class="none">Sin fechas</p>')+'</section>'}).join("");
  w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Yellow Control · Semana '+esc(title)+'</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font:13px/1.35 "Plus Jakarta Sans",Arial,sans-serif;color:#131313;margin:0}'+
   'header{border-top:6px solid #FFD400;padding-top:10px;margin-bottom:14px}header h1{font:400 30px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0}header p{margin:4px 0 0;color:#555}'+
   'section{break-inside:avoid;margin:0 0 10px;padding-top:8px;border-top:1px solid #ddd}h2{font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}'+
-  '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
+  '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.vc{display:inline-block!important;font-style:normal;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-right:5px;letter-spacing:.04em}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
   '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:34px;width:34px;vertical-align:-6px;margin-right:10px">YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
  w.document.close()}
 
@@ -1041,21 +1059,21 @@ function calMonthPdf(y,m,ev,title){
  const w=window.open("","_blank");if(!w){say("Permite las ventanas emergentes para imprimir");return}
  const today=localToday(),weeks=calMonthData(y,m);
  const cell=d=>{if(!d)return '<td class="out"></td>';const iso=isoOf(d),de=ev.filter(e=>e.date===iso),we=d.getDay()===0||d.getDay()===6;
-  return '<td class="'+(we?"we":"")+(iso===today?" today":"")+'"><div class="n">'+d.getDate()+'</div>'+de.map(e=>'<div class="ev" style="border-color:'+(KIND_COLOR[e.kind]||"#FFD400")+'"><small>'+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</div>').join("")+'</td>'};
- const legend=Object.entries(KIND_LABEL).filter(([k])=>ev.some(e=>e.kind===k)).map(([k,v])=>'<span><i style="background:'+KIND_COLOR[k]+'"></i>'+v+'</span>').join("");
+  return '<td class="'+(we?"we":"")+(iso===today?" today":"")+'"><div class="n">'+d.getDate()+'</div>'+de.map(e=>'<div class="ev" style="border-color:'+venueStyle(e).line+'"><small>'+venueChip(e,"vc")+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</div>').join("")+'</td>'};
+ const legend=venueLegend(ev).map(([k,v])=>'<span><b class="vc" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("");
  w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Yellow Control · '+esc(title)+'</title><style>'+[["Anton",400,"anton-400"],["Plus Jakarta Sans",500,"jakarta-500"],["Plus Jakarta Sans",700,"jakarta-700"],["Plus Jakarta Sans",800,"jakarta-800"]].map(([f,wt,n])=>'@font-face{font-family:"'+f+'";font-weight:'+wt+';src:url('+location.origin+'/assets/fonts/'+n+'.woff2) format("woff2")}').join("")+'@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0}body{font:9px/1.25 "Plus Jakarta Sans",Arial,sans-serif;color:#131313;width:281mm}'+
   'header{display:flex;align-items:flex-end;justify-content:space-between;border-top:5px solid #FFD400;padding-top:5px;margin-bottom:5px}header h1{font:400 24px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0;line-height:1}header h1 em{font-style:normal;color:#131313;background:#FFD400;padding:0 6px;margin-left:8px}header p{margin:0;color:#555;font-size:10px;text-align:right}'+
   '.lg{display:flex;gap:10px;margin:0 0 5px;color:#555;font-size:8.5px}.lg i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:-1px}'+
   'table{width:100%;border-collapse:collapse;table-layout:fixed}th{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:3px 4px;background:#131313;color:#FFD400}th.we{color:#d8d3c6}'+
   'td{border:1px solid #cfcac0;vertical-align:top;padding:3px 3px 2px;height:30mm}td.out{background:#f3f1ec}td.we{background:#fbfaf6}td.today .n{background:#FFD400;border-radius:3px;padding:0 3px}.n{font:400 13px Anton,Impact,sans-serif;display:inline-block;margin-bottom:2px}'+
-  '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
-  '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:30px;width:30px;vertical-align:-5px;margin-right:8px">YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
+  '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.vc{display:inline-block!important;font-style:normal;font-size:6.3px;font-weight:800;padding:0 3px;border-radius:2px;margin-right:3px;letter-spacing:.04em}.lg span{display:inline-flex;align-items:center}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
+  '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:30px;width:30px;vertical-align:-5px;margin-right:8px">YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+(calVenue==="Gran Teatro Pavón"?'<img src="'+location.origin+'/assets/venues/altos-pavon.png" alt="" style="height:38px;display:block;margin:0 0 3px auto;filter:brightness(0)">':'')+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
   '<table><thead><tr>'+CAL_WD.map((d,i)=>'<th'+(i>4?' class="we"':'')+'>'+d+'</th>').join("")+'</tr></thead><tbody>'+weeks.map(wk=>'<tr>'+wk.map(cell).join("")+'</tr>').join("")+'</tbody></table>'+
   '<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer>'+
   // Si no cabe en una hoja, se reduce todo lo necesario para que salga en una sola página
   '<script>window.onload=async()=>{try{await document.fonts.ready}catch{}const max=194*96/25.4,h=document.body.scrollHeight;if(h>max)document.body.style.zoom=(max/h).toFixed(3);setTimeout(()=>print(),300)}<\/script></html>');
  w.document.close()}
-function calMonthCanvas(y,m,ev,title,logo){
+function calMonthCanvas(y,m,ev,title,logo,venueLogo){
  const W=2339,H=1654,pad=56,weeks=calMonthData(y,m),cw=(W-pad*2)/7,top=196,foot=56,avail=H-top-foot-pad/2;
  const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");g.textBaseline="top";
  const font=(wt,px,fam)=>wt+" "+px+"px "+(fam||"'Plus Jakarta Sans', Arial");
@@ -1072,7 +1090,8 @@ function calMonthCanvas(y,m,ev,title,logo){
  const lx0=logo?pad+136:pad;if(logo)g.drawImage(logo,pad,20,112,112);
  g.font=font(400,82,"Anton, Impact, sans-serif");g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",lx0,36);const tw=g.measureText("YELLOW CONTROL").width;
  g.fillStyle="#F2EFE6";g.fillText(title.toUpperCase(),lx0+tw+36,36);
- g.font=font(600,24);g.fillStyle="#aaa296";const info=ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:"");g.fillText(info,W-pad-g.measureText(info).width,70);
+ let ir=W-pad;if(venueLogo){const vh=110,vw=venueLogo.naturalWidth*vh/venueLogo.naturalHeight;g.drawImage(venueLogo,W-pad-vw,20,vw,vh);ir=W-pad-vw-30}
+ g.font=font(600,24);g.fillStyle="#aaa296";const info=ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:"");g.fillText(info,ir-g.measureText(info).width,70);
  // cabecera de días
  const hy=top-34;CAL_WD.forEach((d,i)=>{g.font=font(800,18);g.fillStyle=i>4?"#8a8478":"#131313";g.fillText(d.toUpperCase(),pad+i*cw+10,hy)});
  let yy=top;const today=localToday();
@@ -1080,16 +1099,17 @@ function calMonthCanvas(y,m,ev,title,logo){
    g.fillStyle=!d?"#f3f1ec":(i>4?"#fbfaf6":"#FFFFFF");g.fillRect(x,yy,cw,rh);g.strokeStyle="#cfcac0";g.lineWidth=2;g.strokeRect(x,yy,cw,rh);if(!d)return;
    const iso=isoOf(d);g.font=font(400,layout.num,"Anton, Impact, sans-serif");const nw=g.measureText(String(d.getDate())).width;
    if(iso===today){g.fillStyle="#FFD400";g.fillRect(x+8,yy+8,nw+14,layout.num+8)}g.fillStyle="#131313";g.fillText(String(d.getDate()),x+15,yy+10);
-   let ey=yy+layout.num+24;for(const e of ev.filter(e=>e.date===iso)){const h=layout.evH(e)-10*s;g.fillStyle=KIND_COLOR[e.kind]||"#FFD400";g.fillRect(x+12,ey,6,h);
-    g.font=font(800,layout.tag);g.fillStyle="#6b665d";g.fillText(wrap((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),cw-40,1)[0],x+26,ey);
+   let ey=yy+layout.num+24;for(const e of ev.filter(e=>e.date===iso)){const h=layout.evH(e)-10*s,vs=venueStyle(e);g.fillStyle=vs.line;g.fillRect(x+12,ey,6,h);
+    g.font=font(800,layout.tag*.85);let cx=x+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const tw=g.measureText(ch.tag).width+layout.tag*.7;g.fillStyle=ch.bg;g.fillRect(cx,ey-2*s,tw,layout.tag+3*s);g.fillStyle=ch.fg;g.fillText(ch.tag,cx+layout.tag*.35,ey);cx+=tw+6*s}
+    g.font=font(800,layout.tag);g.fillStyle="#6b665d";g.fillText(wrap((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),x+cw-cx-14,1)[0],cx+2,ey);
     let ly=ey+layout.tag+4;g.font=font(700,layout.tl);g.fillStyle="#131313";for(const l of wrap((e.time?e.time+" · ":"")+e.title,cw-34,2)){g.fillText(l,x+26,ly);ly+=layout.tl*1.2}
     if(e.location){g.font=font(500,layout.loc);g.fillStyle="#6b665d";g.fillText(wrap(e.location,cw-40,1)[0],x+26,ly)}
     ey+=layout.evH(e)}});yy+=rh});
  g.font=font(600,18);g.fillStyle="#8a8478";g.fillText("Yellow Media · generado el "+new Date().toLocaleDateString("es-ES"),pad,H-foot+14);
- const lg=Object.entries(KIND_LABEL).filter(([k])=>ev.some(e=>e.kind===k));let lx=W-pad;g.font=font(700,18);for(const [k,v] of lg.reverse()){const w=g.measureText(v).width;lx-=w;g.fillStyle="#6b665d";g.fillText(v,lx,H-foot+14);lx-=24;g.fillStyle=KIND_COLOR[k];g.fillRect(lx,H-foot+16,14,14);lx-=26}
+ let lx=W-pad;for(const [k,v] of venueLegend(ev).reverse()){g.font=font(700,18);const w=g.measureText(k).width;lx-=w;g.fillStyle="#6b665d";g.fillText(k,lx,H-foot+14);g.font=font(800,15);const tw=g.measureText(v.tag).width+14;lx-=tw+8;g.fillStyle=v.bg;g.fillRect(lx,H-foot+10,tw,26);g.fillStyle=v.fg;g.fillText(v.tag,lx+7,H-foot+15);lx-=28}
  return c}
 async function calMonthPng(y,m,ev,title){
- try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calMonthCanvas(y,m,ev,title,await ycLogo());const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calMonthCanvas(y,m,ev,title,await ycLogo(),calVenue==="Gran Teatro Pavón"?await cartLoadImg("/assets/venues/altos-pavon.png").catch(()=>null):null);const blob=await new Promise(r=>c.toBlob(r,"image/png"));
   const name="Yellow_calendario_"+y+"-"+String(m+1).padStart(2,"0")+".png",file=new File([blob],name,{type:"image/png"});
   const touch=matchMedia("(pointer:coarse)").matches;
   if(touch&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Calendario · "+title});return}
@@ -1109,7 +1129,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v39";
+const YC_VERSION="yellow-control-v40";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
