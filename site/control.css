@@ -823,3 +823,9 @@ body.sheet-open{overflow:hidden}
 .rsum-edit-actions{display:flex;gap:6px}.rsum-edit-actions button{padding:5px 10px;font-size:12px}
 :root[data-theme="light"] .rsum-bar{background:#ebe8e1}
 @media (max-width:760px){.rsum-grid{grid-template-columns:1fr}.rsum-total .rsum-row{grid-template-columns:minmax(0,1.4fr) minmax(50px,1fr) 30px}.rsum-total .rsum-row em{display:none}.rsum-row{grid-template-columns:minmax(0,1.4fr) minmax(50px,1fr) 30px}.rsum-edit-row{grid-template-columns:1fr 40px;row-gap:4px}.rsum-edit-row span:first-child{grid-column:1/-1}.rsum-edit-actions{grid-column:1/-1}}
+
+/* Home Ticket: la pieza tapa el hueco negro (rellenar) o se ve entera */
+.ht-compose-slot .media-preview,.ht-slot-preview .media-preview{position:absolute;inset:0;margin:0}
+.ht-slot-preview{position:relative}
+.ht-compose-slot .media-preview img,.ht-slot-preview .media-preview img{max-width:none;max-height:none;width:100%;height:100%;border:0;border-radius:0;object-fit:cover}
+.ht-compose-slot.fit-contain .media-preview img,.ht-slot-preview.fit-contain .media-preview img{object-fit:contain}
