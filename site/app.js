@@ -304,6 +304,15 @@ const HT_COORDS={
  superior:{x:.501,y:.335,w:.438,h:.245},
  inferior:{x:.501,y:.587,w:.438,h:.247}
 };
+// Huecos medidos sobre la base de cada teatro (proporción del ancho y alto de la imagen)
+const HT_COORDS_BY={
+ "Gran Teatro Pavón":{"xl": {"x": 0.0451, "y": 0.3415, "w": 0.4583, "h": 0.5086}, "superior": {"x": 0.5312, "y": 0.3508, "w": 0.4295, "h": 0.2341}, "inferior": {"x": 0.5312, "y": 0.6088, "w": 0.4295, "h": 0.2321}},
+ "Gran Teatro CaixaBank Príncipe Pío":{"xl": {"x": 0.0341, "y": 0.3441, "w": 0.4664, "h": 0.5151}, "superior": {"x": 0.5166, "y": 0.3434, "w": 0.4493, "h": 0.2522}, "inferior": {"x": 0.5166, "y": 0.6056, "w": 0.4502, "h": 0.2535}},
+ "Teatro Serrano":{"xl": {"x": 0.037, "y": 0.3458, "w": 0.462, "h": 0.5134}, "superior": {"x": 0.5256, "y": 0.3546, "w": 0.4336, "h": 0.2406}, "inferior": {"x": 0.5256, "y": 0.616, "w": 0.4336, "h": 0.2359}},
+ "Gran Castillo de Pedraza":{"xl": {"x": 0.0445, "y": 0.3414, "w": 0.4654, "h": 0.507}, "superior": {"x": 0.5384, "y": 0.3508, "w": 0.4227, "h": 0.2334}, "inferior": {"x": 0.5384, "y": 0.6063, "w": 0.4227, "h": 0.2327}},
+ "Abono Teatro":{"xl": {"x": 0.0398, "y": 0.3461, "w": 0.4626, "h": 0.5023}, "superior": {"x": 0.5242, "y": 0.3461, "w": 0.4436, "h": 0.2455}, "inferior": {"x": 0.5242, "y": 0.605, "w": 0.4436, "h": 0.2435}}
+};
+const htCoords=v=>HT_COORDS_BY[v]||HT_COORDS;
 let htView="",htMonth="";
 
 function htRowMonth(r){return r.month||String(r.startDate||"").slice(0,7)||String(r.endDate||"").slice(0,7)}
@@ -347,7 +356,8 @@ function htMockup(rows,v,m){
  if(!base)return '<div class="notice">No hay base de Home Ticket para este espacio.</div>';
  const overlays=HT_POS.map(p=>{
    const r=htRecord(rows,v,m,p);
-   return '<div class="ht-compose-slot '+p.css+'">'+
+   const q=htCoords(v)[p.css];
+   return '<div class="ht-compose-slot '+p.css+'" style="left:'+(q.x*100)+'%;top:'+(q.y*100)+'%;width:'+(q.w*100)+'%;height:'+(q.h*100)+'%">'+
      (r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>'+p.name+'</span>')+
    '</div>'
  }).join("");
@@ -374,7 +384,7 @@ async function htCompositeBlob(v,m,rows){
  for(const p of HT_POS){
    const r=htRecord(rows,v,m,p);if(!r?.assetKey)continue;
    const u=await blobUrl(r.assetKey,"hometicket");if(!u)continue;
-   const im=await htLoadImage(u).catch(()=>null),c=HT_COORDS[p.css];if(!im)continue;
+   const im=await htLoadImage(u).catch(()=>null),c=htCoords(v)[p.css];if(!im)continue;
    // la pieza entra entera en su hueco, sin deformarse (centrada sobre negro)
    const bx=c.x*canvas.width,by=c.y*canvas.height,bw=c.w*canvas.width,bh=c.h*canvas.height,k=Math.min(bw/im.naturalWidth,bh/im.naturalHeight),dw=im.naturalWidth*k,dh=im.naturalHeight*k;
    ctx.fillStyle="#000";ctx.fillRect(bx,by,bw,bh);ctx.drawImage(im,Math.round(bx+(bw-dw)/2),Math.round(by+(bh-dh)/2),Math.round(dw),Math.round(dh))
@@ -1282,7 +1292,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v45";
+const YC_VERSION="yellow-control-v46";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
