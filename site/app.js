@@ -705,8 +705,9 @@ async function cartExportAll(){
   const total=wL+gap+hR*rA+gap+hR*rC,x0=pad+(avW-total)/2,y0=top+(avH-hR)/2;
   const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");g.textBaseline="top";
   g.fillStyle="#FFFFFF";g.fillRect(0,0,W,H);g.fillStyle="#131313";g.fillRect(0,0,W,150);g.fillStyle="#FFD400";g.fillRect(0,150,W,8);
-  g.font="400 82px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,36);const tw=g.measureText("YELLOW CONTROL").width;
-  g.fillStyle="#F2EFE6";g.fillText("CARTELERÍA · GRAN TEATRO PAVÓN",pad+tw+36,36);
+  const logo=await ycLogo(),lx0=logo?pad+136:pad;if(logo)g.drawImage(logo,pad,20,112,112);
+  g.font="400 82px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",lx0,36);const tw=g.measureText("YELLOW CONTROL").width;
+  g.fillStyle="#F2EFE6";g.fillText("CARTELERÍA · GRAN TEATRO PAVÓN",lx0+tw+36,36);
   g.font="600 24px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";const info=(cart.night?"Noche":"Día")+" · "+new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});g.fillText(info,W-pad-g.measureText(info).width,70);
   const hT=wL/rT,hL=wL/rL;
   const place=[["taquilla",x0,y0,wL,hT],["lona",x0,y0+hT+gap,wL,hL],["abierta",x0+wL+gap,y0,hR*rA,hR],["columna",x0+wL+gap+hR*rA+gap,y0,hR*rC,hR]];
@@ -785,7 +786,7 @@ async function importar(){
   const dup=x=>!x.data?false:(existing[x.module]||[]).some(r=>x.module==="hitos"?norm(r.type)===norm(x.data.type)&&r.date===x.data.date&&(norm(r.title).includes(norm(x.data.spectacle))||norm(r.spectacle)===norm(x.data.spectacle)||norm(r.title)===norm(x.data.title)):norm(r.spectacle)===norm(x.data.spectacle)&&(r.startDate||"")===(x.data.startDate||"")&&(r.venue||"")===(x.data.venue||"")&&(r.month||"")===(x.data.month||"")&&(r.magazine||"")===(x.data.magazine||"")&&(r.position||"")===(x.data.position||"")&&(x.module!=="radio"||((r.contractId||"")===(x.data.contractId||"")&&(r.inventoryMonth||"")===(x.data.inventoryMonth||"")&&norm(r.spotName)===norm(x.data.spotName))));
   // Fusión: un registro preparado con «merge» sustituye a los que se solapan (mismo tipo, fechas cercanas, misma palabra clave)
   // y se queda con los datos de la versión más completa; los demás se quitan (recuperables en Archivo)
-  const HF=["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","notes","status"],filled=o=>HF.filter(k=>String(o[k]??"").trim()).length;
+  const HF=["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","link","notes","status"],filled=o=>HF.filter(k=>String(o[k]??"").trim()).length;
   const dayDiff=(a,b)=>Math.abs((new Date(a+"T12:00:00Z")-new Date(b+"T12:00:00Z"))/864e5);
   items.forEach(x=>{if(!x.merge||x.module!=="hitos")return;const key=norm(x.merge.key),days=Number(x.merge.days??2);
    x.matches=(existing.hitos||[]).filter(r=>norm(r.type)===norm(x.data.type)&&r.date&&x.data.date&&dayDiff(r.date,x.data.date)<=days&&norm((r.title||"")+" "+(r.spectacle||"")).includes(key));
@@ -973,13 +974,13 @@ function calWeekPanel(){
  $$("#calPanel [data-sm]").forEach(c=>c.onclick=()=>{const k=c.dataset.sm;calShareMods.has(k)?calShareMods.delete(k):calShareMods.add(k);calWeekPanel()});
  $("#wkShare").onclick=()=>calWeekExport(days,ev,title);$("#wkPdf").onclick=()=>calWeekPdf(days,ev,title);
 }
-function calWeekCanvas(days,ev,title){
+function calWeekCanvas(days,ev,title,logo){
  const W=1080,pad=64,ROW=92,DAY=78;const rows=[];days.forEach(d=>{const de=ev.filter(e=>e.date===isoOf(d));if(de.length){rows.push({day:d});de.forEach(e=>rows.push({e}))}});
  const content=rows.reduce((a,r)=>a+(r.day?DAY:ROW+(r.e.location?22:0)),0);
  const H=Math.max(1350,300+content+140);
  const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
  g.fillStyle="#131313";g.fillRect(0,0,W,H);g.fillStyle="#FFD400";g.fillRect(0,0,W,12);
- g.textBaseline="top";g.font="400 76px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,64);
+ g.textBaseline="top";if(logo)g.drawImage(logo,pad,52,100,100);g.font="400 76px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",logo?pad+124:pad,64);
  g.font="700 34px 'Plus Jakarta Sans', Arial";g.fillStyle="#F2EFE6";g.fillText("Semana · "+title,pad,160);
  g.font="600 22px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText(ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:""),pad,210);
  let y=280;if(!rows.length){g.fillStyle="#aaa296";g.font="600 30px 'Plus Jakarta Sans', Arial";g.fillText("Sin fechas esta semana",pad,y)}
@@ -993,7 +994,7 @@ function calWeekCanvas(days,ev,title){
  g.font="600 18px 'Plus Jakarta Sans', Arial";g.fillStyle="#6b665d";g.fillText("Yellow Media · generado el "+new Date().toLocaleDateString("es-ES"),pad,H-60);
  return c}
 async function calWeekExport(days,ev,title){
- try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calWeekCanvas(days,ev,title);const blob=await new Promise(r=>c.toBlob(r,"image/png"));const name="Yellow_semana_"+isoOf(days[0])+".png";const file=new File([blob],name,{type:"image/png"});
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calWeekCanvas(days,ev,title,await ycLogo());const blob=await new Promise(r=>c.toBlob(r,"image/png"));const name="Yellow_semana_"+isoOf(days[0])+".png";const file=new File([blob],name,{type:"image/png"});
   const touch=matchMedia("(pointer:coarse)").matches;
   if(touch&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Semana · "+title});return}
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
@@ -1007,9 +1008,11 @@ function calWeekPdf(days,ev,title){
   'header{border-top:6px solid #FFD400;padding-top:10px;margin-bottom:14px}header h1{font:400 30px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0}header p{margin:4px 0 0;color:#555}'+
   'section{break-inside:avoid;margin:0 0 10px;padding-top:8px;border-top:1px solid #ddd}h2{font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}'+
   '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
-  '<header><h1>YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
+  '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:34px;width:34px;vertical-align:-6px;margin-right:10px">YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
  w.document.close()}
 
+// Logo de la app para las exportaciones (se carga una vez)
+let ycLogoP=null;const ycLogo=()=>ycLogoP||(ycLogoP=cartLoadImg("/yellow-app-icon-512.png").catch(()=>null));
 // Mes completo en A4 horizontal: PDF para imprimir o PNG apaisado, con los módulos a elegir
 function calMonthData(y,m){const n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,cells=[];
  for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=n;d++)cells.push(new Date(y,m,d));while(cells.length%7)cells.push(null);
@@ -1046,13 +1049,13 @@ function calMonthPdf(y,m,ev,title){
   'table{width:100%;border-collapse:collapse;table-layout:fixed}th{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:3px 4px;background:#131313;color:#FFD400}th.we{color:#d8d3c6}'+
   'td{border:1px solid #cfcac0;vertical-align:top;padding:3px 3px 2px;height:30mm}td.out{background:#f3f1ec}td.we{background:#fbfaf6}td.today .n{background:#FFD400;border-radius:3px;padding:0 3px}.n{font:400 13px Anton,Impact,sans-serif;display:inline-block;margin-bottom:2px}'+
   '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
-  '<header><h1>YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
+  '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:30px;width:30px;vertical-align:-5px;margin-right:8px">YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
   '<table><thead><tr>'+CAL_WD.map((d,i)=>'<th'+(i>4?' class="we"':'')+'>'+d+'</th>').join("")+'</tr></thead><tbody>'+weeks.map(wk=>'<tr>'+wk.map(cell).join("")+'</tr>').join("")+'</tbody></table>'+
   '<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer>'+
   // Si no cabe en una hoja, se reduce todo lo necesario para que salga en una sola página
   '<script>window.onload=async()=>{try{await document.fonts.ready}catch{}const max=194*96/25.4,h=document.body.scrollHeight;if(h>max)document.body.style.zoom=(max/h).toFixed(3);setTimeout(()=>print(),300)}<\/script></html>');
  w.document.close()}
-function calMonthCanvas(y,m,ev,title){
+function calMonthCanvas(y,m,ev,title,logo){
  const W=2339,H=1654,pad=56,weeks=calMonthData(y,m),cw=(W-pad*2)/7,top=196,foot=56,avail=H-top-foot-pad/2;
  const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");g.textBaseline="top";
  const font=(wt,px,fam)=>wt+" "+px+"px "+(fam||"'Plus Jakarta Sans', Arial");
@@ -1066,8 +1069,9 @@ function calMonthCanvas(y,m,ev,title){
   layout={rows,tag,tl,loc,num,evH};if(rows.reduce((a,b)=>a+b,0)<=avail)break}
  const tot=layout.rows.reduce((a,b)=>a+b,0);if(tot<avail){const k=avail/tot;layout.rows=layout.rows.map(r=>r*k)}
  g.fillStyle="#FFFFFF";g.fillRect(0,0,W,H);g.fillStyle="#131313";g.fillRect(0,0,W,150);g.fillStyle="#FFD400";g.fillRect(0,150,W,8);
- g.font=font(400,82,"Anton, Impact, sans-serif");g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,36);const tw=g.measureText("YELLOW CONTROL").width;
- g.fillStyle="#F2EFE6";g.fillText(title.toUpperCase(),pad+tw+36,36);
+ const lx0=logo?pad+136:pad;if(logo)g.drawImage(logo,pad,20,112,112);
+ g.font=font(400,82,"Anton, Impact, sans-serif");g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",lx0,36);const tw=g.measureText("YELLOW CONTROL").width;
+ g.fillStyle="#F2EFE6";g.fillText(title.toUpperCase(),lx0+tw+36,36);
  g.font=font(600,24);g.fillStyle="#aaa296";const info=ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:"");g.fillText(info,W-pad-g.measureText(info).width,70);
  // cabecera de días
  const hy=top-34;CAL_WD.forEach((d,i)=>{g.font=font(800,18);g.fillStyle=i>4?"#8a8478":"#131313";g.fillText(d.toUpperCase(),pad+i*cw+10,hy)});
@@ -1085,7 +1089,7 @@ function calMonthCanvas(y,m,ev,title){
  const lg=Object.entries(KIND_LABEL).filter(([k])=>ev.some(e=>e.kind===k));let lx=W-pad;g.font=font(700,18);for(const [k,v] of lg.reverse()){const w=g.measureText(v).width;lx-=w;g.fillStyle="#6b665d";g.fillText(v,lx,H-foot+14);lx-=24;g.fillStyle=KIND_COLOR[k];g.fillRect(lx,H-foot+16,14,14);lx-=26}
  return c}
 async function calMonthPng(y,m,ev,title){
- try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calMonthCanvas(y,m,ev,title);const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calMonthCanvas(y,m,ev,title,await ycLogo());const blob=await new Promise(r=>c.toBlob(r,"image/png"));
   const name="Yellow_calendario_"+y+"-"+String(m+1).padStart(2,"0")+".png",file=new File([blob],name,{type:"image/png"});
   const touch=matchMedia("(pointer:coarse)").matches;
   if(touch&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Calendario · "+title});return}
