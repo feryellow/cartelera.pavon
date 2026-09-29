@@ -30,8 +30,8 @@ export async function putRecord(moduleName: RecordModule, id: string, value: unk
 const allowed: Record<RecordModule,string[]> = {
   radio: ["venue","spectacle","station","campaignName","spotName","assetKey","assetName","duration","startDate","endDate","frequency","timeSlot","notes","contact","status","materialStatus","deliveryDate","contractId","lineId","inventoryMonth","plannedSpots","actualSpots","unit","certificateRef"],
   publicidad: ["spectacle","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","category","location"],
-  taxis: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
-  intercambiadores: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  taxis: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","posterKey","posterName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
+  intercambiadores: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","posterKey","posterName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
 hometicket: ["venue","position","month","spectacle","startDate","endDate","assetKey","assetName","compositeAssetKey","fit","notes","status","materialStatus","deliveryDate"],
   hitos: ["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","link","assetKey","assetName","notes","status"],
   revistas: ["venue","magazine","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],

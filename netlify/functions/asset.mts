@@ -22,7 +22,7 @@ export default async (req:Request)=>{
   const auth=await requireAccess(req,moduleName,true); if(auth.response)return auth.response;
   if(req.method==="PUT"){
     const contentType=req.headers.get("content-type")||"application/octet-stream";
-    if(!/^(image\/|audio\/|application\/pdf)/.test(contentType))return new Response("Unsupported file type",{status:415});
+    if(!/^(image\/|audio\/|video\/(mp4|quicktime|webm)|application\/pdf)/.test(contentType))return new Response("Unsupported file type",{status:415});
     const buf=await req.arrayBuffer();
     if(buf.byteLength>6*1024*1024)return new Response("El archivo supera 6 MB. Redúcelo antes de subirlo.",{status:413});
     await store.set(`file_${key}`,buf);
