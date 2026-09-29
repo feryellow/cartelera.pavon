@@ -26,7 +26,7 @@ async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
 // la miniatura antigua (la clave del soporte es siempre la misma).
 async function version(ref: ImgRef): Promise<string> {
   if (ref.kind === "blank") return "1";
-  if (ref.kind === "collage") return (await Promise.all((ref.refs || []).map((r) => version(r).catch(() => "0")))).join("-").slice(0, 120);
+  if (ref.kind === "collage") return "recto2-" + (await Promise.all((ref.refs || []).map((r) => version(r).catch(() => "0")))).join("-").slice(0, 120);
   if (ref.kind === "facade") return facadeVersion(ref.key);
   const meta: any = ref.kind === "asset" ? await assetStore().get(`meta_${ref.key}`, { type: "json" }) : await carteleriaStore().get(`imagemeta_${ref.key}`, { type: "json" });
   return String(meta?.updatedAt || meta?.size || "0").replace(/[^0-9A-Za-z]/g, "");
@@ -65,14 +65,14 @@ async function readImage(ref: ImgRef) {
   if (ref.kind === "facade") { const buf = await facadeComposite(ref.key, (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, ""), 912); return buf ? Jimp.read(buf) : null; }
   const bytes = await rawBytes(ref); return bytes ? Jimp.read(Buffer.from(bytes)) : null;
 }
-// Collage tipo polaroid: hasta 4 fotos en 2 × 2 sobre fondo oscuro, con marco blanco, sombra,
+// Collage tipo polaroid: hasta 4 fotos en 2 × 2 sobre fondo oscuro, con marco blanco, sombra
 // cinta amarilla y un giro leve distinto en cada una.
 async function polaroidCollage(refs: ImgRef[], W = 912): Promise<Buffer | null> {
   const imgs = (await Promise.all(refs.slice(0, 4).map((r) => readImage(r).catch(() => null)))).filter(Boolean) as any[];
   if (!imgs.length) return null;
   const cols = imgs.length === 1 ? 1 : 2, rows = Math.ceil(imgs.length / cols), cw = Math.floor(W / cols), ch = Math.round(cw * 1.02);
   const H = rows * ch + 24, bg = new Jimp({ width: W, height: H, color: 0x1b1b1bff });
-  const tilts = [-3.2, 2.6, 2.2, -2.4];
+  
   imgs.forEach((im, i) => {
     // foto cuadrada, como una polaroid clásica: se recorta al centro sin deformar
     const side = Math.round(Math.min(cw * 0.74, ch * 0.72)); im.cover({ w: side, h: side });
@@ -81,7 +81,7 @@ async function polaroidCollage(refs: ImgRef[], W = 912): Promise<Buffer | null> 
     const shadow = new Jimp({ width: fw, height: fh, color: 0x00000088 }); card.composite(shadow, m + 7, m + 10); card.blur(7);
     const frame = new Jimp({ width: fw, height: fh, color: 0xfbfaf6ff }); frame.composite(im, pad, pad); card.composite(frame, m, m);
     const tape = new Jimp({ width: Math.round(fw * 0.32), height: Math.round(pad * 1.6), color: 0xf4c300cc }); card.composite(tape, m + Math.round(fw * 0.34), m - Math.round(pad * 0.7));
-    card.rotate({ deg: tilts[i % 4], mode: true } as any);
+    // rectas, sin giro
     const lastAlone = imgs.length % cols === 1 && i === imgs.length - 1 && cols > 1;
     const x = (lastAlone ? Math.round((W - cw) / 2) : (i % cols) * cw) + Math.round((cw - card.bitmap.width) / 2), y = 12 + Math.floor(i / cols) * ch + Math.round((ch - card.bitmap.height) / 2);
     bg.composite(card, x, y);

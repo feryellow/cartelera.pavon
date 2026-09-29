@@ -41,7 +41,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
       for (let i = 0; i < list.length; i += per) {
         const chunk = list.slice(i, i + per);
         rows.push(`<tr>${chunk.map((l) => `<td width="${pct}%" valign="top" style="width:${pct}%; padding:0 10px 14px 0;">
-          ${l.kicker ? `<div style="font-size:15px; font-weight:800; color:#111111; margin:0 0 6px; line-height:1.2; height:36px; overflow:hidden;">${e(l.kicker)}</div>` : ""}
+          ${l.kicker ? `<div style="font-size:15px; font-weight:800; color:#111111; margin:0 0 6px; line-height:1.2;">${e(l.kicker)}</div>` : ""}
           <img src="cid:${e((l as any).cid)}" width="${iw}" height="${Math.round(iw * ratio)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">
           <div style="font-size:${cap}px; font-weight:800; color:#111111; margin-top:6px; line-height:1.3;">${e(l.title)}</div>
           ${l.detail ? `<div style="font-size:${cap - 1}px; color:#666666; margin-top:2px; line-height:1.35;">${e(l.detail)}</div>` : ""}</td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
@@ -64,13 +64,32 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     return [...groups].sort((a, b) => a[0].localeCompare(b[0])).map(([monday, ls]) => {
       const sun = new Date(monday + "T12:00:00Z"); sun.setUTCDate(sun.getUTCDate() + 6);
       const a = monday < s.first ? s.first : monday, b = sun.toISOString().slice(0, 10) > s.last ? s.last : sun.toISOString().slice(0, 10);
-      const head = `<tr><td class="yw-pad" style="padding:${i++ ? 18 : 14}px 32px 4px;"><div style="font-size:11px; font-weight:800; letter-spacing:0.05em; color:#555555;">SEMANA ${num(monday)} · ${e(f(a, { day: "numeric" }))}–${e(f(b, { day: "numeric", month: "long" }).toUpperCase())}</div></td></tr>`;
+      const head = `<tr><td class="yw-pad" style="padding:${i++ ? 18 : 14}px 32px 4px;"><span style="display:inline-block; background:#111111; color:${Y}; font-size:11px; font-weight:800; letter-spacing:0.05em; padding:3px 8px;">SEMANA ${num(monday)} · ${e(f(a, { day: "numeric" }))}–${e(f(b, { day: "numeric", month: "long" }).toUpperCase())}</span></td></tr>`;
       return head + ls.map((l) => `<tr><td class="yw-pad" style="padding:6px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td valign="top" width="92" style="width:92px; padding:1px 10px 0 0;"><span style="display:inline-block; background:${Y}; color:#111111; font-size:12px; font-weight:800; padding:2px 6px; white-space:nowrap;">${e(f(l.date || s.first, { weekday: "short", day: "numeric" }))}${l.time ? " · " + e(l.time) : ""}</span></td>
         <td valign="top" style="font-size:13px; color:#111111; line-height:1.45;"><b>${e(l.title)}</b>${l.detail ? `<br><span style="font-size:12px; color:#666666;">${e(l.detail)}</span>` : ""}</td>
       </tr></table></td></tr>`).join("");
     }).join("");
   };
+  // Radio: una ficha por contrato con barra de uso y reparto por espectáculo
+  const bar = (v: number, max: number, h = 8, color = Y) => { const pc = max ? Math.max(0, Math.min(100, Math.round(v / max * 100))) : 0;
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;"><tr>${pc ? `<td width="${pc}%" style="width:${pc}%; background:${color}; height:${h}px; line-height:${h}px; font-size:1px;">&nbsp;</td>` : ""}${pc < 100 ? `<td style="background:#e6e3dc; height:${h}px; line-height:${h}px; font-size:1px;">&nbsp;</td>` : ""}</tr></table>`; };
+  const radioBlock = (lines: Line[]) => lines.map((l) => {
+    const st = l.stat; if (!st) return textRow(l, 1);
+    const fm = (x: number) => x.toLocaleString("es-ES"), max = Math.max(1, ...st.parts.map((x) => x[1]));
+    return `<tr><td class="yw-pad" style="padding:14px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f1; border-left:4px solid ${Y};"><tr><td style="padding:14px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td valign="bottom" style="font-size:14px; font-weight:800; color:#111111;">${e(l.title)}</td>
+        <td valign="bottom" align="right" style="white-space:nowrap;"><span style="font-size:22px; font-weight:800; color:#111111;">${fm(st.used)}</span><span style="font-size:12px; color:#666666;"> / ${fm(st.cap)} ${e(st.unit)}</span></td>
+      </tr></table>
+      <div style="height:8px; line-height:8px; font-size:1px;">&nbsp;</div>${bar(st.used, st.cap, 10)}
+      <div style="font-size:11px; color:#666666; margin-top:6px;">${!st.used ? "Sin asignar este mes" : `${Math.round(st.used / st.cap * 100)} % asignado${st.cert ? ` · ${fm(st.cert)} certificadas` : " · pendiente de certificado"}`}</div>
+      ${st.parts.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px; table-layout:fixed;">${st.parts.map(([nme, v]) => `<tr>
+        <td width="44%" style="width:44%; font-size:12px; color:#111111; padding:3px 8px 3px 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${e(nme)}</td>
+        <td style="padding:3px 0;">${bar(v, max, 7, "#111111")}</td>
+        <td width="36" align="right" style="width:36px; font-size:12px; font-weight:800; color:#111111; padding:3px 0 3px 8px;">${fm(v)}</td></tr>`).join("")}</table>` : ""}
+    </td></tr></table></td></tr>`;
+  }).join("");
   const sections = s.sections.map((sec) => {
     const withImg = sec.lines.filter((l) => (l as any).cid), noImg = sec.lines.filter((l) => !(l as any).cid);
     return `
@@ -78,7 +97,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#111111;">${e(sec.name.toUpperCase())} · ${e((sec.count || String(sec.lines.filter((l) => !l.empty).length)).toUpperCase())}</div>
     <div style="height:2px; background:${Y}; margin-top:6px;"></div>
   </td></tr>
-  ${!sec.lines.length ? `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>` : sec.key === "hitos" ? weeksBlock(sec.lines) : (withImg.length ? grid(withImg) : "") + noImg.map(textRow).join("")}`}).join("");
+  ${!sec.lines.length ? `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">Sin registros este mes.</div></td></tr>` : sec.key === "hitos" ? weeksBlock(sec.lines) : sec.key === "radio" ? radioBlock(sec.lines) : (withImg.length ? grid(withImg) : "") + noImg.map(textRow).join("")}`}).join("");
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
 <title>Resumen de publicidad · ${e(s.label)}</title>

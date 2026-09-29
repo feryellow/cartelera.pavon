@@ -7,7 +7,7 @@ import { FACADE_VIEWS, FACADE_SLOTS } from "./facade.ts";
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
-export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean };
+export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
 export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
 
@@ -92,8 +92,9 @@ export async function monthSummary(month: string, origin: string): Promise<Month
       const rr = rows.filter((r) => ls.some((l: any) => l.id === r.lineId));
       const p = rr.reduce((a, r) => a + n(r.plannedSpots), 0), q = rr.reduce((a, r) => a + n(r.actualSpots), 0);
       if (u === "cuñas") { planned += p; actual += q; }
-      const bySpec = new Map<string, number>(); rr.forEach((r) => bySpec.set(r.spectacle || "Sin espectáculo", (bySpec.get(r.spectacle || "Sin espectáculo") || 0) + n(r.plannedSpots)));
-      rLines.push({ title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
+      const nm = (r: any) => r.spectacle || r.campaignName || "Sin espectáculo";
+      const bySpec = new Map<string, number>(); rr.forEach((r) => bySpec.set(nm(r), (bySpec.get(nm(r)) || 0) + n(r.plannedSpots)));
+      rLines.push({ stat: { used: p, cap, cert: q, unit: u, parts: [...bySpec].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]) }, title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
     }
   }
   radio.filter((r) => !r.contractId && overlaps(r)).forEach((r) => rLines.push({ title: r.spectacle || "Sin espectáculo", detail: [short(r.venue), r.station, r.frequency, range(r.startDate, r.endDate)].filter(Boolean).join(" · ") }));
@@ -107,7 +108,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
 
   // Revistas: una página por revista y mes
   const rev = (await listRecords("revistas")).filter((r) => r.month === month);
-  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ kicker: r.magazine || "Revista", title: r.spectacle || "Sin espectáculo", detail: short(r.venue), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ kicker: r.magazine === "Revista Teatros" ? "Teatros" : (r.magazine || "Revista"), title: r.spectacle || "Sin espectáculo", detail: short(r.venue), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
 
   // Comunicación: notas de prensa, ruedas de prensa, estrenos… (hitos del Calendario)
   const hitos = (await listRecords("hitos")).filter((r) => r.date >= first && r.date <= last).sort((a, b) => String(a.date).localeCompare(String(b.date)));
