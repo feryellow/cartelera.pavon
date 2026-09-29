@@ -16,7 +16,15 @@ export default async (req:Request)=>{
     const data=await store.get(`file_${key}`,{type:"arrayBuffer"});
     if(data===null)return new Response("Not found",{status:404});
     const meta=await store.get(`meta_${key}`,{type:"json"}) as any;
-    return new Response(data,{headers:{"content-type":meta?.contentType||"application/octet-stream","cache-control":"private, no-store"}});
+    const type=meta?.contentType||"application/octet-stream", total=data.byteLength;
+    // Rangos de bytes: Safari (iPhone/iPad) solo reproduce vídeo si el servidor responde 206 a Range.
+    const m=/^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range")||"");
+    if(m&&total){
+      let start=m[1]===""?Math.max(0,total-Number(m[2]||0)):Number(m[1]), end=m[1]===""||m[2]===""?total-1:Math.min(Number(m[2]),total-1);
+      if(start>=total||start>end)return new Response(null,{status:416,headers:{"content-range":`bytes */${total}`}});
+      return new Response(data.slice(start,end+1),{status:206,headers:{"content-type":type,"content-range":`bytes ${start}-${end}/${total}`,"accept-ranges":"bytes","content-length":String(end-start+1),"cache-control":"private, max-age=3600"}});
+    }
+    return new Response(data,{headers:{"content-type":type,"accept-ranges":"bytes","content-length":String(total),"cache-control":type.startsWith("video/")?"private, max-age=3600":"private, no-store"}});
   }
 
   const auth=await requireAccess(req,moduleName,true); if(auth.response)return auth.response;

@@ -949,9 +949,12 @@ function bindMailTest(){const out=$("#mailResult");if(!out)return;
  $("#mailStatus").onclick=async()=>{try{show(await api("/api/test-email"))}catch(e){say(e.message)}};
  $("#mailTest").onclick=async()=>{const b=$("#mailTest");b.disabled=true;b.textContent="Enviando…";try{const d=await api("/api/test-email",{method:"POST"});show(d);say(d.sent?"Correo enviado":"No se ha enviado: "+(d.reason||"revisa la configuración"))}catch(e){say(e.message)}finally{b.disabled=false;b.textContent="Enviar correo de prueba"}}}
 
-async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const u=await blobUrl(k,moduleName);if(!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else if(el.dataset.kind==="video"){const pu=el.dataset.poster?await blobUrl(el.dataset.poster,moduleName):"";
-   if(pu){el.innerHTML='<button type="button" class="vid-poster" aria-label="Reproducir vídeo"><img src="'+pu+'" alt=""><span>▶</span></button>';el.querySelector("button").onclick=()=>{el.innerHTML='<video controls autoplay playsinline src="'+u+'"></video>'}}
-   else el.innerHTML='<video controls playsinline preload="metadata" src="'+u+'#t=0.5"></video>'}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
+async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+moduleName+'"][data-asset]')){const k=el.dataset.asset;if(!k)continue;const vid=el.dataset.kind==="video";const u=vid?"":await blobUrl(k,moduleName);if(!vid&&!u)continue;if(el.dataset.kind==="audio"){el.innerHTML='';el.appendChild(yPlayer(u,el.dataset.name||""))}else if(el.dataset.kind==="video"){const pu=el.dataset.poster?await blobUrl(el.dataset.poster,moduleName):"";
+   // El vídeo se pide directo al servidor (con rangos, como exige Safari en iPhone); si falla, se usa la copia descargada.
+   const direct="/api/asset?key="+encodeURIComponent(k)+"&module="+moduleName;
+   const mk=(play)=>{const v=document.createElement("video");v.controls=true;v.playsInline=true;v.setAttribute("playsinline","");v.preload=play?"auto":"metadata";if(pu)v.poster=pu;v.src=direct+(play?"":"#t=0.5");v.onerror=async()=>{if(v.dataset.fb)return;v.dataset.fb="1";const x=await blobUrl(k,moduleName);if(!x)return;v.src=x;if(play)v.play().catch(()=>{})};el.innerHTML="";el.appendChild(v);if(play)v.play().catch(()=>{});return v};
+   if(pu){el.innerHTML='<button type="button" class="vid-poster" aria-label="Reproducir vídeo"><img src="'+pu+'" alt=""><span>▶</span></button>';el.querySelector("button").onclick=()=>mk(true)}
+   else mk(false)}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 
 // Archivo: toda la publicidad de cada mes y los registros quitados, con opción de recuperarlos.
 let arMonth="";
@@ -1355,7 +1358,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v53";
+const YC_VERSION="yellow-control-v54";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
