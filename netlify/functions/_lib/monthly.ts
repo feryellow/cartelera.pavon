@@ -9,7 +9,7 @@ import { FACADE_VIEWS, FACADE_SLOTS } from "./facade.ts";
 import type { ImgRef } from "./thumbs.ts";
 export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
 export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
-export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
+export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number | string; note?: string }[]; sections: Section[] };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const fmt = (iso: string) => iso ? new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: "UTC" }).replace(".", "") : "";
@@ -60,7 +60,8 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   }
   // En el correo, las vistas (o fotos) de la fachada van juntas en un collage tipo polaroid
   const facadeLines: Line[] = facade.length > 1 ? [{ title: facade.map((l) => l.title).join(" · "), detail: facade[0].detail.includes("montaje") && photos.length ? `Fotos del montaje · ${fmt(lastMont.date)}` : (lastMont ? "Último montaje el " + fmt(lastMont.date) : "Fachada del mes"), img: { kind: "collage", key: "facade", refs: facade.map((l) => l.img!).filter(Boolean) }, collage: true }] : facade;
-  sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: facadeLines, count: `${cart.length} ${cart.length === 1 ? "soporte" : "soportes"}` });
+  const nImg = FACADE_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
+  sections.push({ key: "carteleria", name: "Fachada Pavón", lines: facadeLines, count: nImg >= FACADE_SLOTS.length ? "completa" : `${nImg} de ${FACADE_SLOTS.length} soportes` });
 
 // Home Ticket: una miniatura compuesta por teatro y mes.
   const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Gran Castillo de Pedraza", "Abono Teatro"];
@@ -117,13 +118,18 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const hitos = (await listRecords("hitos")).filter((r) => r.date >= first && r.date <= last).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   sections.push({ key: "hitos", name: "Comunicación", lines: hitos.map((r) => ({ title: String(r.title || "").toLowerCase().startsWith(String(r.type || "").toLowerCase()) ? r.title : `${r.type || "Hito"} · ${r.title || r.spectacle || ""}`, detail: [short(r.venue), r.place].filter(Boolean).join(" · "), date: r.date, time: r.time || "" })) });
 
-  const totals = [
-    { label: "soportes de fachada", value: cart.length },
-    { label: "piezas Home Ticket", value: ht.length },
+  // Comprobantes del mes (lo que se enseña al cliente): estado de la fachada, Home Ticket por teatro,
+  // cuñas y páginas en revistas. No se cuentan cosas que salen igual todos los meses.
+  const withImg = FACADE_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
+  const htByVenue = new Map<string, Set<string>>(); ht.forEach((r: any) => { const k = htByVenue.get(r.venue) || new Set(); if (r.position) k.add(r.position); htByVenue.set(r.venue, k); });
+  const htComplete = [...htByVenue.values()].filter((p) => p.size >= 3).length;
+  const tx = sections.filter((s) => s.key === "taxis" || s.key === "intercambiadores").reduce((a, s) => a + s.lines.length, 0);
+  const totals: { label: string; value: number | string; note?: string }[] = [
+    { label: "Fachada Pavón", value: withImg >= FACADE_SLOTS.length ? "Completa" : `${withImg}/${FACADE_SLOTS.length}`, note: withImg >= FACADE_SLOTS.length ? "todos los soportes con cartel" : "soportes con cartel" },
+    { label: "Home Ticket", value: htByVenue.size, note: `${htComplete} ${htComplete === 1 ? "completo" : "completos"}` },
     { label: actual ? "cuñas certificadas" : "cuñas asignadas", value: actual || planned },
-    { label: "campañas taxis e intercambiadores", value: sections.filter((s) => s.key === "taxis" || s.key === "intercambiadores").reduce((a, s) => a + s.lines.length, 0) },
-    { label: "páginas en revistas", value: rev.length },
-    { label: "acciones de comunicación", value: hitos.length },
+    { label: "páginas en revistas de teatro", value: rev.length },
+    ...(tx ? [{ label: "campañas en taxis e intercambiadores", value: tx }] : []),
   ];
   return { month, label: label.charAt(0).toUpperCase() + label.slice(1), first, last, totals, sections };
 }
