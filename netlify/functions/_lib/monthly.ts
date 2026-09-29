@@ -7,7 +7,7 @@ import { FACADE_VIEWS, FACADE_SLOTS } from "./facade.ts";
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
-export type Line = { title: string; detail: string; date?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean };
+export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean };
 export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number }[]; sections: Section[] };
 
@@ -58,7 +58,9 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     const withPoster = FACADE_SLOTS.filter((x) => x.view === v.id && state.slots?.[x.key]?.hasImage).length;
     if (withPoster) facade.push({ title: v.name, detail: `${withPoster} ${withPoster === 1 ? "cartel" : "carteles"}${lastMont ? " · último montaje el " + fmt(lastMont.date) : ""}`, img: { kind: "facade", key: v.id }, wide: true });
   }
-  sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: facade, count: `${cart.length} ${cart.length === 1 ? "soporte" : "soportes"}` });
+  // En el correo, las vistas (o fotos) de la fachada van juntas en un collage tipo polaroid
+  const facadeLines: Line[] = facade.length > 1 ? [{ title: facade.map((l) => l.title).join(" · "), detail: facade[0].detail.includes("montaje") && photos.length ? `Fotos del montaje · ${fmt(lastMont.date)}` : (lastMont ? "Último montaje el " + fmt(lastMont.date) : "Fachada del mes"), img: { kind: "collage", key: "facade", refs: facade.map((l) => l.img!).filter(Boolean) }, collage: true }] : facade;
+  sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: facadeLines, count: `${cart.length} ${cart.length === 1 ? "soporte" : "soportes"}` });
 
   // Home Ticket
   // Home Ticket: los cinco espacios, en orden; los que no tuvieron piezas aparecen como «sin piezas»
@@ -67,10 +69,13 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const ht = (await listRecords("hometicket")).filter(overlaps);
   const htVenues = [...HT_VENUES, ...new Set(ht.map((r) => r.venue).filter((v) => v && !HT_VENUES.includes(v)))];
   const htLines: Line[] = [];
+  // Una sola imagen por espacio (la de mayor tamaño: XL, Superior o Inferior) y debajo sus piezas
+  const PICK = ["Home Ticket XL · 520 × 856", "HT Superior · 520 × 420", "HT Inferior · 520 × 420"];
   for (const v of htVenues) {
     const mine = ht.filter((r) => r.venue === v).sort((a, b) => POS_ORDER.indexOf(a.position) - POS_ORDER.indexOf(b.position));
-    if (!mine.length) { htLines.push({ title: short(v), detail: "Sin piezas este mes", empty: true }); continue; }
-    mine.forEach((r) => htLines.push({ title: r.spectacle || "Sin espectáculo", detail: `${short(r.venue)} · ${HT_NAMES[r.position] || r.position || ""} · ${range(r.startDate, r.endDate)}`, img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined }));
+    if (!mine.length) { htLines.push({ kicker: short(v), title: "Sin piezas este mes", detail: "", img: { kind: "blank", key: "ht" }, empty: true }); continue; }
+    const main = [...mine].sort((a, b) => PICK.indexOf(a.position) - PICK.indexOf(b.position)).find((r) => r.assetKey);
+    htLines.push({ kicker: short(v), title: [...new Set(mine.map((r) => r.spectacle || "Sin espectáculo"))].join(" · "), detail: mine.map((r) => `${HT_NAMES[r.position] || r.position || ""} ${range(r.startDate, r.endDate)}`.trim()).join(" · "), img: main ? { kind: "asset" as const, key: main.assetKey } : { kind: "blank", key: "ht" } });
   }
   sections.push({ key: "hometicket", name: "Home Ticket", lines: htLines });
 
@@ -102,11 +107,11 @@ export async function monthSummary(month: string, origin: string): Promise<Month
 
   // Revistas: una página por revista y mes
   const rev = (await listRecords("revistas")).filter((r) => r.month === month);
-  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ title: r.spectacle || "Sin espectáculo", detail: [r.magazine, short(r.venue)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ kicker: r.magazine || "Revista", title: r.spectacle || "Sin espectáculo", detail: short(r.venue), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
 
   // Comunicación: notas de prensa, ruedas de prensa, estrenos… (hitos del Calendario)
   const hitos = (await listRecords("hitos")).filter((r) => r.date >= first && r.date <= last).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  sections.push({ key: "hitos", name: "Comunicación", lines: hitos.map((r) => ({ title: String(r.title || "").toLowerCase().startsWith(String(r.type || "").toLowerCase()) ? r.title : `${r.type || "Hito"} · ${r.title || r.spectacle || ""}`, detail: [fmt(r.date) + (r.time ? " " + r.time : ""), short(r.venue), r.place].filter(Boolean).join(" · "), date: r.date })) });
+  sections.push({ key: "hitos", name: "Comunicación", lines: hitos.map((r) => ({ title: String(r.title || "").toLowerCase().startsWith(String(r.type || "").toLowerCase()) ? r.title : `${r.type || "Hito"} · ${r.title || r.spectacle || ""}`, detail: [short(r.venue), r.place].filter(Boolean).join(" · "), date: r.date, time: r.time || "" })) });
 
   const totals = [
     { label: "soportes de fachada", value: cart.length },
