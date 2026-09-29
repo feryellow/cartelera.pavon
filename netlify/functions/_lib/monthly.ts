@@ -77,8 +77,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     htLines.push({
       title: short(v),
       detail: pieces,
-      img: composite ? { kind: "asset" as const, key: composite } : (mine[0]?.assetKey ? { kind:"asset" as const, key: mine[0].assetKey } : undefined),
-      wide: true
+      img: composite ? { kind: "asset" as const, key: composite } : (mine[0]?.assetKey ? { kind:"asset" as const, key: mine[0].assetKey } : undefined)
     });
   }
   sections.push({ key: "hometicket", name: "Home Ticket", lines: htLines });
