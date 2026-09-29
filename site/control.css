@@ -829,3 +829,6 @@ body.sheet-open{overflow:hidden}
 .ht-slot-preview{position:relative}
 .ht-compose-slot .media-preview img,.ht-slot-preview .media-preview img{max-width:none;max-height:none;width:100%;height:100%;border:0;border-radius:0;object-fit:cover}
 .ht-compose-slot.fit-contain .media-preview img,.ht-slot-preview.fit-contain .media-preview img{object-fit:contain}
+
+/* Vídeos de campaña (taxis, intercambiadores) */
+.media-video video{display:block;width:100%;max-width:360px;border-radius:10px;border:1px solid var(--line);background:#000}

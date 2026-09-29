@@ -107,7 +107,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   // Taxis e intercambiadores
   for (const [m, name] of [["taxis", "Taxis"], ["intercambiadores", "Intercambiadores"]] as const) {
     const rows = (await listRecords(m)).filter(overlaps);
-    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: (r.posterKey || r.assetKey) ? { kind: "asset" as const, key: r.posterKey || r.assetKey } : undefined })) });
   }
 
   // Revistas: una página por revista y mes
