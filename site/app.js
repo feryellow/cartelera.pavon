@@ -873,7 +873,7 @@ function calDetail(e){
  calPanel('<div class="section-title"><div><small class="section-kicker">'+esc(evTag(e))+' · '+esc(e.module)+'</small><h2>'+esc(e.title)+'</h2></div><button type="button" class="ghost" id="dtClose">Cerrar</button></div>'+
   '<span class="badge '+(e.auto?"":"ok")+' cal-origin">'+(e.auto?"Automático · se edita en "+esc(e.module):"Hito manual · editable aquí")+'</span>'+
   '<dl class="cal-dl">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl>'+
-  (canOpen?'<div class="actions-row"><button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button></div>':''));
+  ((canOpen||(/^https?:\\/\\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\\/\\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">Ver newsletter / informe</a>':'')+'</div>':''));
  $("#dtClose").onclick=()=>calPanel("");
  if(canOpen)$("#dtOpen").onclick=()=>calOpen(e);
 }
@@ -898,6 +898,7 @@ function calHitoForm(r={}){
   '<label>Lugar<input name="place" value="'+esc(r.place||"")+'" placeholder="Sala, medio, dirección…"'+dis+'></label><label>Responsable<input name="responsable" value="'+esc(r.responsable||"")+'"'+dis+'></label>'+
   '<label>Contacto<input name="contact" value="'+esc(r.contact||"")+'" placeholder="Periodista, medio, teléfono…"'+dis+'></label>'+
   '<label>Aviso<select name="reminder"'+dis+'>'+HITO_REMINDERS.map(([v,l])=>'<option value="'+v+'"'+(v===(r.reminder||"")?" selected":"")+'>'+l+'</option>').join("")+'</select></label>'+
+  '<label class="wide">Enlace<input type="url" name="link" value="'+esc(r.link||"")+'" placeholder="https://… (Brevo, noticia, dossier, etc.)"'+dis+'></label>'+
   '<label class="wide">Notas<textarea name="notes"'+dis+'>'+esc(r.notes||"")+'</textarea></label>'+
   '<p class="cart-legacy wide" style="margin:0">El aviso llega a quien esté suscrito al calendario. Por defecto: una hora antes si tiene hora; si no, el día anterior a las 9:00.</p>'+
   (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Quitar</button>':'')+'</div>':'')+'</form>');
