@@ -3,7 +3,7 @@ import { carteleriaStore } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { normalizeDate } from "./dates.ts";
 
-export type EventRow = { id: string; date: string; time?: string; module: string; moduleKey: string; title: string; location: string; action: string; status: string; recordId?: string; slotKey?: string; kind: string; notes?: string; link?: string; auto: boolean; venue: string; responsable?: string; reminder?: string };
+export type EventRow = { id: string; date: string; time?: string; module: string; moduleKey: string; title: string; location: string; action: string; status: string; recordId?: string; slotKey?: string; kind: string; notes?: string; link?: string; assetKey?: string; assetName?: string; auto: boolean; venue: string; responsable?: string; reminder?: string };
 
 export const SLOT_NAMES: Record<string, string> = {
   "taquilla__secundario-1": "Columna 2", "taquilla__taquilla-izq": "Taquilla izquierda cerrada", "taquilla__taquilla-der": "Taquilla derecha cerrada",
@@ -46,7 +46,7 @@ export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
       const date = normalizeDate(r.date); if (!date) continue;
       events.push({ id: `hitos-${r.id}`, date, time: r.time || "", module: "Hito", moduleKey: "hitos", title: r.title || r.spectacle || "Hito",
         location: [r.venue, r.place].filter(Boolean).join(" · "), action: r.type || "Hito", status: r.status || "", recordId: r.id, kind: "hito", notes: r.notes || "", auto: false, venue: r.venue || "",
-        responsable: r.responsable || "", reminder: r.reminder || "", link: r.link || "" });
+        responsable: r.responsable || "", reminder: r.reminder || "", link: r.link || "", assetKey: r.assetKey || "", assetName: r.assetName || "" });
     }
   }
   events.sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || "") || a.module.localeCompare(b.module));
