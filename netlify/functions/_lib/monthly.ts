@@ -61,7 +61,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   // En el correo, las vistas (o fotos) de la fachada van juntas en un collage tipo polaroid
   const facadeLines: Line[] = facade.length > 1 ? [{ title: facade.map((l) => l.title).join(" · "), detail: facade[0].detail.includes("montaje") && photos.length ? `Fotos del montaje · ${fmt(lastMont.date)}` : (lastMont ? "Último montaje el " + fmt(lastMont.date) : "Fachada del mes"), img: { kind: "collage", key: "facade", refs: facade.map((l) => l.img!).filter(Boolean) }, collage: true }] : facade;
   const nImg = FACADE_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
-  sections.push({ key: "carteleria", name: "Fachada Pavón", lines: facadeLines, count: nImg >= FACADE_SLOTS.length ? "completa" : `${nImg} de ${FACADE_SLOTS.length} soportes` });
+  sections.push({ key: "carteleria", name: "Fachada Gran Teatro Pavón", lines: facadeLines, count: `${nImg} de ${FACADE_SLOTS.length} soportes` });
 
 // Home Ticket: una miniatura compuesta por teatro y mes.
   const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Gran Castillo de Pedraza", "Abono Teatro"];
@@ -123,13 +123,13 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const withImg = FACADE_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
   const htByVenue = new Map<string, Set<string>>(); ht.forEach((r: any) => { const k = htByVenue.get(r.venue) || new Set(); if (r.position) k.add(r.position); htByVenue.set(r.venue, k); });
   const htComplete = [...htByVenue.values()].filter((p) => p.size >= 3).length;
-  const tx = sections.filter((s) => s.key === "taxis" || s.key === "intercambiadores").reduce((a, s) => a + s.lines.length, 0);
   const totals: { label: string; value: number | string; note?: string }[] = [
-    { label: "Fachada Pavón", value: withImg >= FACADE_SLOTS.length ? "Completa" : `${withImg}/${FACADE_SLOTS.length}`, note: withImg >= FACADE_SLOTS.length ? "todos los soportes con cartel" : "soportes con cartel" },
+    { label: "soportes fachada Gran Teatro Pavón", value: `${withImg} de ${FACADE_SLOTS.length}` },
     { label: "Home Ticket", value: htByVenue.size, note: `${htComplete} ${htComplete === 1 ? "completo" : "completos"}` },
     { label: actual ? "cuñas certificadas" : "cuñas asignadas", value: actual || planned },
-    { label: "páginas en revistas de teatro", value: rev.length },
-    ...(tx ? [{ label: "campañas en taxis e intercambiadores", value: tx }] : []),
+    { label: "Revistas Teatros", value: rev.length },
+    { label: "campañas taxis", value: sections.find((x) => x.key === "taxis")?.lines.length || 0 },
+    { label: "campañas intercambiadores", value: sections.find((x) => x.key === "intercambiadores")?.lines.length || 0 },
   ];
   return { month, label: label.charAt(0).toUpperCase() + label.slice(1), first, last, totals, sections };
 }

@@ -6,12 +6,14 @@ const Y = "#f4c300";
 
 function quickRead(s: MonthSummary) {
   const t = Object.fromEntries(s.totals.map((x) => [x.label, x]));
-  const f = t["Fachada Pavón"], h = t["Home Ticket"], c = t["cuñas asignadas"] || t["cuñas certificadas"], r = t["páginas en revistas de teatro"];
+  const f = t["soportes fachada Gran Teatro Pavón"], h = t["Home Ticket"], c = t["cuñas asignadas"] || t["cuñas certificadas"], r = t["Revistas Teatros"], tx = t["campañas taxis"], ic = t["campañas intercambiadores"];
   const parts: string[] = [];
-  if (f) parts.push(f.value === "Completa" ? "fachada del Pavón completa" : `fachada del Pavón con ${String(f.value).replace("/", " de ")} soportes con cartel`);
-  if (h && Number(h.value)) parts.push(`Home Ticket en ${h.value} ${Number(h.value) === 1 ? "teatro" : "teatros"} (${h.note})`);
   if (c && Number(c.value)) parts.push(`${Number(c.value).toLocaleString("es-ES")} ${c.label}`);
-  if (r && Number(r.value)) parts.push(`${r.value} ${Number(r.value) === 1 ? "página" : "páginas"} en revistas de teatro`);
+  if (f) parts.push(`${f.value} soportes de la fachada del Gran Teatro Pavón`);
+  if (r) parts.push(`${r.value} Revistas Teatros`);
+  if (h && Number(h.value)) parts.push(`${parseInt(String(h.note || "0"), 10) || 0} Home Tickets completos de ${h.value}`);
+  if (tx) parts.push(`${tx.value} ${Number(tx.value) === 1 ? "campaña" : "campañas"} en taxis`);
+  if (ic) parts.push(`${ic.value} ${Number(ic.value) === 1 ? "campaña" : "campañas"} en intercambiadores`);
   return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; falta el certificado de emisión." : "");
 }
 
@@ -38,14 +40,13 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   const cards: { big: string; label: string; note?: string; text?: boolean }[] = [];
   const cu = T["cuñas certificadas"] || T["cuñas asignadas"];
   if (cu && Number(cu.value)) cards.push({ big: Number(cu.value).toLocaleString("es-ES"), label: cu.label });
-  const fa = T["Fachada Pavón"];
-  if (fa) cards.push(fa.value === "Completa" ? { big: "Fachada Pavón", label: "", note: "Todos los soportes con cartel", text: true } : { big: String(fa.value).replace("/", " de "), label: "soportes de la fachada Pavón con cartel" });
-  const rv = T["páginas en revistas de teatro"];
-  if (rv && Number(rv.value)) cards.push({ big: String(rv.value), label: Number(rv.value) === 1 ? "página en revistas de teatro" : "páginas en revistas de teatro" });
+  const fa = T["soportes fachada Gran Teatro Pavón"];
+  if (fa) cards.push({ big: String(fa.value), label: fa.label });
+  const rv = T["Revistas Teatros"];
+  if (rv) cards.push({ big: String(rv.value), label: "Revistas Teatros" });
   const htc = T["Home Ticket"];
   if (htc && Number(htc.value)) { const done = parseInt(String(htc.note || "0"), 10) || 0; cards.push({ big: String(done), label: done === 1 ? "Home Ticket completo" : "Home Tickets completos", note: `de ${htc.value} ${Number(htc.value) === 1 ? "teatro" : "teatros"} con Home Ticket` }); }
-  const tx = T["campañas en taxis e intercambiadores"];
-  if (tx && Number(tx.value)) cards.push({ big: String(tx.value), label: "campañas en taxis e intercambiadores" });
+  for (const k of ["campañas taxis", "campañas intercambiadores"]) { const x = T[k]; if (x) cards.push({ big: String(x.value), label: Number(x.value) === 1 ? k.replace("campañas", "campaña") : k }); }
   const card = (c: typeof cards[number]) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efeb; border-radius:10px;"><tr><td style="padding:16px 16px 18px;">
       ${c.text ? `<div style="font-size:18px; font-weight:800; color:#111111; line-height:1.2;">${e(c.big)}</div>` : `<div style="font-size:44px; font-weight:800; color:#111111; line-height:1; letter-spacing:-0.02em;">${e(c.big)}</div>`}
       ${c.label ? `<div style="font-size:15px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${e(c.label)}</div>` : ""}
