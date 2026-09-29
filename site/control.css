@@ -832,3 +832,10 @@ body.sheet-open{overflow:hidden}
 
 /* Vídeos de campaña (taxis, intercambiadores) */
 .media-video video{display:block;width:100%;max-width:360px;border-radius:10px;border:1px solid var(--line);background:#000}
+
+/* Taxis / intercambiadores por teatro */
+.camp-space{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.camp-form{margin:0 0 14px}
+.vid-poster{position:relative;display:block;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000;width:100%;max-width:360px;cursor:pointer}
+.vid-poster img{display:block;width:100%;height:auto;max-width:none;max-height:none;border:0;border-radius:0}
+.vid-poster span{position:absolute;inset:0;margin:auto;width:58px;height:58px;border-radius:50%;background:var(--gold);color:#111;display:grid;place-items:center;font-size:22px;padding-left:4px;box-shadow:0 4px 20px #0008}
