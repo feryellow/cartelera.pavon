@@ -751,8 +751,8 @@ async function archivo(){
 // muestra una vista previa y no se guarda nada hasta pulsar «Añadir».
 const IMPORT_MODULES={hitos:"Calendario (hito)",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas",radio:"Radio"};
 function importDecode(t){t=String(t||"").trim();if(!t)return null;try{if(t.startsWith("{")||t.startsWith("["))return JSON.parse(t);const b=t.replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(decodeURIComponent(escape(atob(b))))}catch{return null}}
-function importItems(d){const list=Array.isArray(d)?d:(d&&d.items)||[];return list.filter(x=>x&&IMPORT_MODULES[x.module]&&x.data&&typeof x.data==="object")}
-function importLabel(x){const r=x.data;if(x.module==="hitos"){const t=r.title||r.spectacle||"";return (t.toLowerCase().startsWith(String(r.type||"").toLowerCase())?t:(r.type||"Hito")+" · "+t)+" · "+fdate(r.date)+(r.time?" "+r.time:"")}return (r.spectacle||r.campaignName||r.magazine||"Registro")+" · "+[r.venue,r.position,r.magazine,r.month,r.startDate&&fdate(r.startDate)].filter(Boolean).join(" · ")}
+function importItems(d){const list=Array.isArray(d)?d:(d&&d.items)||[];return list.filter(x=>x&&IMPORT_MODULES[x.module]&&((x.data&&typeof x.data==="object")||(x.op==="keepOnly"&&x.match)))}
+function importLabel(x){if(x.op==="keepOnly")return x.label||"Dejar solo una";const r=x.data;if(x.module==="hitos"){const t=r.title||r.spectacle||"";return (t.toLowerCase().startsWith(String(r.type||"").toLowerCase())?t:(r.type||"Hito")+" · "+t)+" · "+fdate(r.date)+(r.time?" "+r.time:"")}return (r.spectacle||r.campaignName||r.magazine||"Registro")+" · "+[r.venue,r.position,r.magazine,r.month,r.startDate&&fdate(r.startDate)].filter(Boolean).join(" · ")}
 async function importar(){
  const q=new URLSearchParams(location.hash.split("?")[1]||"").get("d");
  app.innerHTML=pageHead("Importar","Añade de una vez datos preparados: revisa la lista y pulsa Añadir")+'<section class="card"><div id="impBody"></div></section>';
@@ -761,17 +761,43 @@ async function importar(){
   // Duplicados: mismo módulo y mismos datos clave que un registro existente
   const mods=[...new Set(items.map(x=>x.module))],existing={};for(const m of mods){try{existing[m]=(await api("/api/control?module="+m)).rows||[]}catch{existing[m]=[]}}
   const norm=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ").trim();
-  const dup=x=>(existing[x.module]||[]).some(r=>x.module==="hitos"?norm(r.type)===norm(x.data.type)&&r.date===x.data.date&&(norm(r.title).includes(norm(x.data.spectacle))||norm(r.spectacle)===norm(x.data.spectacle)||norm(r.title)===norm(x.data.title)):norm(r.spectacle)===norm(x.data.spectacle)&&(r.startDate||"")===(x.data.startDate||"")&&(r.venue||"")===(x.data.venue||"")&&(r.month||"")===(x.data.month||"")&&(r.magazine||"")===(x.data.magazine||"")&&(r.position||"")===(x.data.position||"")&&(x.module!=="radio"||((r.contractId||"")===(x.data.contractId||"")&&(r.inventoryMonth||"")===(x.data.inventoryMonth||"")&&norm(r.spotName)===norm(x.data.spotName))));
-  body.innerHTML=(d.note?'<p class="muted" style="margin:0 0 10px">'+esc(d.note)+'</p>':'')+'<div class="list">'+items.map((x,i)=>{const dp=dup(x);return '<label class="item imp-row'+(dp?" dup":"")+'"><input type="checkbox" data-imp="'+i+'"'+(dp?"":" checked")+'><div><h3>'+esc(importLabel(x))+'</h3><div class="item-meta"><span class="badge">'+esc(IMPORT_MODULES[x.module])+'</span>'+(x.data.venue?'<span>'+esc(x.data.venue)+'</span>':'')+(x.data.spotName?'<span>'+esc(x.data.spotName)+'</span>':'')+(x.asset?'<span class="badge">Con audio</span>':'')+(dp?'<span class="badge warn">Ya existe</span>':'')+'</div></div></label>'}).join("")+'</div>'+
+  const dup=x=>!x.data?false:(existing[x.module]||[]).some(r=>x.module==="hitos"?norm(r.type)===norm(x.data.type)&&r.date===x.data.date&&(norm(r.title).includes(norm(x.data.spectacle))||norm(r.spectacle)===norm(x.data.spectacle)||norm(r.title)===norm(x.data.title)):norm(r.spectacle)===norm(x.data.spectacle)&&(r.startDate||"")===(x.data.startDate||"")&&(r.venue||"")===(x.data.venue||"")&&(r.month||"")===(x.data.month||"")&&(r.magazine||"")===(x.data.magazine||"")&&(r.position||"")===(x.data.position||"")&&(x.module!=="radio"||((r.contractId||"")===(x.data.contractId||"")&&(r.inventoryMonth||"")===(x.data.inventoryMonth||"")&&norm(r.spotName)===norm(x.data.spotName))));
+  // Fusión: un registro preparado con «merge» sustituye a los que se solapan (mismo tipo, fechas cercanas, misma palabra clave)
+  // y se queda con los datos de la versión más completa; los demás se quitan (recuperables en Archivo)
+  const HF=["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","notes","status"],filled=o=>HF.filter(k=>String(o[k]??"").trim()).length;
+  const dayDiff=(a,b)=>Math.abs((new Date(a+"T12:00:00Z")-new Date(b+"T12:00:00Z"))/864e5);
+  items.forEach(x=>{if(!x.merge||x.module!=="hitos")return;const key=norm(x.merge.key),days=Number(x.merge.days??2);
+   x.matches=(existing.hitos||[]).filter(r=>norm(r.type)===norm(x.data.type)&&r.date&&x.data.date&&dayDiff(r.date,x.data.date)<=days&&norm((r.title||"")+" "+(r.spectacle||"")).includes(key));
+   if(!x.matches.length)return;
+   const cands=[{src:"import",d:x.data},...x.matches.map(r=>({src:r.id,d:r}))].sort((a,b)=>filled(b.d)-filled(a.d));
+   const win=cands[0].d,out={};HF.forEach(k=>{const v=String(win[k]??"").trim()?win[k]:(cands.find(c=>String(c.d[k]??"").trim())||{d:{}}).d[k];if(v!=null&&String(v).trim())out[k]=v});
+   x.merged=out;x.keepId=x.matches[0].id;x.dropIds=x.matches.slice(1).map(r=>r.id);
+   x.same=x.matches.length===1&&HF.every(k=>String(x.matches[0][k]??"")===String(out[k]??""))});
+  // «Dejar solo una»: de los registros activos que cumplen match se queda el que contiene «prefer» (o el más completo);
+  // los demás se quitan (siguen recuperables en Archivo)
+  for(const x of items.filter(x=>x.op==="keepOnly")){
+   const fit=r=>Object.entries(x.match).every(([k,v])=>norm(r[k])===norm(v));
+   const act=(existing[x.module]||[]).filter(r=>fit(r)&&!r.deletedAt);
+   const score=r=>Object.values(r).filter(v=>String(v??"").trim()).length+(x.prefer&&norm(JSON.stringify(r)).includes(norm(x.prefer))?100:0);
+   const keep=act.slice().sort((a,b)=>score(b)-score(a))[0];
+   x.keep=keep;x.drop=act.filter(r=>r!==keep);
+   x.fillData=keep?Object.fromEntries(Object.entries(x.fill||{}).filter(([k])=>!String(keep[k]??"").trim())):{};
+   x.same=!x.drop.length&&!Object.keys(x.fillData).length;
+   x.detail=keep?"Se queda: "+(keep.spectacle||x.fill?.spectacle||"sin espectáculo")+" · "+(keep.venue||x.fill?.venue||"")+(x.drop.length?" · quita "+x.drop.length:" · ya hay solo una"):"No hay ninguna página que cumpla"}
+  body.innerHTML=(d.note?'<p class="muted" style="margin:0 0 10px">'+esc(d.note)+'</p>':'')+'<div class="list">'+items.map((x,i)=>{const dp=x.op==="keepOnly"||(x.matches&&x.matches.length)?!!x.same:dup(x);return '<label class="item imp-row'+(dp?" dup":"")+'"><input type="checkbox" data-imp="'+i+'"'+(dp?"":" checked")+'><div><h3>'+esc(importLabel(x))+'</h3><div class="item-meta"><span class="badge">'+esc(IMPORT_MODULES[x.module])+'</span>'+(x.detail?'<span>'+esc(x.detail)+'</span>':'')+(x.data&&x.data.venue?'<span>'+esc(x.data.venue)+'</span>':'')+(x.data&&x.data.spotName?'<span>'+esc(x.data.spotName)+'</span>':'')+(x.asset?'<span class="badge">Con audio</span>':'')+(dp?'<span class="badge warn">Ya existe</span>':'')+(x.matches&&x.matches.length&&!dp?'<span class="badge">'+(x.matches.length===1&&x.matches[0].date===x.data.date&&(x.matches[0].time||"")===(x.data.time||"")?"Completa":"Sustituye a")+': '+x.matches.map(r=>esc((r.title||r.type)+" · "+fdate(r.date)+(r.time?" "+r.time:""))).join(" / ")+'</span>':'')+'</div></div></label>'}).join("")+'</div>'+
    '<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="impGo">Añadir seleccionados</button></div><div id="impRes"></div>';
   $("#impGo").onclick=async()=>{const sel=$$("[data-imp]").filter(c=>c.checked).map(c=>items[+c.dataset.imp]);if(!sel.length){say("No hay nada seleccionado");return}
    const b=$("#impGo");b.disabled=true;b.textContent="Añadiendo…";let ok=0;const errs=[];
-   for(const x of sel){try{const data={...x.data};
+   for(const x of sel){try{
+     if(x.op==="keepOnly"){if(x.keep&&Object.keys(x.fillData).length)await api("/api/control?module="+x.module+"&id="+x.keep.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.fillData)});
+      for(const r of x.drop)await api("/api/control?module="+x.module+"&id="+r.id,{method:"DELETE"});ok++;continue}
+     const data={...x.data};
      // Archivo adjunto preparado (p. ej. el audio de una cuña): se descarga de la propia web y se sube a la biblioteca
      if(x.asset&&x.asset.url){const fr=await fetch(x.asset.url,{cache:"no-cache"});if(!fr.ok)throw new Error("no se ha podido leer el archivo "+(x.asset.name||""));const bl=await fr.blob();const file=new File([bl],x.asset.name||"archivo",{type:x.asset.type||bl.type||"application/octet-stream"});data.assetKey=await uploadAsset(file,x.module);data.assetName=file.name}
+     if(x.keepId){await api("/api/control?module="+x.module+"&id="+x.keepId,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.merged)});for(const id of x.dropIds)await api("/api/control?module="+x.module+"&id="+id,{method:"DELETE"});ok++;continue}
      await api("/api/control?module="+x.module,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});ok++}catch(e){errs.push(importLabel(x)+": "+e.message)}}
    history.replaceState(null,"","#importar");
-   $("#impRes").innerHTML='<div class="notice" style="margin-top:12px;text-align:left">'+ok+(ok===1?" registro añadido.":" registros añadidos.")+(errs.length?'<br>No se han podido añadir: '+errs.map(esc).join("<br>"):'')+'</div><div class="actions-row" style="margin-top:10px"><a class="btn primary" href="#'+(sel.every(x=>x.module==="hitos")?"calendario":sel[0].module)+'">'+(sel.every(x=>x.module==="hitos")?"Ver el Calendario":"Ver "+esc(IMPORT_MODULES[sel[0].module]))+'</a></div>';
+   $("#impRes").innerHTML='<div class="notice" style="margin-top:12px;text-align:left">'+ok+(ok===1?" registro añadido o actualizado.":" registros añadidos o actualizados.")+(sel.some(x=>(x.dropIds&&x.dropIds.length)||(x.drop&&x.drop.length))?" Lo que se ha quitado queda en Archivo, en «Registros quitados».":"")+(errs.length?'<br>No se han podido añadir: '+errs.map(esc).join("<br>"):'')+'</div><div class="actions-row" style="margin-top:10px"><a class="btn primary" href="#'+(sel.some(x=>x.module==="hitos")?"calendario":sel[0].module)+'">'+(sel.some(x=>x.module==="hitos")?"Ver el Calendario":"Ver "+esc(IMPORT_MODULES[sel[0].module]))+'</a></div>';
    b.textContent="Hecho";say(ok+" añadidos")}};
  show(importDecode(q));
 }
@@ -971,7 +997,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v36";
+const YC_VERSION="yellow-control-v37";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
