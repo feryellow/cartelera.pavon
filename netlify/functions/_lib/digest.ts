@@ -2,7 +2,7 @@
 // amarillo #f4c300). HTML con tablas y estilos en línea para Gmail, Outlook y el correo del iPhone.
 // El logo y el rayo van como PNG alojados en la web: Gmail no muestra SVG dentro del correo.
 export type DigestItem = { module: string; title: string; location: string; action: string; date: string; days?: number; materialStatus?: string; time?: string; link?: string; kind?: string };
-export type DigestInput = { day: string; test?: boolean; appUrl: string; assetBase?: string; pending: DigestItem[]; upcoming: DigestItem[]; current: DigestItem[]; devRecipient?: string };
+export type DigestInput = { day: string; test?: boolean; appUrl: string; assetBase?: string; pending: DigestItem[]; upcoming: DigestItem[]; current: DigestItem[]; currentTotal?: number; devRecipient?: string };
 
 const e = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] as string));
 const Y = "#f4c300";
@@ -68,14 +68,14 @@ function quickRead(d: DigestInput) {
 
 export function renderDigest(d: DigestInput) {
   const base = (d.assetBase || d.appUrl).replace(/\/$/, "");
-  const n = { p: d.pending.length, u: d.upcoming.length, c: d.current.length };
+  const n = { p: d.pending.length, u: d.upcoming.length, c: d.currentTotal ?? d.current.length };
   const title = n.p ? `${n.p} ${n.p === 1 ? "aviso requiere" : "avisos requieren"} atención` : "Semana sin avisos urgentes";
   const kpi = (v: number, label: string) => `<td width="33%" valign="top" class="yw-num-col" style="padding-right:10px;">
       <div style="font-size:26px; font-weight:800; color:#111111; line-height:1;">${v}</div>
       <div style="font-size:11px; color:#555555; margin-top:4px;">${e(label)}</div></td>`;
   const pendingRows = n.p ? d.pending.map((a, i) => alertRow(a, i === 0)).join("") : emptyRow("Nada pendiente: no hay entregas ni cambios en los próximos días.");
   const upcomingRows = n.u ? d.upcoming.map((a, i) => agendaRow(a, i === 0, cap(fmt(a.date, { weekday: "short", day: "numeric" })) + (a.time ? " · " + a.time : ""))).join("") : emptyRow("No hay fechas en los próximos siete días.");
-  const currentRows = n.c ? d.current.map((a, i) => agendaRow({ ...a, action: a.module }, i === 0, a.date ? "Hasta el " + fmt(a.date, { day: "numeric", month: "short" }) : "Sin fecha de fin")).join("") : emptyRow("No hay campañas activas registradas.");
+  const currentRows = d.current.length ? d.current.map((a, i) => agendaRow({ ...a, action: a.module }, i === 0, a.date ? "Hasta el " + fmt(a.date, { day: "numeric", month: "short" }) : "Sin fecha de fin")).join("") : emptyRow("No hay campañas activas registradas.");
   const pre = `${title} · ${n.u} ${n.u === 1 ? "fecha" : "fechas"} esta semana · ${n.c} ${n.c === 1 ? "campaña activa" : "campañas activas"}`;
 
   return `<!DOCTYPE html>
