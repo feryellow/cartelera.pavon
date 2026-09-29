@@ -32,7 +32,7 @@ const allowed: Record<RecordModule,string[]> = {
   publicidad: ["spectacle","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","category","location"],
   taxis: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
   intercambiadores: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
-  hometicket: ["venue","position","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate"],
+hometicket: ["venue","position","month","spectacle","startDate","endDate","assetKey","assetName","compositeAssetKey","notes","status","materialStatus","deliveryDate"],
   hitos: ["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","link","assetKey","assetName","notes","status"],
   revistas: ["venue","magazine","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],
 };

@@ -284,69 +284,190 @@ function campaignForm(moduleName,r={}){const cfg=CAMPAIGN_CONFIG[moduleName];ret
 function bindCampaignRows(rows,moduleName){$$("[data-edit-campaign]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editCampaign);if(!r)return;$("#campaignFormCard").innerHTML=campaignForm(moduleName,r);bindCampaignForm(r,moduleName)});$$("[data-del-campaign]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta campaña?"))return;const _u="/api/control?module="+moduleName+"&id="+b.dataset.delCampaign;await api(_u,{method:"DELETE"});sayUndo("Campaña quitada",_u,()=>campaigns(moduleName));campaigns(moduleName)})}
 function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)return;$("#cancelCampaign").onclick=()=>{$("#campaignFormCard").innerHTML=campaignForm(moduleName);bindCampaignForm(null,moduleName)};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#campaignAsset")?.files?.[0];try{const assetKey=await uploadAsset(file,moduleName,existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(existing?.id)await api("/api/control?module="+moduleName+"&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module="+moduleName,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Campaña guardada");campaigns(moduleName)}catch(err){say(err.message)}}}
 
+/* ===== HOME TICKET · por teatro + mes + composición PNG ===== */
 const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro"];
-// Cada Home Ticket (uno por espacio) tiene tres huecos fijos: Superior, Inferior y XL.
-const HT_POS=[{key:"HT Superior · 520 × 420",name:"Superior",size:"520 × 420"},{key:"HT Inferior · 520 × 420",name:"Inferior",size:"520 × 420"},{key:"Home Ticket XL · 520 × 856",name:"XL",size:"520 × 856"}];
-function htCurrent(list){const t=localToday(),live=list.filter(r=>(r.status||"").toLowerCase()!=="finalizado");
- const act=live.filter(r=>(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)).sort((a,b)=>String(b.startDate||"").localeCompare(String(a.startDate||"")))[0];
- const next=live.filter(r=>r.startDate&&r.startDate>t).sort((a,b)=>a.startDate.localeCompare(b.startDate))[0];
- const last=[...list].sort((a,b)=>String(b.endDate||b.startDate||"").localeCompare(String(a.endDate||a.startDate||"")))[0];
- return {cur:act||next||last||null,next:act&&next?next:null}}
-let htView="";
+const HT_POS=[
+ {key:"Home Ticket XL · 520 × 856",name:"XL",size:"520 × 856",css:"xl"},
+ {key:"HT Superior · 520 × 420",name:"Superior",size:"520 × 420",css:"superior"},
+ {key:"HT Inferior · 520 × 420",name:"Inferior",size:"520 × 420",css:"inferior"}
+];
+const HT_BASES={
+ "Gran Teatro Pavón":"/assets/hometicket/gtp.png",
+ "Gran Teatro CaixaBank Príncipe Pío":"/assets/hometicket/gtcpp.png",
+ "Teatro Serrano":"/assets/hometicket/serrano.png",
+ "Gran Castillo de Pedraza":"/assets/hometicket/castillo.png",
+ "Abono Teatro":"/assets/hometicket/abonoteatro.png"
+};
+// Coordenadas relativas de los tres huecos sobre la base suministrada.
+const HT_COORDS={
+ xl:{x:.033,y:.335,w:.456,h:.499},
+ superior:{x:.501,y:.335,w:.438,h:.245},
+ inferior:{x:.501,y:.587,w:.438,h:.247}
+};
+let htView="",htMonth="";
+
+function htRowMonth(r){return r.month||String(r.startDate||"").slice(0,7)||String(r.endDate||"").slice(0,7)}
+function htMonthList(rows){
+ const now=new Date(),cur=monthKey(now),months=[];
+ for(let i=-2;i<=10;i++)months.push(monthKey(new Date(now.getFullYear(),now.getMonth()+i,1)));
+ rows.forEach(r=>{const m=htRowMonth(r);if(m&&!months.includes(m))months.push(m)});
+ return [...new Set(months)].sort()
+}
+function htMonthShort(m){
+ const [y,mo]=m.split("-").map(Number);
+ const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","");
+ return t.charAt(0).toUpperCase()+t.slice(1)+" "+String(y).slice(2)
+}
+function htRecord(rows,v,m,p){
+ return rows.filter(r=>r.venue===v&&htRowMonth(r)===m&&r.position===p.key)
+   .sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")))[0]||null
+}
+function htCompositeKey(v,m){
+ const slug=v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,80);
+ return "htcomp_"+slug+"_"+m.replace("-","")
+}
+function htBase(v){return HT_BASES[v]||""}
+
+function htMockup(rows,v,m){
+ const base=htBase(v);
+ if(!base)return '<div class="notice">No hay base de Home Ticket para este espacio.</div>';
+ const overlays=HT_POS.map(p=>{
+   const r=htRecord(rows,v,m,p);
+   return '<div class="ht-compose-slot '+p.css+'">'+
+     (r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>'+p.name+'</span>')+
+   '</div>'
+ }).join("");
+ return '<div class="ht-compose-card"><div class="ht-compose-top"><div><small class="section-kicker">'+esc(monthLabel(m))+'</small><h3>Vista final</h3></div><button type="button" data-ht-export="'+esc(v)+'">Exportar PNG</button></div>'+
+   '<div class="ht-compose-stage"><img src="'+base+'" alt="Base Home Ticket · '+esc(v)+'">'+overlays+'</div></div>'
+}
+function htSlot(rows,v,m,p){
+ const r=htRecord(rows,v,m,p);
+ return '<div class="ht-slot '+p.css+(r?"":" empty")+'">'+
+   '<div class="ht-slot-head"><b>'+p.name+'</b><span>'+p.size+'</span></div>'+
+   '<div class="ht-slot-preview">'+(r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>Sin pieza</span>')+'</div>'+
+   (r?'<div class="ht-info"><h3>'+esc(r.spectacle||"Sin espectáculo")+'</h3><div class="item-meta">'+statusBadge(r.materialStatus||"pendiente")+'</div></div>':'')+
+   '<div class="item-actions">'+
+     (r?'<button type="button" data-edit-ht="'+r.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button>':'<button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button>')+
+   '</div></div>'
+}
+async function htLoadImage(url){
+ return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=url})
+}
+async function htCompositeBlob(v,m,rows){
+ const baseUrl=htBase(v);if(!baseUrl)throw new Error("Este espacio no tiene una base Home Ticket.");
+ const base=await htLoadImage(baseUrl),canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+ canvas.width=base.naturalWidth||base.width;canvas.height=base.naturalHeight||base.height;ctx.drawImage(base,0,0,canvas.width,canvas.height);
+ for(const p of HT_POS){
+   const r=htRecord(rows,v,m,p);if(!r?.assetKey)continue;
+   const u=await blobUrl(r.assetKey,"hometicket");if(!u)continue;
+   const im=await htLoadImage(u),c=HT_COORDS[p.css];
+   ctx.drawImage(im,Math.round(c.x*canvas.width),Math.round(c.y*canvas.height),Math.round(c.w*canvas.width),Math.round(c.h*canvas.height))
+ }
+ return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("No se ha podido generar el PNG.")),"image/png"))
+}
+async function htPutComposite(v,m,rows){
+ const mine=rows.filter(r=>r.venue===v&&htRowMonth(r)===m);
+ if(!mine.length)return "";
+ const blob=await htCompositeBlob(v,m,rows),k=htCompositeKey(v,m);
+ const r=await fetch("/api/asset?key="+encodeURIComponent(k)+"&module=hometicket",{method:"PUT",headers:headers({"content-type":"image/png"}),body:blob});
+ if(!r.ok)throw new Error(await r.text());
+ // Guardamos la referencia del montaje final en el registro más reciente del mes.
+ const target=[...mine].sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")))[0];
+ if(target){
+   await api("/api/control?module=hometicket&id="+target.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({...target,month:m,compositeAssetKey:k})})
+ }
+ return k
+}
+async function htRefreshComposite(v,m){
+ const d=await api("/api/control?module=hometicket"),rows=d.rows||[];
+ await htPutComposite(v,m,rows);
+ return rows
+}
+async function htDownload(v,m,rows){
+ const blob=await htCompositeBlob(v,m,rows),u=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=u;a.download=("home-ticket-"+venueShort(v)+"-"+m+".png").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9._-]+/g,"-");
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)
+}
+
 async function homeTicket(){
  const d=await api("/api/control?module=hometicket"),rows=d.rows||[];loadSpectacles();learnSpectacles(rows);
+ const months=htMonthList(rows),cur=monthKey(new Date());if(!htMonth)htMonth=months.includes(cur)?cur:months[0];
  const htSpaces=[...HOME_TICKET_SPACES,...new Set(rows.map(r=>r.venue).filter(v=>v&&!HOME_TICKET_SPACES.includes(v)))];
- const slot=(v,p)=>{const list=rows.filter(r=>r.venue===v&&r.position===p.key),{cur,next}=htCurrent(list);
-  return '<div class="ht-slot'+(cur?"":" empty")+'"><div class="ht-slot-head"><b>'+p.name+'</b><span>'+p.size+'</span></div>'+
-   (cur?'<div class="ht-body">'+(cur.assetKey?'<div class="media-preview ht-thumb" data-asset="'+esc(cur.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'')+'<div class="ht-info"><h3>'+esc(cur.spectacle||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(cur.startDate)+' → '+fdate(cur.endDate)+'</span>'+statusBadge(cur.materialStatus||"pendiente")+'</div>'+(next?'<p class="ht-next">Después: <b>'+esc(next.spectacle||"")+'</b> desde '+fdate(next.startDate)+'</p>':'')+'</div></div>'+
-    '<div class="item-actions"><button type="button" data-edit-ht="'+cur.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button></div>'
-   :'<p class="muted">Sin pieza.</p><div class="item-actions"><button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button></div>')+'</div>'};
  const editId=new URLSearchParams(location.hash.split("?")[1]||"").get("edit"),editRow=editId&&rows.find(r=>r.id===editId);
- if(editRow)htView=editRow.venue;if(htView&&!htSpaces.includes(htView))htView="";
- const tabs='<div class="chip-row ht-tabs">'+htSpaces.map(v=>{const n=rows.filter(r=>r.venue===v&&activeNow(r)).length;return '<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(n?' <span class="ht-count">'+n+'</span>':'')+'</button>'}).join("")+'</div>';
- const v=htView,mine=rows.filter(r=>r.venue===v);
- const grouped=!v?'':'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
-  '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div><div class="ht-slots">'+HT_POS.map(p=>slot(v,p)).join("")+'</div>'+
-  (mine.length?'<details class="ht-history"><summary>Historial ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+'</div>';
- app.innerHTML=pageHead("Home Ticket","Tres huecos por espacio: Superior, Inferior y XL")+moduleKpis(rows,"Piezas activas")+'<section class="card">'+tabs+grouped+'</section>';
- $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=htView===b.dataset.htTab?"":b.dataset.htTab;homeTicket()});
+ if(editRow){htView=editRow.venue;htMonth=htRowMonth(editRow)||htMonth}
+ if(htView&&!htSpaces.includes(htView))htView="";
+ if(!htView)htView=htSpaces[0]||"";
+ const monthTabs='<div class="chip-row ht-month-tabs"><span class="chip-label">Mes</span>'+months.map(m=>'<button type="button" class="chip'+(m===htMonth?" on":"")+'" data-ht-month="'+m+'">'+esc(htMonthShort(m))+'</button>').join("")+'</div>';
+ const venueTabs='<div class="chip-row ht-tabs"><span class="chip-label">Espacio</span>'+htSpaces.map(v=>'<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+'</button>').join("")+'</div>';
+ const v=htView,m=htMonth,mine=rows.filter(r=>r.venue===v&&htRowMonth(r)===m);
+ const work=v?'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket · '+esc(monthLabel(m))+'</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
+  '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div>'+
+  '<div class="ht-workbench">'+htMockup(rows,v,m)+'<div class="ht-slots">'+HT_POS.map(p=>htSlot(rows,v,m,p)).join("")+'</div></div>'+
+  (mine.length?'<details class="ht-history"><summary>Registros de '+esc(monthLabel(m))+' ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+
+  '</div>':'';
+ app.innerHTML=pageHead("Home Ticket","Base por teatro, piezas por mes y exportación PNG")+moduleKpis(rows.filter(r=>htRowMonth(r)===m),"Piezas en "+monthLabel(m))+
+  '<section class="card">'+monthTabs+venueTabs+work+'</section>';
+
+ $$("[data-ht-month]").forEach(b=>b.onclick=()=>{htMonth=b.dataset.htMonth;homeTicket()});
+ $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=b.dataset.htTab;homeTicket()});
  const panelOf=v=>$('[data-ht-panel="'+CSS.escape(v)+'"]');
  const open=(v,html,bind)=>{$$(".ht-panel").forEach(x=>x.innerHTML="");const p=panelOf(v);p.innerHTML='<div class="ht-form card">'+html+'</div>';bind(p);p.scrollIntoView({behavior:"smooth",block:"start"})};
- $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r),()=>bindHTForm(r))});
- $$("[data-new-ht]").forEach(b=>b.onclick=()=>{const [v,pos]=b.dataset.newHt.split("|");open(v,htForm({venue:v,position:pos}),()=>bindHTForm(null))});
- $$("[data-ht-all]").forEach(b=>b.onclick=()=>{const v=b.dataset.htAll;open(v,htAllForm(v),()=>bindHTAll(v))});
- $$("[data-del-ht]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+b.dataset.delHt;await api(_u,{method:"DELETE"});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()});
- await hydrateMedia("hometicket");
+ $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r,htMonth),()=>bindHTForm(r,htMonth))});
+ $$("[data-new-ht]").forEach(b=>b.onclick=()=>{const [vv,pos]=b.dataset.newHt.split("|");open(vv,htForm({venue:vv,position:pos,month:htMonth},htMonth),()=>bindHTForm(null,htMonth))});
+ $$("[data-ht-all]").forEach(b=>b.onclick=()=>{const vv=b.dataset.htAll;open(vv,htAllForm(vv,htMonth),()=>bindHTAll(vv,htMonth))});
+ $$("[data-ht-export]").forEach(b=>b.onclick=async()=>{try{b.disabled=true;b.textContent="Generando…";await htDownload(b.dataset.htExport,htMonth,rows)}catch(e){say(e.message)}finally{b.disabled=false;b.textContent="Exportar PNG"}});
+ $$("[data-del-ht]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const r=rows.find(x=>x.id===b.dataset.delHt);const _u="/api/control?module=hometicket&id="+b.dataset.delHt;await api(_u,{method:"DELETE"});if(r)await htRefreshComposite(r.venue,htRowMonth(r)||htMonth).catch(()=>{});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()});
+ await hydrateMedia("hometicket")
 }
-function htItems(rows){return rows.length?[...rows].sort((a,b)=>String(b.startDate||"").localeCompare(String(a.startDate||""))).map(r=>'<div class="item"><div><h3>'+esc((HT_POS.find(p=>p.key===r.position)||{name:r.position||"Home Ticket"}).name)+' · '+esc(r.spectacle||"")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span>Material: '+esc(r.materialStatus||"sin indicar")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+statusBadge(r.status)+'</div></div><div class="item-actions"><button data-edit-ht="'+r.id+'">Editar</button><button class="danger" data-del-ht="'+r.id+'">Quitar</button></div></div>').join(""):'<div class="notice">Todavía no hay piezas cargadas para este Home Ticket.</div>'}
-function htForm(r={}){const pos=HT_POS.find(p=>p.key===r.position)||HT_POS[0];
+
+function htItems(rows){return rows.length?[...rows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(r=>'<div class="item"><div><h3>'+esc((HT_POS.find(p=>p.key===r.position)||{name:r.position||"Home Ticket"}).name)+' · '+esc(r.spectacle||"")+'</h3><div class="item-meta"><span>'+esc(monthLabel(htRowMonth(r)))+'</span><span>Material: '+esc(r.materialStatus||"sin indicar")+'</span>'+statusBadge(r.status)+'</div></div><div class="item-actions"><button data-edit-ht="'+r.id+'">Editar</button><button class="danger" data-del-ht="'+r.id+'">Quitar</button></div></div>').join(""):'<div class="notice">Todavía no hay piezas cargadas para este Home Ticket.</div>'}
+
+function htForm(r={},selectedMonth=htMonth){
+ const pos=HT_POS.find(p=>p.key===r.position)||HT_POS[0],m=r.month||htRowMonth(r)||selectedMonth,{startDate,endDate}=monthRange(m);
  return '<div class="section-title"><div><small class="section-kicker">'+esc(venueShort(r.venue||""))+' · '+pos.name+' · '+pos.size+'</small><h2>'+(r.id?"Editar pieza":"Nueva pieza")+'</h2></div><button type="button" class="ghost" id="cancelHT">Cerrar</button></div>'+
-  '<form id="htForm" class="form-grid"><input type="hidden" name="venue" value="'+esc(r.venue||"")+'"><input type="hidden" name="position" value="'+esc(pos.key)+'">'+
+  '<form id="htForm" class="form-grid"><input type="hidden" name="venue" value="'+esc(r.venue||"")+'"><input type="hidden" name="position" value="'+esc(pos.key)+'"><input type="hidden" name="month" value="'+esc(m)+'"><input type="hidden" name="startDate" value="'+startDate+'"><input type="hidden" name="endDate" value="'+endDate+'">'+
+  '<label>Mes<input value="'+esc(monthLabel(m))+'" disabled></label>'+materialStatusSelect(r.materialStatus)+
   '<label class="wide">Espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" placeholder="Empieza a escribir y elige de la lista" value="'+esc(r.spectacle||"")+'" required></label>'+
-  input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+
   '<label class="wide">Creatividad'+(r.assetKey?' (deja vacío para mantener la actual)':'')+'<input id="htAsset" type="file" accept="image/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
-  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Quitar</button>':'')+'</div></form>'}
+  '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Quitar</button>':'')+'</div></form>'
+}
 function htSaving(f,on){const b=f.querySelector('button[type="submit"]');if(b){b.disabled=on;b.textContent=on?"Guardando…":"Guardar"}}
-function bindHTForm(existing){const f=$("#htForm");if(!f)return;$("#cancelHT").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
- const del=f.querySelector("[data-del-ht]");if(del)del.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+del.dataset.delHt;await api(_u,{method:"DELETE"});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()};
+function bindHTForm(existing,selectedMonth){
+ const f=$("#htForm");if(!f)return;$("#cancelHT").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
+ const del=f.querySelector("[data-del-ht]");if(del)del.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+del.dataset.delHt;await api(_u,{method:"DELETE"});await htRefreshComposite(existing.venue,existing.month||htRowMonth(existing)||selectedMonth).catch(()=>{});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()};
  f.onsubmit=async e=>{e.preventDefault();if(f.dataset.busy)return;f.dataset.busy="1";htSaving(f,true);const data=formObject(f),file=$("#htAsset")?.files?.[0];
-  if(data.startDate&&data.endDate&&data.endDate<data.startDate){say("La fecha de fin no puede ser anterior al inicio");delete f.dataset.busy;htSaving(f,false);return}
   try{if(!existing)data.status="activo";const assetKey=await uploadAsset(file,"hometicket",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}
-   if(existing?.id)await api("/api/control?module=hometicket&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module=hometicket",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
-   say("Home Ticket guardado");homeTicket()}catch(err){say(err.message);delete f.dataset.busy;htSaving(f,false)}}}
-// Actualizar los tres huecos de un Home Ticket de una vez (mismas fechas para los tres)
-function htAllForm(v){return '<div class="section-title"><div><small class="section-kicker">'+esc(venueShort(v))+' · Superior, Inferior y XL</small><h2>Actualizar los tres</h2></div><button type="button" class="ghost" id="cancelHTAll">Cerrar</button></div>'+
- '<form id="htAllForm" class="form-grid">'+input("startDate","Inicio","","date")+input("endDate","Fin","","date")+input("deliveryDate","Fecha límite material","","date")+materialStatusSelect("pendiente")+
+   if(existing?.id)await api("/api/control?module=hometicket&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   else await api("/api/control?module=hometicket",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   await htRefreshComposite(data.venue,data.month);say("Home Ticket guardado");homeTicket()
+  }catch(err){say(err.message);delete f.dataset.busy;htSaving(f,false)}
+ }
+}
+
+function htAllForm(v,m){
+ const {startDate,endDate}=monthRange(m);
+ return '<div class="section-title"><div><small class="section-kicker">'+esc(venueShort(v))+' · '+esc(monthLabel(m))+'</small><h2>Actualizar los tres</h2></div><button type="button" class="ghost" id="cancelHTAll">Cerrar</button></div>'+
+ '<form id="htAllForm" class="form-grid"><input type="hidden" name="month" value="'+m+'"><input type="hidden" name="startDate" value="'+startDate+'"><input type="hidden" name="endDate" value="'+endDate+'">'+materialStatusSelect("pendiente")+
  HT_POS.map((p,i)=>'<div class="wide ht-all-row"><b>'+p.name+' <span>'+p.size+'</span></b><input name="spectacle_'+i+'" data-ac="spectacle" autocomplete="off" placeholder="Espectáculo (vacío si no cambia)"><label class="btn">Creatividad<input type="file" accept="image/*" data-ht-file="'+i+'" hidden></label><em data-ht-fname="'+i+'"></em></div>').join("")+
- '<p class="wide cart-legacy" style="margin:0">Solo se guardan los huecos con espectáculo. Los demás se quedan como están.</p><div class="wide actions-row"><button class="primary" type="submit">Guardar</button></div></form>'}
-function bindHTAll(v){const f=$("#htAllForm");if(!f)return;$("#cancelHTAll").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
+ '<p class="wide cart-legacy" style="margin:0">Solo se guardan los huecos con espectáculo. Los demás se quedan como están.</p><div class="wide actions-row"><button class="primary" type="submit">Guardar</button></div></form>'
+}
+function bindHTAll(v,m){
+ const f=$("#htAllForm");if(!f)return;$("#cancelHTAll").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
  $$("[data-ht-file]",f).forEach(i=>i.onchange=()=>{const n=$('[data-ht-fname="'+i.dataset.htFile+'"]',f);if(n)n.textContent=i.files[0]?i.files[0].name:""});
- f.onsubmit=async e=>{e.preventDefault();if(f.dataset.busy)return;const d=formObject(f);const todo=HT_POS.map((p,i)=>({p,i,spectacle:(d["spectacle_"+i]||"").trim(),file:$('[data-ht-file="'+i+'"]',f).files[0]})).filter(x=>x.spectacle);
-  if(!todo.length){say("Escribe al menos un espectáculo");return}if(d.startDate&&d.endDate&&d.endDate<d.startDate){say("La fecha de fin no puede ser anterior al inicio");return}
-  f.dataset.busy="1";htSaving(f,true);
-  try{for(const x of todo){const data={venue:v,position:x.p.key,spectacle:x.spectacle,startDate:d.startDate,endDate:d.endDate,deliveryDate:d.deliveryDate,materialStatus:d.materialStatus,status:"activo"};const k=await uploadAsset(x.file,"hometicket","");if(k){data.assetKey=k;data.assetName=x.file.name}
-    await api("/api/control?module=hometicket",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})}
-   say(todo.length+(todo.length===1?" pieza guardada":" piezas guardadas"));homeTicket()}catch(err){say(err.message);delete f.dataset.busy;htSaving(f,false)}}}
+ f.onsubmit=async e=>{e.preventDefault();if(f.dataset.busy)return;const d=formObject(f);
+  const todo=HT_POS.map((p,i)=>({p,i,spectacle:(d["spectacle_"+i]||"").trim(),file:$('[data-ht-file="'+i+'"]',f).files[0]})).filter(x=>x.spectacle);
+  if(!todo.length){say("Escribe al menos un espectáculo");return}f.dataset.busy="1";htSaving(f,true);
+  try{const current=(await api("/api/control?module=hometicket")).rows||[];
+   for(const x of todo){const old=htRecord(current,v,m,x.p),data={venue:v,position:x.p.key,month:m,spectacle:x.spectacle,startDate:d.startDate,endDate:d.endDate,materialStatus:d.materialStatus,status:"activo"};
+    const k=await uploadAsset(x.file,"hometicket",old?.assetKey||"");if(k){data.assetKey=k;data.assetName=x.file?.name||old?.assetName||""}
+    if(old?.id)await api("/api/control?module=hometicket&id="+old.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+    else await api("/api/control?module=hometicket",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})
+   }
+   await htRefreshComposite(v,m);say(todo.length+(todo.length===1?" pieza guardada":" piezas guardadas"));homeTicket()
+  }catch(err){say(err.message);delete f.dataset.busy;htSaving(f,false)}
+ }
+}
+/* ===== /HOME TICKET ===== */
 
 // ===== Revistas: una página de publicidad al mes en cada revista =====
 const MAGAZINES=["Revista Teatros","AEscena","Godot"];

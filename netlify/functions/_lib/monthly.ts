@@ -62,20 +62,24 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const facadeLines: Line[] = facade.length > 1 ? [{ title: facade.map((l) => l.title).join(" · "), detail: facade[0].detail.includes("montaje") && photos.length ? `Fotos del montaje · ${fmt(lastMont.date)}` : (lastMont ? "Último montaje el " + fmt(lastMont.date) : "Fachada del mes"), img: { kind: "collage", key: "facade", refs: facade.map((l) => l.img!).filter(Boolean) }, collage: true }] : facade;
   sections.push({ key: "carteleria", name: "Cartelería · Gran Teatro Pavón", lines: facadeLines, count: `${cart.length} ${cart.length === 1 ? "soporte" : "soportes"}` });
 
-  // Home Ticket
-  // Home Ticket: los cinco espacios, en orden; los que no tuvieron piezas aparecen como «sin piezas»
+// Home Ticket: una miniatura compuesta por teatro y mes.
   const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Gran Castillo de Pedraza", "Abono Teatro"];
-  const POS_ORDER = ["HT Superior · 520 × 420", "HT Inferior · 520 × 420", "Home Ticket XL · 520 × 856"];
-  const ht = (await listRecords("hometicket")).filter(overlaps);
-  const htVenues = [...HT_VENUES, ...new Set(ht.map((r) => r.venue).filter((v) => v && !HT_VENUES.includes(v)))];
+  const POS_ORDER = ["Home Ticket XL · 520 × 856", "HT Superior · 520 × 420", "HT Inferior · 520 × 420"];
+  const rowMonth = (r:any) => r.month || String(r.startDate || "").slice(0,7) || String(r.endDate || "").slice(0,7);
+  const ht = (await listRecords("hometicket")).filter((r:any) => rowMonth(r) === month || (!r.month && overlaps(r)));
+  const htVenues = [...HT_VENUES, ...new Set(ht.map((r:any) => r.venue).filter((v:any) => v && !HT_VENUES.includes(v)))];
   const htLines: Line[] = [];
-  // Una sola imagen por espacio (la de mayor tamaño: XL, Superior o Inferior) y debajo sus piezas
-  const PICK = ["Home Ticket XL · 520 × 856", "HT Superior · 520 × 420", "HT Inferior · 520 × 420"];
   for (const v of htVenues) {
-    const mine = ht.filter((r) => r.venue === v).sort((a, b) => POS_ORDER.indexOf(a.position) - POS_ORDER.indexOf(b.position));
-    if (!mine.length) { htLines.push({ kicker: short(v), title: "Sin piezas este mes", detail: "", img: { kind: "blank", key: "ht" }, empty: true }); continue; }
-    const main = [...mine].sort((a, b) => PICK.indexOf(a.position) - PICK.indexOf(b.position)).find((r) => r.assetKey);
-    htLines.push({ kicker: short(v), title: [...new Set(mine.map((r) => r.spectacle || "Sin espectáculo"))].join(" · "), detail: mine.map((r) => `${HT_NAMES[r.position] || r.position || ""} ${range(r.startDate, r.endDate)}`.trim()).join(" · "), img: main ? { kind: "asset" as const, key: main.assetKey } : { kind: "blank", key: "ht" } });
+    const mine = ht.filter((r:any) => r.venue === v).sort((a:any,b:any) => POS_ORDER.indexOf(a.position)-POS_ORDER.indexOf(b.position));
+    if (!mine.length) { htLines.push({ title: short(v), detail: "Sin piezas este mes", empty: true }); continue; }
+    const composite = [...mine].sort((a:any,b:any)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).find((r:any)=>r.compositeAssetKey)?.compositeAssetKey;
+    const pieces = mine.map((r:any)=>`${HT_NAMES[r.position] || r.position}: ${r.spectacle || "Sin espectáculo"}`).join(" · ");
+    htLines.push({
+      title: short(v),
+      detail: pieces,
+      img: composite ? { kind: "asset" as const, key: composite } : (mine[0]?.assetKey ? { kind:"asset" as const, key: mine[0].assetKey } : undefined),
+      wide: true
+    });
   }
   sections.push({ key: "hometicket", name: "Home Ticket", lines: htLines });
 
