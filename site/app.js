@@ -529,7 +529,7 @@ async function carteleria(){
  const next=upcoming[0];const nd=next?cartDaysTo(next.n[1]):null;
  const pend=CART_SLOTS.filter(s=>{const st=cartSched(s.key).status;return st&&st!=="instalado"}).length;
  app.innerHTML=pageHead("Cartelería","Fachada y soportes del Gran Teatro Pavón",
-   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar PNG</button>'+(edit?'<button type="button" id="cartMontaje">Confirmar montaje</button><button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar vista PNG</button><button type="button" id="cartExportAll">Exportar todas PNG</button>'+(edit?'<button type="button" id="cartMontaje">Confirmar montaje</button><button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
   '<div id="montajePanel"></div>'+
   '<div class="kpi-row">'+kpi(withImg+"/"+CART_SLOTS.length,"Soportes con cartel")+kpi(upcoming.length,"Cambios programados")+(next?'<span class="kpi '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b><em>'+esc(next.n[0]+" · "+next.s.name)+'</em></span>':kpi(0,"Sin cambios próximos"))+kpi(pend,"Por instalar",pend?"warn":"")+'</div>'+
   '<div class="cart-sync" id="cartSync"></div>'+
@@ -547,7 +547,7 @@ async function carteleria(){
   '<input type="file" id="cartFile" accept="image/*" hidden>';
  $("#cartViews").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;cart.view=c.dataset.v;cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;cartRender()};
  $("#cartNight").onclick=e=>{const b=e.target.closest("button");if(!b)return;cart.night=b.dataset.n==="1";cartRender()};
- $("#cartExport").onclick=()=>cartExport(false);
+ $("#cartExport").onclick=()=>cartExport(false);$("#cartExportAll").onclick=()=>cartExportAll();
  $("#cartShare").onclick=()=>cartExport(true);
  if(edit){$("#cartSave").onclick=cartSave;$("#cartSave2").onclick=cartSave;$("#cartMontaje").onclick=()=>montajePanel();
   $("#cartFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f)await cartSetFile(cart.sel,f)}}
@@ -694,6 +694,27 @@ async function cartComposite(viewId,night){
  g.fillText("Gran Teatro Pavón · "+v.name+" · "+new Date().toLocaleDateString("es-ES"),Math.round(14*scale/1.2),H-Math.round(17*scale/1.2));
  return c.toDataURL("image/png");
 }
+// Todas las vistas en una sola imagen apaisada (proporción A4): Taquilla cerrada y Lona a la izquierda, Taquilla abierta y Columna 1 a la derecha
+async function cartExportAll(){
+ try{say("Preparando la imagen…");if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  const ims={};for(const v of CART_VIEWS)ims[v.id]=await cartLoadImg(await cartComposite(v.id,cart.night));
+  const W=2339,H=1654,pad=56,gap=24,top=196,foot=60,avW=W-pad*2,avH=H-top-foot;
+  const ar=id=>{const v=cartView(id);return v.w/v.h};const rT=ar("taquilla"),rL=ar("lona"),rA=ar("abierta"),rC=ar("columna");
+  // altura común de la columna derecha (hR) y ancho de la izquierda (wL) para ocupar todo el ancho sin pasarse de alto
+  const k=1/(1/rT+1/rL);let hR=(avW-gap*2+gap*k)/(rA+rC+k);if(hR>avH)hR=avH;const wL=(hR-gap)*k;
+  const total=wL+gap+hR*rA+gap+hR*rC,x0=pad+(avW-total)/2,y0=top+(avH-hR)/2;
+  const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");g.textBaseline="top";
+  g.fillStyle="#FFFFFF";g.fillRect(0,0,W,H);g.fillStyle="#131313";g.fillRect(0,0,W,150);g.fillStyle="#FFD400";g.fillRect(0,150,W,8);
+  g.font="400 82px Anton, Impact, sans-serif";g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,36);const tw=g.measureText("YELLOW CONTROL").width;
+  g.fillStyle="#F2EFE6";g.fillText("CARTELERÍA · GRAN TEATRO PAVÓN",pad+tw+36,36);
+  g.font="600 24px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";const info=(cart.night?"Noche":"Día")+" · "+new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});g.fillText(info,W-pad-g.measureText(info).width,70);
+  const hT=wL/rT,hL=wL/rL;
+  const place=[["taquilla",x0,y0,wL,hT],["lona",x0,y0+hT+gap,wL,hL],["abierta",x0+wL+gap,y0,hR*rA,hR],["columna",x0+wL+gap+hR*rA+gap,y0,hR*rC,hR]];
+  for(const [id,x,y,w,h] of place){g.drawImage(ims[id],x,y,w,h);g.strokeStyle="#131313";g.lineWidth=2;g.strokeRect(x,y,w,h)}
+  g.font="600 18px 'Plus Jakarta Sans', Arial";g.fillStyle="#8a8478";g.fillText("Yellow Media · generado el "+new Date().toLocaleDateString("es-ES"),pad,H-foot+18);
+  const blob=await new Promise(r=>c.toBlob(r,"image/png"));const name="Pavon_carteleria_completa_"+new Date().toLocaleDateString("sv")+".png";
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  say("PNG descargado")}catch(e){say(e.message||"No se ha podido exportar")}}
 async function cartExport(share){
  try{const png=await cartComposite(cart.view,cart.night);const name="Pavon_"+cart.view+"_"+new Date().toLocaleDateString("sv")+".png";
   const blob=await (await fetch(png)).blob();const file=new File([blob],name,{type:"image/png"});
@@ -848,7 +869,7 @@ function renderCalendar(){
   body='<div class="calendar-grid">'+cells+'</div>'+(ev.some(e=>e.date.startsWith(y+"-"+String(m+1).padStart(2,"0")))?'':'<div class="notice" style="margin-top:10px">No hay fechas este mes con estos filtros.</div>');
  }
  app.innerHTML=pageHead("Calendario","Campañas, montajes, entregas e hitos de comunicación de todos los espacios",
-  '<button type="button" id="calSub">Suscribirme</button><button type="button" id="calWeek">Compartir semana</button>'+(calCanHito()?'<button type="button" class="primary" id="calNewHito">+ Nuevo hito</button>':''))+
+  '<button type="button" id="calSub">Suscribirme</button><button type="button" id="calWeek">Compartir semana</button><button type="button" id="calMonth">Imprimir mes</button>'+(calCanHito()?'<button type="button" class="primary" id="calNewHito">+ Nuevo hito</button>':''))+
   '<div id="calPanel"></div>'+
   '<div class="card cal-card">'+filters+
   '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
@@ -861,7 +882,7 @@ function renderCalendar(){
  $$(".cal-filters [data-mod]").forEach(b=>b.onclick=()=>{const k=b.dataset.mod;if(!k)calMods.clear();else if(calMods.has(k))calMods.delete(k);else calMods.add(k);renderCalendar()});
  $("#calVenue").onchange=e=>{calVenue=e.target.value;renderCalendar()};
  $(".cal-card").addEventListener("click",e=>{const b=e.target.closest("[data-ev]");if(!b)return;const x=calEvents.find(y=>y.id===b.dataset.ev);if(x)calDetail(x)});
- $("#calSub").onclick=()=>calSubscribe();$("#calWeek").onclick=()=>calWeekPanel();
+ $("#calSub").onclick=()=>calSubscribe();$("#calWeek").onclick=()=>calWeekPanel();$("#calMonth").onclick=()=>{if(calView==="semana"){const d=calWeekOffset?weekRange(calWeekOffset)[3]:new Date();calCursor=new Date(d.getFullYear(),d.getMonth(),1)}calMonthPanel()};
  if(calCanHito())$("#calNewHito").onclick=()=>calHitoForm({date:localToday()});
 }
 function calPanel(html){const p=$("#calPanel");if(!p)return;p.innerHTML=html?'<section class="card cal-panel">'+html+'</section>':"";if(html)p.scrollIntoView({behavior:"smooth",block:"start"})}
@@ -985,6 +1006,88 @@ function calWeekPdf(days,ev,title){
   '<header><h1>YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
  w.document.close()}
 
+// Mes completo en A4 horizontal: PDF para imprimir o PNG apaisado, con los módulos a elegir
+function calMonthData(y,m){const n=new Date(y,m+1,0).getDate(),offset=(new Date(y,m,1).getDay()+6)%7,cells=[];
+ for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=n;d++)cells.push(new Date(y,m,d));while(cells.length%7)cells.push(null);
+ const weeks=[];for(let i=0;i<cells.length;i+=7)weeks.push(cells.slice(i,i+7));return weeks}
+const CAL_WD=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+function calMonthPanel(){
+ const avail=CAL_MODS.filter(([k])=>calEvents.some(e=>e.moduleKey===k));
+ if(!calShareMods)calShareMods=new Set(calMods.size?[...calMods]:avail.map(([k])=>k));
+ const y=calCursor.getFullYear(),m=calCursor.getMonth(),key=y+"-"+String(m+1).padStart(2,"0"),title=cap(calCursor.toLocaleDateString("es-ES",{month:"long",year:"numeric"}));
+ const ev=calFiltered(calShareMods).filter(e=>String(e.date).startsWith(key)).sort((a,b)=>(a.date+(a.time||"99")).localeCompare(b.date+(b.time||"99")));
+ const t=new Date(),opts=[-1,0,1,2].map(o=>{const d=new Date(t.getFullYear(),t.getMonth()+o,1);return [d,cap(d.toLocaleDateString("es-ES",{month:"long"}))]});
+ calPanel('<div class="section-title"><div><small class="section-kicker">Imprimir mes · A4 horizontal</small><h2>'+esc(title)+'</h2></div><button type="button" class="ghost" id="mnClose">Cerrar</button></div>'+
+  '<div class="chip-row" style="margin-bottom:8px"><span class="chip-label">Mes</span><button type="button" class="chip" data-mo="-1">‹</button>'+opts.map(([d,l])=>'<button type="button" class="chip'+(d.getFullYear()===y&&d.getMonth()===m?" on":"")+'" data-md="'+d.getFullYear()+'-'+d.getMonth()+'">'+esc(l)+'</button>').join("")+'<button type="button" class="chip" data-mo="1">›</button></div>'+
+  '<div class="chip-row" style="margin-bottom:12px"><span class="chip-label">Incluir</span>'+(avail.length?avail.map(([k,l])=>'<button type="button" class="chip'+(calShareMods.has(k)?" on":"")+'" data-sm="'+k+'"><span class="dot"></span>'+l+'</button>').join(""):'<span class="muted">Aún no hay fechas</span>')+'</div>'+
+  (calVenue?'<p class="cart-legacy" style="margin:0 0 10px">Solo '+esc(calVenue)+' (filtro activo en el calendario).</p>':'')+
+  '<p class="muted" style="margin:0 0 10px">'+ev.length+(ev.length===1?" fecha":" fechas")+' en '+esc(title.toLowerCase())+'.</p>'+
+  '<div class="actions-row"><button type="button" class="primary" id="mnPdf">Imprimir / PDF A4 horizontal</button><button type="button" id="mnPng">Imagen PNG horizontal</button></div>'+
+  '<p class="cart-legacy" style="margin-top:8px">«Imprimir» abre el cuadro de impresión ya en horizontal; para PDF elige «Guardar como PDF». Si hay muchas fechas, el texto se ajusta para que quepa en una sola hoja.</p>');
+ $("#mnClose").onclick=()=>calPanel("");
+ $$("#calPanel [data-mo]").forEach(c=>c.onclick=()=>{calCursor=new Date(y,m+(+c.dataset.mo),1);if(calView==="mes")renderCalendar();calMonthPanel()});
+ $$("#calPanel [data-md]").forEach(c=>c.onclick=()=>{const [yy,mm]=c.dataset.md.split("-").map(Number);calCursor=new Date(yy,mm,1);if(calView==="mes")renderCalendar();calMonthPanel()});
+ $$("#calPanel [data-sm]").forEach(c=>c.onclick=()=>{const k=c.dataset.sm;calShareMods.has(k)?calShareMods.delete(k):calShareMods.add(k);calMonthPanel()});
+ $("#mnPdf").onclick=()=>calMonthPdf(y,m,ev,title);$("#mnPng").onclick=()=>calMonthPng(y,m,ev,title);
+}
+function calMonthPdf(y,m,ev,title){
+ const w=window.open("","_blank");if(!w){say("Permite las ventanas emergentes para imprimir");return}
+ const today=localToday(),weeks=calMonthData(y,m);
+ const cell=d=>{if(!d)return '<td class="out"></td>';const iso=isoOf(d),de=ev.filter(e=>e.date===iso),we=d.getDay()===0||d.getDay()===6;
+  return '<td class="'+(we?"we":"")+(iso===today?" today":"")+'"><div class="n">'+d.getDate()+'</div>'+de.map(e=>'<div class="ev" style="border-color:'+(KIND_COLOR[e.kind]||"#FFD400")+'"><small>'+esc(evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module))+'</small><b>'+esc((e.time?e.time+" · ":"")+e.title)+'</b>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</div>').join("")+'</td>'};
+ const legend=Object.entries(KIND_LABEL).filter(([k])=>ev.some(e=>e.kind===k)).map(([k,v])=>'<span><i style="background:'+KIND_COLOR[k]+'"></i>'+v+'</span>').join("");
+ w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Yellow Control · '+esc(title)+'</title><style>'+[["Anton",400,"anton-400"],["Plus Jakarta Sans",500,"jakarta-500"],["Plus Jakarta Sans",700,"jakarta-700"],["Plus Jakarta Sans",800,"jakarta-800"]].map(([f,wt,n])=>'@font-face{font-family:"'+f+'";font-weight:'+wt+';src:url('+location.origin+'/assets/fonts/'+n+'.woff2) format("woff2")}').join("")+'@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0}body{font:9px/1.25 "Plus Jakarta Sans",Arial,sans-serif;color:#131313;width:281mm}'+
+  'header{display:flex;align-items:flex-end;justify-content:space-between;border-top:5px solid #FFD400;padding-top:5px;margin-bottom:5px}header h1{font:400 24px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0;line-height:1}header h1 em{font-style:normal;color:#131313;background:#FFD400;padding:0 6px;margin-left:8px}header p{margin:0;color:#555;font-size:10px;text-align:right}'+
+  '.lg{display:flex;gap:10px;margin:0 0 5px;color:#555;font-size:8.5px}.lg i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:-1px}'+
+  'table{width:100%;border-collapse:collapse;table-layout:fixed}th{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:3px 4px;background:#131313;color:#FFD400}th.we{color:#d8d3c6}'+
+  'td{border:1px solid #cfcac0;vertical-align:top;padding:3px 3px 2px;height:30mm}td.out{background:#f3f1ec}td.we{background:#fbfaf6}td.today .n{background:#FFD400;border-radius:3px;padding:0 3px}.n{font:400 13px Anton,Impact,sans-serif;display:inline-block;margin-bottom:2px}'+
+  '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
+  '<header><h1>YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
+  '<table><thead><tr>'+CAL_WD.map((d,i)=>'<th'+(i>4?' class="we"':'')+'>'+d+'</th>').join("")+'</tr></thead><tbody>'+weeks.map(wk=>'<tr>'+wk.map(cell).join("")+'</tr>').join("")+'</tbody></table>'+
+  '<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer>'+
+  // Si no cabe en una hoja, se reduce todo lo necesario para que salga en una sola página
+  '<script>window.onload=async()=>{try{await document.fonts.ready}catch{}const max=194*96/25.4,h=document.body.scrollHeight;if(h>max)document.body.style.zoom=(max/h).toFixed(3);setTimeout(()=>print(),300)}<\/script></html>');
+ w.document.close()}
+function calMonthCanvas(y,m,ev,title){
+ const W=2339,H=1654,pad=56,weeks=calMonthData(y,m),cw=(W-pad*2)/7,top=196,foot=56,avail=H-top-foot-pad/2;
+ const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");g.textBaseline="top";
+ const font=(wt,px,fam)=>wt+" "+px+"px "+(fam||"'Plus Jakarta Sans', Arial");
+ const wrap=(t,max,lines)=>{const words=String(t).split(/\s+/),out=[];let cur="";for(const w of words){const x=cur?cur+" "+w:w;if(g.measureText(x).width<=max)cur=x;else{if(cur)out.push(cur);cur=w}}if(cur)out.push(cur);
+  if(out.length>lines){const keep=out.slice(0,lines);let l=keep[lines-1];while(l.length&&g.measureText(l+"…").width>max)l=l.slice(0,-1);keep[lines-1]=l+"…";return keep}
+  return out.map(l=>{if(g.measureText(l).width<=max)return l;while(l.length&&g.measureText(l+"…").width>max)l=l.slice(0,-1);return l+"…"})};
+ // Busca el tamaño de letra más grande con el que todo el mes cabe en la hoja
+ let s=1,layout;for(const k of [1,.9,.8,.7,.62,.55,.48,.42]){s=k;const tag=15*s,tl=20*s,loc=15*s,num=30*s;g.font=font(700,tl);
+  const evH=e=>{g.font=font(700,tl);const L=wrap((e.time?e.time+" · ":"")+e.title,cw-34,2).length;return tag+4+L*(tl*1.2)+(e.location?loc*1.25:0)+10*s};
+  const rows=weeks.map(wk=>Math.max(150,...wk.map(d=>d?num+14+ev.filter(e=>e.date===isoOf(d)).reduce((a,e)=>a+evH(e),0)+8:0)));
+  layout={rows,tag,tl,loc,num,evH};if(rows.reduce((a,b)=>a+b,0)<=avail)break}
+ const tot=layout.rows.reduce((a,b)=>a+b,0);if(tot<avail){const k=avail/tot;layout.rows=layout.rows.map(r=>r*k)}
+ g.fillStyle="#FFFFFF";g.fillRect(0,0,W,H);g.fillStyle="#131313";g.fillRect(0,0,W,150);g.fillStyle="#FFD400";g.fillRect(0,150,W,8);
+ g.font=font(400,82,"Anton, Impact, sans-serif");g.fillStyle="#FFD400";g.fillText("YELLOW CONTROL",pad,36);const tw=g.measureText("YELLOW CONTROL").width;
+ g.fillStyle="#F2EFE6";g.fillText(title.toUpperCase(),pad+tw+36,36);
+ g.font=font(600,24);g.fillStyle="#aaa296";const info=ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+calVenue:"");g.fillText(info,W-pad-g.measureText(info).width,70);
+ // cabecera de días
+ const hy=top-34;CAL_WD.forEach((d,i)=>{g.font=font(800,18);g.fillStyle=i>4?"#8a8478":"#131313";g.fillText(d.toUpperCase(),pad+i*cw+10,hy)});
+ let yy=top;const today=localToday();
+ weeks.forEach((wk,wi)=>{const rh=layout.rows[wi];wk.forEach((d,i)=>{const x=pad+i*cw;
+   g.fillStyle=!d?"#f3f1ec":(i>4?"#fbfaf6":"#FFFFFF");g.fillRect(x,yy,cw,rh);g.strokeStyle="#cfcac0";g.lineWidth=2;g.strokeRect(x,yy,cw,rh);if(!d)return;
+   const iso=isoOf(d);g.font=font(400,layout.num,"Anton, Impact, sans-serif");const nw=g.measureText(String(d.getDate())).width;
+   if(iso===today){g.fillStyle="#FFD400";g.fillRect(x+8,yy+8,nw+14,layout.num+8)}g.fillStyle="#131313";g.fillText(String(d.getDate()),x+15,yy+10);
+   let ey=yy+layout.num+24;for(const e of ev.filter(e=>e.date===iso)){const h=layout.evH(e)-10*s;g.fillStyle=KIND_COLOR[e.kind]||"#FFD400";g.fillRect(x+12,ey,6,h);
+    g.font=font(800,layout.tag);g.fillStyle="#6b665d";g.fillText(wrap((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),cw-40,1)[0],x+26,ey);
+    let ly=ey+layout.tag+4;g.font=font(700,layout.tl);g.fillStyle="#131313";for(const l of wrap((e.time?e.time+" · ":"")+e.title,cw-34,2)){g.fillText(l,x+26,ly);ly+=layout.tl*1.2}
+    if(e.location){g.font=font(500,layout.loc);g.fillStyle="#6b665d";g.fillText(wrap(e.location,cw-40,1)[0],x+26,ly)}
+    ey+=layout.evH(e)}});yy+=rh});
+ g.font=font(600,18);g.fillStyle="#8a8478";g.fillText("Yellow Media · generado el "+new Date().toLocaleDateString("es-ES"),pad,H-foot+14);
+ const lg=Object.entries(KIND_LABEL).filter(([k])=>ev.some(e=>e.kind===k));let lx=W-pad;g.font=font(700,18);for(const [k,v] of lg.reverse()){const w=g.measureText(v).width;lx-=w;g.fillStyle="#6b665d";g.fillText(v,lx,H-foot+14);lx-=24;g.fillStyle=KIND_COLOR[k];g.fillRect(lx,H-foot+16,14,14);lx-=26}
+ return c}
+async function calMonthPng(y,m,ev,title){
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const c=calMonthCanvas(y,m,ev,title);const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+  const name="Yellow_calendario_"+y+"-"+String(m+1).padStart(2,"0")+".png",file=new File([blob],name,{type:"image/png"});
+  const touch=matchMedia("(pointer:coarse)").matches;
+  if(touch&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Calendario · "+title});return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  say("Imagen descargada")}catch(e){if(e&&e.name==="AbortError")return;say(e.message||"No se ha podido exportar")}}
+
 async function admin(){
  if(!roles().includes("admin"))throw new Error("Acceso reservado a administración");
  let d;try{d=await api("/api/admin-users")}catch(e){app.innerHTML=pageHead("Usuarios","Administración de accesos")+'<div class="card notice">Netlify Identity todavía no está habilitado para este proyecto. El código de roles ya está preparado, pero la gestión de usuarios queda bloqueada hasta activar Identity en Netlify.</div>'+mailTestCard();bindMailTest();return}
@@ -998,7 +1101,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v37";
+const YC_VERSION="yellow-control-v38";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
