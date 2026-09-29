@@ -390,7 +390,7 @@ function htMockup(rows,v,m){
  const overlays=HT_POS.map(p=>{
    const r=htRecord(rows,v,m,p);
    const q=htCoords(v)[p.css];
-   return '<div class="ht-compose-slot '+p.css+'" style="left:'+(q.x*100)+'%;top:'+(q.y*100)+'%;width:'+(q.w*100)+'%;height:'+(q.h*100)+'%">'+
+   return '<div class="ht-compose-slot '+p.css+(r&&r.fit==="contain"?" fit-contain":"")+'" style="left:'+(q.x*100)+'%;top:'+(q.y*100)+'%;width:'+(q.w*100)+'%;height:'+(q.h*100)+'%">'+
      (r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>'+p.name+'</span>')+
    '</div>'
  }).join("");
@@ -401,10 +401,10 @@ function htSlot(rows,v,m,p){
  const r=htRecord(rows,v,m,p);
  return '<div class="ht-slot '+p.css+(r?"":" empty")+'">'+
    '<div class="ht-slot-head"><b>'+p.name+'</b><span>'+p.size+'</span></div>'+
-   '<div class="ht-slot-preview">'+(r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>Sin pieza</span>')+'</div>'+
+   '<div class="ht-slot-preview'+(r&&r.fit==="contain"?" fit-contain":"")+'">'+(r?.assetKey?'<div class="media-preview" data-asset="'+esc(r.assetKey)+'" data-module="hometicket" data-kind="image"></div>':'<span>Sin pieza</span>')+'</div>'+
    (r?'<div class="ht-info"><h3>'+esc(r.spectacle||"Sin espectáculo")+'</h3><div class="item-meta">'+statusBadge(r.materialStatus||"pendiente")+'</div></div>':'')+
    '<div class="item-actions">'+
-     (r?'<button type="button" data-edit-ht="'+r.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button>':'<button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button>')+
+     (r?(r.assetKey?'<button type="button" data-ht-fit="'+r.id+'" title="Cómo entra la pieza en el hueco negro">'+(r.fit==="contain"?"Ajuste: entera":"Ajuste: rellenar")+'</button>':'')+'<button type="button" data-edit-ht="'+r.id+'">Editar</button><button type="button" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">Cambiar</button>':'<button type="button" class="primary" data-new-ht="'+esc(v)+'|'+esc(p.key)+'">+ Añadir</button>')+
    '</div></div>'
 }
 async function htLoadImage(url){
@@ -419,8 +419,9 @@ async function htCompositeBlob(v,m,rows){
    const u=await blobUrl(r.assetKey,"hometicket");if(!u)continue;
    const im=await htLoadImage(u).catch(()=>null),c=htCoords(v)[p.css];if(!im)continue;
    // la pieza entra entera en su hueco, sin deformarse (centrada sobre negro)
-   const bx=c.x*canvas.width,by=c.y*canvas.height,bw=c.w*canvas.width,bh=c.h*canvas.height,k=Math.min(bw/im.naturalWidth,bh/im.naturalHeight),dw=im.naturalWidth*k,dh=im.naturalHeight*k;
-   ctx.fillStyle="#000";ctx.fillRect(bx,by,bw,bh);ctx.drawImage(im,Math.round(bx+(bw-dw)/2),Math.round(by+(bh-dh)/2),Math.round(dw),Math.round(dh))
+   // «rellenar» (por defecto) tapa todo el negro recortando lo que sobre; «entera» la encaja sin recortar
+   const bx=c.x*canvas.width,by=c.y*canvas.height,bw=c.w*canvas.width,bh=c.h*canvas.height,fit=r.fit==="contain"?Math.min:Math.max,k=fit(bw/im.naturalWidth,bh/im.naturalHeight),dw=im.naturalWidth*k,dh=im.naturalHeight*k;
+   ctx.save();ctx.beginPath();ctx.rect(bx,by,bw,bh);ctx.clip();ctx.fillStyle="#000";ctx.fillRect(bx,by,bw,bh);ctx.drawImage(im,bx+(bw-dw)/2,by+(bh-dh)/2,dw,dh);ctx.restore()
  }
  return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("No se ha podido generar el PNG.")),"image/png"))
 }
@@ -471,6 +472,7 @@ async function homeTicket(){
  $$("[data-ht-month]").forEach(b=>b.onclick=()=>{htMonth=b.dataset.htMonth;homeTicket()});
  $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=htView===b.dataset.htTab?"":b.dataset.htTab;homeTicket()});
  $$("[data-ht-close]").forEach(b=>b.onclick=()=>{htView="";homeTicket()});
+ $$("[data-ht-fit]").forEach(b=>b.onclick=async()=>{const r=rows.find(x=>x.id===b.dataset.htFit);if(!r)return;b.disabled=true;try{await api("/api/control?module=hometicket&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({fit:r.fit==="contain"?"cover":"contain"})});await htRefreshComposite(r.venue,htRowMonth(r)||htMonth);homeTicket()}catch(e){say(e.message);b.disabled=false}});
  const panelOf=v=>$('[data-ht-panel="'+CSS.escape(v)+'"]');
  const open=(v,html,bind)=>{$$(".ht-panel").forEach(x=>x.innerHTML="");const p=panelOf(v);p.innerHTML='<div class="ht-form card">'+html+'</div>';bind(p);p.scrollIntoView({behavior:"smooth",block:"start"})};
  $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r,htMonth),()=>bindHTForm(r,htMonth))});
@@ -488,6 +490,7 @@ function htForm(r={},selectedMonth=htMonth){
  return '<div class="section-title"><div><small class="section-kicker">'+esc(venueShort(r.venue||""))+' · '+pos.name+' · '+pos.size+'</small><h2>'+(r.id?"Editar pieza":"Nueva pieza")+'</h2></div><button type="button" class="ghost" id="cancelHT">Cerrar</button></div>'+
   '<form id="htForm" class="form-grid"><input type="hidden" name="venue" value="'+esc(r.venue||"")+'"><input type="hidden" name="position" value="'+esc(pos.key)+'"><input type="hidden" name="month" value="'+esc(m)+'"><input type="hidden" name="startDate" value="'+startDate+'"><input type="hidden" name="endDate" value="'+endDate+'">'+
   '<label>Mes<input value="'+esc(monthLabel(m))+'" disabled></label>'+materialStatusSelect(r.materialStatus)+
+  '<label class="wide">Ajuste en el hueco<select name="fit"><option value="cover"'+(r.fit!=="contain"?" selected":"")+'>Rellenar el hueco negro (recorta lo que sobre)</option><option value="contain"'+(r.fit==="contain"?" selected":"")+'>Pieza entera (puede quedar borde negro)</option></select></label>'+
   '<label class="wide">Espectáculo<input name="spectacle" data-ac="spectacle" autocomplete="off" placeholder="Empieza a escribir y elige de la lista" value="'+esc(r.spectacle||"")+'" required></label>'+
   '<label class="wide">Creatividad'+(r.assetKey?' (deja vacío para mantener la actual)':'')+'<input id="htAsset" type="file" accept="image/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
   '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Quitar</button>':'')+'</div></form>'
@@ -1327,7 +1330,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v48";
+const YC_VERSION="yellow-control-v49";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
