@@ -5,12 +5,14 @@ const e = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&a
 const Y = "#f4c300";
 
 function quickRead(s: MonthSummary) {
-  const t = Object.fromEntries(s.totals.map((x) => [x.label, x.value]));
-  const parts = s.totals.filter((x) => x.value > 0).map((x) => `${x.value.toLocaleString("es-ES")} ${x.label}`);
-  const specs = new Map<string, number>();
-  for (const sec of s.sections) for (const l of sec.lines) if (sec.key !== "radio" && sec.key !== "hitos" && sec.key !== "carteleria" && !l.empty && !l.title.startsWith("Montaje")) specs.set(l.title, (specs.get(l.title) || 0) + 1);
-  const top = [...specs].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} (${v} ${v === 1 ? "soporte" : "soportes"})`);
-  return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (top.length ? ` Más presencia: ${top.join(", ")}.` : "") + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; faltan los certificados de emisión." : "");
+  const t = Object.fromEntries(s.totals.map((x) => [x.label, x]));
+  const f = t["Fachada Pavón"], h = t["Home Ticket"], c = t["cuñas asignadas"] || t["cuñas certificadas"], r = t["páginas en revistas de teatro"];
+  const parts: string[] = [];
+  if (f) parts.push(f.value === "Completa" ? "fachada del Pavón completa" : `fachada del Pavón con ${String(f.value).replace("/", " de ")} soportes con cartel`);
+  if (h && Number(h.value)) parts.push(`Home Ticket en ${h.value} ${Number(h.value) === 1 ? "teatro" : "teatros"} (${h.note})`);
+  if (c && Number(c.value)) parts.push(`${Number(c.value).toLocaleString("es-ES")} ${c.label}`);
+  if (r && Number(r.value)) parts.push(`${r.value} ${Number(r.value) === 1 ? "página" : "páginas"} en revistas de teatro`);
+  return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; falta el certificado de emisión." : "");
 }
 
 // Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
@@ -29,9 +31,9 @@ export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; tes
 
 export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
   const base = o.appUrl.replace(/\/$/, "");
-  const kpis = s.totals.filter((x) => x.value > 0).slice(0, 6);
+  const kpis = s.totals.filter((x) => typeof x.value === "string" || x.value > 0).slice(0, 6);
   const kpiRows: string[] = [];
-  for (let i = 0; i < kpis.length; i += 3) kpiRows.push(`<tr>${kpis.slice(i, i + 3).map((k) => `<td width="33%" valign="top" style="padding:0 10px 12px 0;"><div style="font-size:24px; font-weight:800; color:#111111; line-height:1;">${k.value.toLocaleString("es-ES")}</div><div style="font-size:11px; color:#555555; margin-top:4px;">${e(k.label)}</div></td>`).join("")}</tr>`);
+  for (let i = 0; i < kpis.length; i += 3) kpiRows.push(`<tr>${kpis.slice(i, i + 3).map((k) => `<td width="33%" valign="top" style="padding:0 10px 12px 0;"><div style="font-size:24px; font-weight:800; color:#111111; line-height:1;">${e(typeof k.value === "number" ? k.value.toLocaleString("es-ES") : k.value)}</div><div style="font-size:11px; font-weight:bold; color:#111111; margin-top:5px;">${e(k.label)}</div>${k.note ? `<div style="font-size:11px; color:#666666; margin-top:1px;">${e(k.note)}</div>` : ""}</td>`).join("")}</tr>`);
   const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`;
   // Cuadrículas: carteles de fachada 4 por fila (cuadradas y pequeñas), resto 3 por fila (3:4),
   // fotos de montaje 2 por fila (4:3)
@@ -140,7 +142,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES</div>
     <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">Resumen de ${e(s.label.toLowerCase())}</div>
   </td></tr>
-  ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f1;"><tr><td style="padding:14px 16px 2px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${kpiRows.join("")}</table></td></tr></table></td></tr>` : ""}
+  ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:6px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f1;"><tr><td style="padding:14px 16px 2px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${kpiRows.join("")}</table></td></tr></table></td></tr>` : ""}
   <tr><td class="yw-pad" style="padding:16px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="yw-dark-block" style="background:#111111;"><tr><td style="padding:20px 20px;">
       <table role="presentation" cellpadding="0" cellspacing="0"><tr>

@@ -942,7 +942,7 @@ async function archivo(){
  const removed=[];mods.forEach((m,i)=>(lists[i].rows||[]).filter(r=>r.deletedAt&&r.deletedAt>lim).forEach(r=>removed.push({m,r})));removed.sort((a,b)=>b.r.deletedAt.localeCompare(a.r.deletedAt));
  const short=m=>{const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","");return t.charAt(0).toUpperCase()+t.slice(1)+" "+String(y).slice(2)};
  const chips='<div class="chip-row ar-months">'+months.map(m=>'<button type="button" class="chip'+(m===arMonth?" on":"")+'" data-ar="'+m+'">'+short(m)+(m===cur?' · en curso':'')+'</button>').join("")+'</div>';
- const kpis='<div class="kpi-row">'+sum.totals.map(t=>kpi(t.value,t.label)).join("")+'</div>';
+ const kpis='<div class="kpi-row">'+sum.totals.map(t=>typeof t.value==="number"?kpi(t.value,t.label+(t.note?" · "+t.note:"")):'<span class="kpi"><b>'+esc(t.value)+'</b><em>'+esc(t.label+(t.note?" · "+t.note:""))+'</em></span>').join("")+'</div>';
  const cards='<div class="ar-grid">'+sum.sections.map(sec=>'<section class="card ar-card'+(sec.lines.length?'':' empty')+'"><div class="section-title"><div><small class="section-kicker">'+esc(sec.name)+'</small></div><span class="badge">'+sec.lines.length+'</span></div>'+
   (sec.lines.length?'<ul class="ar-list">'+sec.lines.map(l=>'<li><b>'+esc((l.kicker?l.kicker+" · ":"")+l.title)+'</b><span>'+esc([sec.key==="hitos"&&l.date?fdate(l.date)+(l.time?" "+l.time:""):"",l.detail].filter(Boolean).join(" · "))+'</span></li>').join("")+'</ul>':'<p class="muted" style="margin:0">Sin registros este mes.</p>')+'</section>').join("")+'</div>';
  const rem=removed.length?'<details class="card ar-removed"><summary>Registros quitados ('+removed.length+')</summary><p class="muted" style="margin:6px 0 10px">Lo que se ha quitado en los últimos cuatro meses. Puedes recuperarlo.</p><div class="list">'+removed.map(({m,r})=>'<div class="item"><div><h3>'+esc(modLabel(m))+' · '+esc(r.spectacle||r.title||r.campaignName||"Registro")+'</h3><div class="item-meta">'+(r.magazine?'<span>'+esc(magName(r.magazine))+' · '+esc(monthLabel(r.month||""))+'</span>':'')+(r.venue?'<span>'+esc(r.venue)+'</span>':'')+'<span>Quitado el '+fdate(r.deletedAt.slice(0,10))+'</span></div></div><div class="item-actions"><button type="button" data-restore="'+m+'|'+r.id+'">Recuperar</button></div></div>').join("")+'</div></details>':'';
@@ -1330,7 +1330,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v49";
+const YC_VERSION="yellow-control-v50";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
