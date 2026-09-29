@@ -5,6 +5,7 @@ import { monthSummary } from "./_lib/monthly.ts";
 import { buildMonthlyMail } from "./_lib/monthly-mail.ts";
 import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
 import { madridToday } from "./_lib/dates.ts";
+import { getContacts } from "./_lib/contacts.ts";
 
 // GET ?mes=YYYY-MM → resumen del mes para la sección Archivo.
 // POST ?mes=YYYY-MM → envía ahora el correo de ese mes (solo administración).
@@ -18,10 +19,15 @@ export default async (req: Request) => {
   }
   if (req.method === "POST") {
     const auth = await requireAccess(req, "admin", true); if (auth.response) return auth.response;
+    // Destinatarios extra elegidos en Archivo: solo se aceptan direcciones de la agenda de contactos.
+    let body: any = {}; try { body = await req.json(); } catch {}
+    const agenda = new Map((await getContacts()).map((c) => [c.email.toLowerCase(), c.email]));
+    const extra = [...new Set((Array.isArray(body?.extra) ? body.extra : []).map((x: any) => agenda.get(String(x).trim().toLowerCase())).filter(Boolean))] as string[];
     const s = await monthSummary(month, url.origin), rcp = mailRecipients();
-    const mail = await buildMonthlyMail(s, { appUrl: origin, test: true, devRecipient: rcp.live ? "" : rcp.to[0] });
-    const r: any = await sendPavonMail({ subject: `[Prueba] Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments });
-    await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `monthly-${month}`, action: r.sent ? "email_sent" : "email_pending", note: "Resumen mensual (prueba)" });
+    const real = extra.length > 0;
+    const mail = await buildMonthlyMail(s, { appUrl: origin, test: !real, devRecipient: rcp.live || real ? "" : rcp.to[0] });
+    const r: any = await sendPavonMail({ subject: `${real ? "" : "[Prueba] "}Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments, extra });
+    await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `monthly-${month}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Resumen mensual enviado también a ${extra.join(", ")}` : "Resumen mensual (prueba)" });
     return Response.json({ sent: !!r.sent, to: r.to || [], reason: r.sent ? "" : r.reason || "" });
   }
   return new Response("Method not allowed", { status: 405 });

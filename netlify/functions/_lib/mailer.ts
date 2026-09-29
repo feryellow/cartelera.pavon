@@ -40,11 +40,14 @@ export function mailConfigured() {
 
 // to/cc opcionales: destinatarios pedidos para este envío. En modo desarrollo se ignoran y el correo
 // va solo a DEV_RECIPIENT; se devuelven en intendedTo/intendedCc para poder avisar de a quién iría.
-export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[]; to?: string[]; cc?: string[] }) {
+// extra: destinatarios añadidos a mano para un envío concreto (ya validados contra la agenda por quien
+// llama). Son la única excepción al modo desarrollo: se suman a los destinatarios normales.
+export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[]; to?: string[]; cc?: string[]; extra?: string[] }) {
   const apiKey = env("RESEND_API_KEY"), from = env("PAVON_EMAIL_FROM");
   const base = mailRecipients();
   const intendedTo = input.to?.length ? input.to : base.to, intendedCc = input.to?.length ? (input.cc || []) : base.cc;
-  const to = base.live ? intendedTo : [DEV_RECIPIENT], cc = base.live ? intendedCc : [];
+  const extra = (input.extra || []).filter(Boolean);
+  const to = [...new Set([...(base.live ? intendedTo : [DEV_RECIPIENT]), ...extra])], cc = base.live ? intendedCc.filter((x) => !to.includes(x)) : [];
   if (!apiKey || !from || !to.length) return { sent: false, configured: false, reason: "email_not_configured", intendedTo, intendedCc };
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",

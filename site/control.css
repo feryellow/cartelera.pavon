@@ -839,3 +839,8 @@ body.sheet-open{overflow:hidden}
 .vid-poster{position:relative;display:block;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000;width:100%;max-width:360px;cursor:pointer}
 .vid-poster img{display:block;width:100%;height:auto;max-width:none;max-height:none;border:0;border-radius:0}
 .vid-poster span{position:absolute;inset:0;margin:auto;width:58px;height:58px;border-radius:50%;background:var(--gold);color:#111;display:grid;place-items:center;font-size:22px;padding-left:4px;box-shadow:0 4px 20px #0008}
+#arSendBox .ar-rcp{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;margin:0!important;padding:9px 0!important;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);text-align:left!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important;cursor:pointer}
+#arSendBox .ar-rcp input{width:18px!important;height:18px!important;flex:0 0 18px;margin:0!important}
+#arSendBox .ar-rcp i{font-style:normal;display:flex!important;flex-direction:column;min-width:0}
+#arSendBox .ar-rcp b{font-weight:700}
+#arSendBox .ar-rcp small{opacity:.65;font-size:12px;overflow-wrap:anywhere}
