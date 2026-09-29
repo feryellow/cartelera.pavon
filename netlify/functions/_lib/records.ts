@@ -34,7 +34,7 @@ const allowed: Record<RecordModule,string[]> = {
   intercambiadores: ["venue","spectacle","campaignName","support","format","provider","startDate","endDate","assetKey","assetName","posterKey","posterName","contact","agreement","notes","status","location","materialStatus","deliveryDate"],
 hometicket: ["venue","position","month","spectacle","startDate","endDate","assetKey","assetName","compositeAssetKey","fit","notes","status","materialStatus","deliveryDate"],
   hitos: ["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","link","assetKey","assetName","notes","status"],
-  revistas: ["venue","magazine","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],
+  revistas: ["venue","magazine","deal","month","spectacle","startDate","endDate","assetKey","assetName","notes","status","materialStatus","deliveryDate","contact"],
 };
 
 export function cleanInput(moduleName: RecordModule, input: any) {

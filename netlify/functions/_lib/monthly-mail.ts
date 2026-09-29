@@ -13,6 +13,8 @@ function quickRead(s: MonthSummary) {
   const ar = t["soportes cartelera Teatro Arlequín"];
   if (ar) parts.push(`${ar.value} soportes de la cartelera del Teatro Arlequín`);
   if (r) parts.push(`${r.value} Revistas Teatros`);
+  const xr = t["intercambios en revistas"];
+  if (xr) parts.push(`${xr.value} ${Number(xr.value) === 1 ? "intercambio" : "intercambios"} en otras revistas`);
   if (h && Number(h.value)) parts.push(`${parseInt(String(h.note || "0"), 10) || 0} Home Tickets completos de ${h.value}`);
   if (tx) parts.push(`${tx.value} ${Number(tx.value) === 1 ? "campaña" : "campañas"} en taxis`);
   if (ic) parts.push(`${ic.value} ${Number(ic.value) === 1 ? "campaña" : "campañas"} en intercambiadores`);
@@ -48,6 +50,8 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   if (arc) cards.push({ big: String(arc.value), label: arc.label });
   const rv = T["Revistas Teatros"];
   if (rv) cards.push({ big: String(rv.value), label: "Revistas Teatros" });
+  const xv = T["intercambios en revistas"];
+  if (xv) cards.push({ big: String(xv.value), label: Number(xv.value) === 1 ? "intercambio en revistas" : "intercambios en revistas" });
   const htc = T["Home Ticket"];
   if (htc && Number(htc.value)) { const done = parseInt(String(htc.note || "0"), 10) || 0; cards.push({ big: String(done), label: done === 1 ? "Home Ticket completo" : "Home Tickets completos", note: `de ${htc.value} ${Number(htc.value) === 1 ? "teatro" : "teatros"} con Home Ticket` }); }
   for (const k of ["campañas taxis", "campañas intercambiadores"]) { const x = T[k]; if (x) cards.push({ big: String(x.value), label: Number(x.value) === 1 ? k.replace("campañas", "campaña") : k }); }
