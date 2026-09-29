@@ -830,21 +830,21 @@ const HITO_REMINDERS=[["","Por defecto"],["none","Sin aviso"],["15m","15 minutos
 const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito"};
 // Identidad por recinto: color de franja (claro / oscuro) y etiqueta con siglas en sus colores de marca
 const VENUE_STYLE={
- "Gran Teatro Pavón":{tag:"PAVÓN",bg:"#1E1E1E",fg:"#FFD968",line:"#1E1E1E",dark:"#FFD968"},
+ "Gran Teatro Pavón":{tag:"PAVÓN",bg:"#4A2C1A",fg:"#FFD968",line:"#4A2C1A",dark:"#D9A066"},
  "Gran Teatro CaixaBank Príncipe Pío":{tag:"P. PÍO",bg:"#1F5FBF",fg:"#FFFFFF",line:"#1F5FBF",dark:"#5B93EA"},
  "Teatro Serrano":{tag:"SERRANO",bg:"#1E8C5A",fg:"#FFFFFF",line:"#1E8C5A",dark:"#4CC08A"},
- "Gran Castillo de Pedraza":{tag:"CASTILLO",bg:"#7A4E2D",fg:"#FFFFFF",line:"#7A4E2D",dark:"#C08A5C"},
- "Abono Teatro":{tag:"ABT",bg:"#B32745",fg:"#FFCD35",line:"#B32745",dark:"#E0506E"},
+ "Gran Castillo de Pedraza":{tag:"CASTILLO",bg:"#9A6A3A",fg:"#FFFFFF",line:"#9A6A3A",dark:"#B8906A"},
+ "Abono Teatro":{tag:"ABT",bg:"#BC2C4F",fg:"#FFD33C",line:"#BC2C4F",dark:"#E0506E"},
  "Soho City Madrid":{tag:"SOHO",bg:"#1B2A4A",fg:"#C9A24B",line:"#1B2A4A",dark:"#C9A24B"}};
-const VENUE_NONE={tag:"YM",bg:"#6b665d",fg:"#FFFFFF",line:"#8a8478",dark:"#aaa296"};
+const VENUE_NONE={tag:"YELLOW",bg:"#FFD400",fg:"#131313",line:"#E6BE00",dark:"#FFD400"};
 // El título manda cuando la campaña es de otro recinto (p. ej. la cuña de Abonoteatro va en el contrato de Príncipe Pío)
 const venueOf=e=>{const t=String(e&&e.title||"").toLowerCase();if(/abono ?teatro/.test(t))return "Abono Teatro";if(/\bpav[oó]n\b/.test(t)&&!(e.venue in VENUE_STYLE&&e.venue==="Gran Teatro Pavón"))return "Gran Teatro Pavón";return e&&e.venue||""};
 const venueStyle=e=>VENUE_STYLE[venueOf(e)]||VENUE_NONE;
 // Plataforma de la newsletter (se deduce del lugar, las notas o el enlace)
 const nlPlatform=e=>{if(!e||!/newsletter/i.test(e.action||""))return null;const t=((e.location||"")+" "+(e.notes||"")+" "+(e.link||"")).toLowerCase();
  if(/brevo|sendinblue|sendibt/.test(t))return{tag:"BREVO",bg:"#0B996E",fg:"#FFFFFF"};if(/mailchimp|mailchi\.mp|list-manage/.test(t))return{tag:"MAILCHIMP",bg:"#FFE01B",fg:"#241C15"};return null};
-const venueChip=(e,cls="vchip")=>{const v=venueStyle(e),nl=nlPlatform(e);return '<i class="'+cls+'" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</i>'+(nl?'<i class="'+cls+'" style="background:'+nl.bg+';color:'+nl.fg+'">'+nl.tag+'</i>':'')};
-const venueLegend=list=>{const seen=[...new Set(list.map(e=>VENUE_STYLE[venueOf(e)]?venueOf(e):""))];return seen.map(v=>[v||"Interno / otros",VENUE_STYLE[v]||VENUE_NONE])};
+const venueChip=(e,cls="vchip")=>{const v=venueStyle(e),nl=nlPlatform(e);return '<i class="'+cls+'" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</i>'+(nl?'<i class="'+cls+' nl" style="background:'+nl.bg+';color:'+nl.fg+'">'+nl.tag+'</i>':'')};
+const venueLegend=list=>{const seen=[...new Set(list.map(e=>VENUE_STYLE[venueOf(e)]?venueOf(e):""))];return seen.map(v=>[v||"Yellow / otros",VENUE_STYLE[v]||VENUE_NONE])};
 const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aaa296",entrega:"#ff6b5e",hito:"#7fb8ff"};
 const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
 const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
@@ -891,7 +891,7 @@ function renderCalendar(){
   '<div id="calPanel"></div>'+
   '<div class="card cal-card">'+filters+
   '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
-  '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Interno / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div>'+
+  '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Yellow / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip nl" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip nl" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div>'+
   body+'</div>';
  const move=dir=>{if(calView==="semana")calWeekOffset+=dir;else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+dir,1);renderCalendar()};
  $("#calPrev").onclick=()=>move(-1);$("#calNext").onclick=()=>move(1);
@@ -1004,7 +1004,7 @@ function calWeekCanvas(days,ev,title,logo){
  const clip=(t,max)=>{if(g.measureText(t).width<=max)return t;while(t.length&&g.measureText(t+"…").width>max)t=t.slice(0,-1);return t+"…"};
  for(const r of rows){if(r.day){y+=14;g.font="400 40px Anton, Impact, sans-serif";g.fillStyle="#F2EFE6";g.fillText(r.day.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),pad,y);y+=DAY-14;continue}
   const e=r.e,h=ROW-20+(e.location?22:0),vs=venueStyle(e);g.fillStyle=vs.dark;g.fillRect(pad,y,7,h);
-  g.font="800 17px 'Plus Jakarta Sans', Arial";let cx=pad+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const tw=g.measureText(ch.tag).width+16;g.fillStyle=ch.bg;g.fillRect(cx,y,tw,24);if(ch===vs&&vs.bg==="#1E1E1E"){g.strokeStyle=vs.fg;g.lineWidth=1.5;g.strokeRect(cx+.75,y+.75,tw-1.5,22.5)}g.fillStyle=ch.fg;g.fillText(ch.tag,cx+8,y+4);cx+=tw+8}
+  g.font="800 17px 'Plus Jakarta Sans', Arial";let cx=pad+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const sm=ch!==vs;g.font="800 "+(sm?12:17)+"px 'Plus Jakarta Sans', Arial";const tw=g.measureText(ch.tag).width+(sm?10:16);g.fillStyle=ch.bg;g.fillRect(cx,y+(sm?4:0),tw,sm?17:24);g.fillStyle=ch.fg;g.fillText(ch.tag,cx+(sm?5:8),y+(sm?6:4));cx+=tw+8}
   g.font="800 19px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),cx+4,y+2);
   g.font="700 29px 'Plus Jakarta Sans', Arial";g.fillStyle="#F2EFE6";g.fillText(clip((e.time?e.time+"  ":"")+e.title,W-pad*2-30),pad+26,y+28);
   if(e.location){g.font="500 21px 'Plus Jakarta Sans', Arial";g.fillStyle="#aaa296";g.fillText(clip(e.location,W-pad*2-30),pad+26,y+66)}
@@ -1025,7 +1025,7 @@ function calWeekPdf(days,ev,title){
  w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Yellow Control · Semana '+esc(title)+'</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font:13px/1.35 "Plus Jakarta Sans",Arial,sans-serif;color:#131313;margin:0}'+
   'header{border-top:6px solid #FFD400;padding-top:10px;margin-bottom:14px}header h1{font:400 30px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0}header p{margin:4px 0 0;color:#555}'+
   'section{break-inside:avoid;margin:0 0 10px;padding-top:8px;border-top:1px solid #ddd}h2{font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}'+
-  '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.vc{display:inline-block!important;font-style:normal;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-right:5px;letter-spacing:.04em}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
+  '.ev{border-left:4px solid;padding:3px 0 3px 9px;margin:0 0 6px}.vc.nl{font-size:7px!important;padding:0 3px!important}.vc{display:inline-block!important;font-style:normal;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-right:5px;letter-spacing:.04em}.ev small{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#666}.ev b{display:block;font-size:14px}.ev span{display:block;color:#555;font-size:12px}.none{color:#999;margin:0}footer{margin-top:16px;color:#999;font-size:10px}</style>'+
   '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:34px;width:34px;vertical-align:-6px;margin-right:10px">YELLOW CONTROL</h1><p>Semana · '+esc(title)+' · '+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+body+'<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer><script>window.onload=()=>setTimeout(()=>print(),250)<\/script></html>');
  w.document.close()}
 
@@ -1066,7 +1066,7 @@ function calMonthPdf(y,m,ev,title){
   '.lg{display:flex;gap:10px;margin:0 0 5px;color:#555;font-size:8.5px}.lg i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:-1px}'+
   'table{width:100%;border-collapse:collapse;table-layout:fixed}th{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:3px 4px;background:#131313;color:#FFD400}th.we{color:#d8d3c6}'+
   'td{border:1px solid #cfcac0;vertical-align:top;padding:3px 3px 2px;height:30mm}td.out{background:#f3f1ec}td.we{background:#fbfaf6}td.today .n{background:#FFD400;border-radius:3px;padding:0 3px}.n{font:400 13px Anton,Impact,sans-serif;display:inline-block;margin-bottom:2px}'+
-  '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.vc{display:inline-block!important;font-style:normal;font-size:6.3px;font-weight:800;padding:0 3px;border-radius:2px;margin-right:3px;letter-spacing:.04em}.lg span{display:inline-flex;align-items:center}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
+  '.ev{border-left:3px solid;padding:0 0 0 4px;margin:0 0 3px;break-inside:avoid}.vc.nl{font-size:5px!important;padding:0 2px!important}.vc{display:inline-block!important;font-style:normal;font-size:6.3px;font-weight:800;padding:0 3px;border-radius:2px;margin-right:3px;letter-spacing:.04em}.lg span{display:inline-flex;align-items:center}.ev small{display:block;font-size:6.8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#666}.ev b{display:block;font-size:8.3px;font-weight:700}.ev span{display:block;color:#666;font-size:7.3px}footer{margin-top:4px;color:#999;font-size:7.5px}</style>'+
   '<header><h1><img src="'+location.origin+'/yellow-app-icon-180.png?v=3" alt="" style="height:30px;width:30px;vertical-align:-5px;margin-right:8px">YELLOW CONTROL<em>'+esc(title.toUpperCase())+'</em></h1><p>'+(calVenue==="Gran Teatro Pavón"?'<img src="'+location.origin+'/assets/venues/altos-pavon.png" alt="" style="height:38px;display:block;margin:0 0 3px auto;filter:brightness(0)">':'')+ev.length+(ev.length===1?" fecha":" fechas")+(calVenue?" · "+esc(calVenue):"")+'</p></header>'+(legend?'<div class="lg">'+legend+'</div>':'')+
   '<table><thead><tr>'+CAL_WD.map((d,i)=>'<th'+(i>4?' class="we"':'')+'>'+d+'</th>').join("")+'</tr></thead><tbody>'+weeks.map(wk=>'<tr>'+wk.map(cell).join("")+'</tr>').join("")+'</tbody></table>'+
   '<footer>Yellow Media · generado el '+new Date().toLocaleDateString("es-ES")+'</footer>'+
@@ -1100,7 +1100,7 @@ function calMonthCanvas(y,m,ev,title,logo,venueLogo){
    const iso=isoOf(d);g.font=font(400,layout.num,"Anton, Impact, sans-serif");const nw=g.measureText(String(d.getDate())).width;
    if(iso===today){g.fillStyle="#FFD400";g.fillRect(x+8,yy+8,nw+14,layout.num+8)}g.fillStyle="#131313";g.fillText(String(d.getDate()),x+15,yy+10);
    let ey=yy+layout.num+24;for(const e of ev.filter(e=>e.date===iso)){const h=layout.evH(e)-10*s,vs=venueStyle(e);g.fillStyle=vs.line;g.fillRect(x+12,ey,6,h);
-    g.font=font(800,layout.tag*.85);let cx=x+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const tw=g.measureText(ch.tag).width+layout.tag*.7;g.fillStyle=ch.bg;g.fillRect(cx,ey-2*s,tw,layout.tag+3*s);g.fillStyle=ch.fg;g.fillText(ch.tag,cx+layout.tag*.35,ey);cx+=tw+6*s}
+    g.font=font(800,layout.tag*.85);let cx=x+26;for(const ch of [vs,nlPlatform(e)].filter(Boolean)){const k=ch===vs?1:.72;g.font=font(800,layout.tag*.85*k);const tw=g.measureText(ch.tag).width+layout.tag*.6*k;g.fillStyle=ch.bg;g.fillRect(cx,ey-2*s+(1-k)*layout.tag*.5,tw,(layout.tag+3*s)*k);g.fillStyle=ch.fg;g.fillText(ch.tag,cx+layout.tag*.3*k,ey+(1-k)*layout.tag*.45);cx+=tw+6*s}
     g.font=font(800,layout.tag);g.fillStyle="#6b665d";g.fillText(wrap((evTag(e)+(e.moduleKey==="hitos"?"":" · "+e.module)).toUpperCase(),x+cw-cx-14,1)[0],cx+2,ey);
     let ly=ey+layout.tag+4;g.font=font(700,layout.tl);g.fillStyle="#131313";for(const l of wrap((e.time?e.time+" · ":"")+e.title,cw-34,2)){g.fillText(l,x+26,ly);ly+=layout.tl*1.2}
     if(e.location){g.font=font(500,layout.loc);g.fillStyle="#6b665d";g.fillText(wrap(e.location,cw-40,1)[0],x+26,ly)}

@@ -784,5 +784,5 @@ body.sheet-open{overflow:hidden}
 :root[data-theme="light"] .event{border-left-color:var(--v,var(--k,var(--gold)))!important}
 .vchip{display:inline-block!important;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:4px;margin-right:5px;line-height:1.5;vertical-align:1px}
 .event em .vchip{font-size:8.5px}
-.vchip[style*="#1E1E1E"]{box-shadow:inset 0 0 0 1px #FFD968}
+.vchip.nl{font-size:7px!important;padding:0 3px;letter-spacing:.03em;vertical-align:2px}
 .cal-venues{flex-wrap:wrap;gap:6px 14px}.cal-venues span{display:inline-flex;align-items:center}
