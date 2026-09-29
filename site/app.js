@@ -872,10 +872,12 @@ function calDetail(e){
  const canOpen=e.kind==="hito"||canRoute(e.moduleKey);
  calPanel('<div class="section-title"><div><small class="section-kicker">'+esc(evTag(e))+' · '+esc(e.module)+'</small><h2>'+esc(e.title)+'</h2></div><button type="button" class="ghost" id="dtClose">Cerrar</button></div>'+
   '<span class="badge '+(e.auto?"":"ok")+' cal-origin">'+(e.auto?"Automático · se edita en "+esc(e.module):"Hito manual · editable aquí")+'</span>'+
+  (e.assetKey?'<div class="media-preview hito-thumb" data-asset="'+esc(e.assetKey)+'" data-module="hitos" data-kind="image"></div>':'')+
   '<dl class="cal-dl">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl>'+
   ((canOpen||(/^https?:\\/\\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\\/\\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">Ver newsletter / informe</a>':'')+'</div>':''));
  $("#dtClose").onclick=()=>calPanel("");
  if(canOpen)$("#dtOpen").onclick=()=>calOpen(e);
+ if(e.assetKey)hydrateMedia("hitos");
 }
 function calOpen(e){
  if(e.kind==="hito"){api("/api/control?module=hitos").then(d=>{const r=(d.rows||[]).find(x=>x.id===e.recordId);calHitoForm(r||{})}).catch(x=>say(x.message));return}
@@ -899,12 +901,14 @@ function calHitoForm(r={}){
   '<label>Contacto<input name="contact" value="'+esc(r.contact||"")+'" placeholder="Periodista, medio, teléfono…"'+dis+'></label>'+
   '<label>Aviso<select name="reminder"'+dis+'>'+HITO_REMINDERS.map(([v,l])=>'<option value="'+v+'"'+(v===(r.reminder||"")?" selected":"")+'>'+l+'</option>').join("")+'</select></label>'+
   '<label class="wide">Enlace<input type="url" name="link" value="'+esc(r.link||"")+'" placeholder="https://… (Brevo, noticia, dossier, etc.)"'+dis+'></label>'+
+  '<label class="wide">Miniatura<input id="hitoAsset" type="file" accept="image/*"'+dis+'>'+(r.assetName?'<small class="muted">Actual: '+esc(r.assetName)+'</small>':'')+'</label>'+
   '<label class="wide">Notas<textarea name="notes"'+dis+'>'+esc(r.notes||"")+'</textarea></label>'+
   '<p class="cart-legacy wide" style="margin:0">El aviso llega a quien esté suscrito al calendario. Por defecto: una hora antes si tiene hora; si no, el día anterior a las 9:00.</p>'+
   (edit?'<div class="wide actions-row"><button class="primary" type="submit">Guardar hito</button>'+(r.id?'<button type="button" class="danger" id="hitoDel">Quitar</button>':'')+'</div>':'')+'</form>');
  $("#hitoClose").onclick=()=>calPanel("");loadSpectacles();
  if(!edit)return;
- $("#hitoForm").onsubmit=async ev=>{ev.preventDefault();const data=formObject(ev.target);try{
+ $("#hitoForm").onsubmit=async ev=>{ev.preventDefault();const data=formObject(ev.target),file=$("#hitoAsset")?.files?.[0];try{
+  const assetKey=await uploadAsset(file,"hitos",r.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||r.assetName||""}
   if(r.id)await api("/api/control?module=hitos&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   else await api("/api/control?module=hitos",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   say("Hito guardado");if(data.date){const [yy,mm,dd]=data.date.split("-").map(Number);calCursor=new Date(yy,mm-1,1);const w0=weekRange(0)[0];calWeekOffset=Math.floor((new Date(yy,mm-1,dd)-w0)/(7*864e5))}calendario()}catch(e){say(e.message)}};
