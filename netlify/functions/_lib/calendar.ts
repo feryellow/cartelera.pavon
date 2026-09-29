@@ -9,7 +9,11 @@ export const SLOT_NAMES: Record<string, string> = {
   "taquilla__secundario-1": "Columna 2", "taquilla__taquilla-izq": "Taquilla izquierda cerrada", "taquilla__taquilla-der": "Taquilla derecha cerrada",
   "taquilla__secundario-2": "Columna 3", "lona__lona": "Lona", "lona__sec1": "Secundario 1 (lona)", "lona__sec2": "Secundario 2 (lona)", "lona__sec3": "Secundario 3 (lona)",
   "abierta__taquilla-izq-abierta": "Taquilla izquierda abierta", "abierta__taquilla-der-abierta": "Taquilla derecha abierta", "taquilla__columna_1": "Columna 1",
+  "arlequin__cartel-1": "Cartel 1 Arlequín (90×186)", "arlequin__cartel-2": "Cartel 2 Arlequín (76×114)",
+  "arlequin__cartel-3a": "Cartel 3 izquierda Arlequín (76×53,5)", "arlequin__cartel-3b": "Cartel 3 derecha Arlequín (76×53,5)",
 };
+// Cada soporte de cartelería pertenece a un teatro: los del Arlequín llevan el prefijo arlequin__
+export const slotVenue = (key: string) => key.startsWith("arlequin__") ? "Teatro Arlequín" : "Gran Teatro Pavón";
 const LABEL: Record<string, string> = { radio: "Radio", taxis: "Taxis", intercambiadores: "Intercambiadores", hometicket: "Home Ticket", revistas: "Revistas de Teatros" };
 
 // Todas las fechas de la app en una lista. kind: montaje | retirada | inicio | fin | entrega | hito
@@ -21,7 +25,7 @@ export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
       const install = normalizeDate(v?.installDate || v?.date), change = normalizeDate(v?.next), remove = normalizeDate(v?.removeDate);
       const location = SLOT_NAMES[key] || key.split("__")[1]?.replaceAll("_", " ") || key;
       const title = v?.title || location, status = v?.status || "programado";
-      const base = { module: "Cartelería", moduleKey: "carteleria", title, location, status, slotKey: key, auto: true, venue: "Gran Teatro Pavón" };
+      const base = { module: "Cartelería", moduleKey: "carteleria", title, location, status, slotKey: key, auto: true, venue: slotVenue(key) };
       if (install) events.push({ ...base, id: `cart-i-${key}`, date: install, action: "Instalación", kind: "montaje" });
       if (change) events.push({ ...base, id: `cart-c-${key}`, date: change, action: "Cambio previsto", kind: "montaje" });
       if (remove) events.push({ ...base, id: `cart-r-${key}`, date: remove, action: "Retirada", kind: "retirada" });

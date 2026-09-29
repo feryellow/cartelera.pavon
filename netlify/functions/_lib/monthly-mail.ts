@@ -10,6 +10,8 @@ function quickRead(s: MonthSummary) {
   const parts: string[] = [];
   if (c && Number(c.value)) parts.push(`${Number(c.value).toLocaleString("es-ES")} ${c.label}`);
   if (f) parts.push(`${f.value} soportes de la fachada del Gran Teatro Pavón`);
+  const ar = t["soportes cartelera Teatro Arlequín"];
+  if (ar) parts.push(`${ar.value} soportes de la cartelera del Teatro Arlequín`);
   if (r) parts.push(`${r.value} Revistas Teatros`);
   if (h && Number(h.value)) parts.push(`${parseInt(String(h.note || "0"), 10) || 0} Home Tickets completos de ${h.value}`);
   if (tx) parts.push(`${tx.value} ${Number(tx.value) === 1 ? "campaña" : "campañas"} en taxis`);
@@ -42,6 +44,8 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   if (cu && Number(cu.value)) cards.push({ big: Number(cu.value).toLocaleString("es-ES"), label: cu.label });
   const fa = T["soportes fachada Gran Teatro Pavón"];
   if (fa) cards.push({ big: String(fa.value), label: fa.label });
+  const arc = T["soportes cartelera Teatro Arlequín"];
+  if (arc) cards.push({ big: String(arc.value), label: arc.label });
   const rv = T["Revistas Teatros"];
   if (rv) cards.push({ big: String(rv.value), label: "Revistas Teatros" });
   const htc = T["Home Ticket"];

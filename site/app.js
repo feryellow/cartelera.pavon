@@ -25,7 +25,7 @@ const MODULE_LABELS={avisos:"Avisos",hitos:"Comunicación",carteleria:"Carteler�
 const ACTION_LABELS={create:"creado",update:"editado",archive:"quitado",restore:"recuperado",save:"guardado",image_replace:"imagen cambiada",image_delete:"imagen quitada",role_change:"rol cambiado",user_create:"usuario creado",user_disable:"usuario desactivado",user_enable:"usuario activado",email_sent:"correo enviado",email_pending:"correo pendiente",digest_sent:"resumen enviado",digest_pending:"resumen pendiente"};
 function modLabel(m){return MODULE_LABELS[m]||m||""}
 function actLabel(a){return ACTION_LABELS[a]||a||""}
-function prettyKey(k=""){const cs=CART_SLOTS.find(x=>x.key===k);if(cs)return cs.name;const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
+function prettyKey(k=""){const cs=CART_SLOTS.find(x=>x.key===k);if(cs)return (k.startsWith("arlequin__")?"Arlequín · ":"")+cs.name;const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
 function openFormCard(){setTimeout(()=>{const c=$('[id$="FormCard"]');if(!c)return;c.classList.add("open");if(matchMedia("(max-width:700px)").matches)c.scrollIntoView({behavior:"smooth",block:"start"})},0)}
 document.addEventListener("click",e=>{const t=e.target.closest("#newCampaign,#newRadio,#newHT,#newRevista,[data-edit-campaign],[data-edit-radio],[data-edit-ht],[data-edit-revista],[data-add-revista]");if(t)openFormCard();const c=e.target.closest("#cancelCampaign,#cancelRadio,#cancelHT,#cancelRevista");if(c)setTimeout(()=>{const f=$('[id$="FormCard"]');f&&f.classList.remove("open")},0)});
 function applyNav(){document.body.dataset.route=state.route;document.body.dataset.roleMode=isCarteleriaRole()?"carteleria":"";$$("#mainNav [data-route]").forEach(a=>{const r=a.dataset.route,locked=!canRoute(r);a.classList.toggle("active",r===state.route);a.classList.toggle("locked",locked);a.setAttribute("aria-disabled",locked?"true":"false");if(locked){a.removeAttribute("href");a.tabIndex=-1}else{a.setAttribute("href",a.dataset.href||("#"+r));a.removeAttribute("tabindex")}});$("#accountName").textContent=state.actor?.email||"";const na=$("#navAccountName");if(na){na.textContent=state.actor?.email||"—";const av=$(".account-avatar");if(av)av.textContent=(state.actor?.email||"Y").charAt(0).toUpperCase()}const act=$("#mainNav a.active");if(act&&matchMedia("(max-width:980px)").matches)act.scrollIntoView({inline:"center",block:"nearest"})}
@@ -247,7 +247,7 @@ function radioForm(r={},selectedContract=null,selectedMonth=""){
  '<div class="wide actions-row"><button class="primary" type="submit">Guardar asignación</button><button type="button" id="cancelRadio">Limpiar</button></div></form>'
 }
 function input(name,label,value="",type="text"){return '<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" value="'+esc(value||"")+'"'+(name==="spectacle"?' data-ac="spectacle" autocomplete="off"':"")+'></label>'}
-const VENUES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro","Soho City Madrid"];
+const VENUES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Teatro Arlequín","Gran Castillo de Pedraza","Abono Teatro","Soho City Madrid"];
 function venueSelect(v=""){const values=VENUES;return '<label>Espacio<select name="venue"><option value="">Seleccionar…</option>'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'}
 function materialStatusSelect(v="pendiente"){const values=["pendiente","solicitado","en producción","recibido","entregado","listo"];return '<label>Estado del material<select name="materialStatus">'+values.map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
 function selectStatus(v="activo"){return '<label>Estado<select name="status">'+["activo","pendiente","finalizado"].map(x=>'<option '+(x===v?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'}
@@ -340,7 +340,7 @@ function bindCampaignRows(rows,moduleName){$$("[data-edit-campaign]").forEach(b=
 function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)return;$("#cancelCampaign").onclick=()=>{const box=$("#campaignFormCard");box.className="";box.innerHTML=""};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#campaignAsset")?.files?.[0],poster=$("#campaignPoster")?.files?.[0];try{const assetKey=await uploadAsset(file,moduleName,existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(poster){data.posterKey=await uploadAsset(poster,moduleName);data.posterName=poster.name}if(existing?.id)await api("/api/control?module="+moduleName+"&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module="+moduleName,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Campaña guardada");campaigns(moduleName)}catch(err){say(err.message)}}}
 
 /* ===== HOME TICKET · por teatro + mes + composición PNG ===== */
-const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Gran Castillo de Pedraza","Abono Teatro"];
+const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Teatro Arlequín","Gran Castillo de Pedraza","Abono Teatro"];
 const HT_POS=[
  {key:"Home Ticket XL · 520 × 856",name:"XL",size:"520 × 856",css:"xl"},
  {key:"HT Superior · 520 × 420",name:"Superior",size:"520 × 420",css:"superior"},
@@ -350,6 +350,7 @@ const HT_BASES={
  "Gran Teatro Pavón":"/assets/hometicket/gtp.png",
  "Gran Teatro CaixaBank Príncipe Pío":"/assets/hometicket/gtcpp.png",
  "Teatro Serrano":"/assets/hometicket/serrano.png",
+ "Teatro Arlequín":"/assets/hometicket/arlequin.png",
  "Gran Castillo de Pedraza":"/assets/hometicket/castillo.png",
  "Abono Teatro":"/assets/hometicket/abonoteatro.png"
 };
@@ -364,6 +365,7 @@ const HT_COORDS_BY={
  "Gran Teatro Pavón":{"xl": {"x": 0.0451, "y": 0.3415, "w": 0.4583, "h": 0.5086}, "superior": {"x": 0.5312, "y": 0.3508, "w": 0.4295, "h": 0.2341}, "inferior": {"x": 0.5312, "y": 0.6088, "w": 0.4295, "h": 0.2321}},
  "Gran Teatro CaixaBank Príncipe Pío":{"xl": {"x": 0.0341, "y": 0.3441, "w": 0.4664, "h": 0.5151}, "superior": {"x": 0.5166, "y": 0.3434, "w": 0.4493, "h": 0.2522}, "inferior": {"x": 0.5166, "y": 0.6056, "w": 0.4502, "h": 0.2535}},
  "Teatro Serrano":{"xl": {"x": 0.037, "y": 0.3458, "w": 0.462, "h": 0.5134}, "superior": {"x": 0.5256, "y": 0.3546, "w": 0.4336, "h": 0.2406}, "inferior": {"x": 0.5256, "y": 0.616, "w": 0.4336, "h": 0.2359}},
+ "Teatro Arlequín":{"xl": {"x": 0.037, "y": 0.3458, "w": 0.462, "h": 0.5134}, "superior": {"x": 0.5256, "y": 0.3546, "w": 0.4336, "h": 0.2406}, "inferior": {"x": 0.5256, "y": 0.616, "w": 0.4336, "h": 0.2359}},
  "Gran Castillo de Pedraza":{"xl": {"x": 0.0445, "y": 0.3414, "w": 0.4654, "h": 0.507}, "superior": {"x": 0.5384, "y": 0.3508, "w": 0.4227, "h": 0.2334}, "inferior": {"x": 0.5384, "y": 0.6063, "w": 0.4227, "h": 0.2327}},
  "Abono Teatro":{"xl": {"x": 0.0398, "y": 0.3461, "w": 0.4626, "h": 0.5023}, "superior": {"x": 0.5242, "y": 0.3461, "w": 0.4436, "h": 0.2455}, "inferior": {"x": 0.5242, "y": 0.605, "w": 0.4436, "h": 0.2435}}
 };
@@ -624,7 +626,7 @@ function yPlayer(src,name){const w=document.createElement("div");w.className="yp
 function chipify(sel,label,short){if(!sel||sel.dataset.chips)return;sel.dataset.chips="1";const lab=sel.closest("label");const row=document.createElement("div");row.className="chip-row";row.innerHTML='<span class="chip-label">'+esc(label)+'</span>'+[...sel.options].map(o=>'<button type="button" class="chip'+(o.selected?' on':'')+'" data-v="'+esc(o.value)+'">'+esc(short?.(o.textContent)||o.textContent)+'</button>').join("");
  row.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;sel.value=c.dataset.v;row.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===c));sel.dispatchEvent(new Event("input",{bubbles:true}))});
  (lab||sel).style.display="none";(lab||sel).insertAdjacentElement("afterend",row);return row}
-const VENUE_SHORT={"Gran Teatro Pavón":"Pavón","Gran Teatro CaixaBank Príncipe Pío":"Príncipe Pío","Teatro Serrano":"Serrano","Gran Castillo de Pedraza":"Castillo","Abono Teatro":"Abono Teatro","Soho City Madrid":"Soho City","Todos los espacios":"Todos"};
+const VENUE_SHORT={"Gran Teatro Pavón":"Pavón","Gran Teatro CaixaBank Príncipe Pío":"Príncipe Pío","Teatro Serrano":"Serrano","Teatro Arlequín":"Arlequín","Gran Castillo de Pedraza":"Castillo","Abono Teatro":"Abono Teatro","Soho City Madrid":"Soho City","Todos los espacios":"Todos"};
 const venueShort=v=>VENUE_SHORT[v]||v;
 
 function htChips(rows){const first=$(".ht-space");if(!first)return;const row=document.createElement("div");row.className="chip-row";row.style.marginBottom="6px";
@@ -691,11 +693,14 @@ window.addEventListener("scroll",acPlace,true);window.addEventListener("resize",
 
 // ===================== CARTELERÍA (integrada en Yellow Control) =====================
 // Datos compatibles con la versión anterior: /api/state (slots + schedule) y /api/image?key=<vista>__<soporte> (dataURL).
+// Teatros con cartelería. Cada vista pertenece a uno; los soportes del Arlequín llevan el prefijo arlequin__
+const CART_VENUES=[{id:"pavon",name:"Gran Teatro Pavón",short:"Pavón",file:"Pavon"},{id:"arlequin",name:"Teatro Arlequín",short:"Arlequín",file:"Arlequin"}];
 const CART_VIEWS=[
- {id:"taquilla",name:"Taquilla cerrada",img:"/assets/facade/taquilla.jpg",w:1448,h:1086},
- {id:"lona",name:"Lona + secundarios",img:"/assets/facade/lona.jpg",w:856,h:718},
- {id:"abierta",name:"Taquilla abierta",img:"/assets/facade/abierta.jpg",w:946,h:1381},
- {id:"columna",name:"Columna 1",img:"/assets/columna1.jpg?v=2",w:1086,h:1448}
+ {id:"taquilla",venue:"pavon",name:"Taquilla cerrada",img:"/assets/facade/taquilla.jpg",w:1448,h:1086},
+ {id:"lona",venue:"pavon",name:"Lona + secundarios",img:"/assets/facade/lona.jpg",w:856,h:718},
+ {id:"abierta",venue:"pavon",name:"Taquilla abierta",img:"/assets/facade/abierta.jpg",w:946,h:1381},
+ {id:"columna",venue:"pavon",name:"Columna 1",img:"/assets/columna1.jpg?v=2",w:1086,h:1448},
+ {id:"arlequin",venue:"arlequin",name:"Cartelera",img:"/assets/facade/arlequin.jpg",w:1400,h:1254}
 ];
 const CART_SLOTS=[
  {key:"taquilla__secundario-1",view:"taquilla",name:"Columna 2",r:[19.06,40.06,13.54,27.90]},
@@ -708,13 +713,20 @@ const CART_SLOTS=[
  {key:"lona__sec3",view:"lona",name:"Secundario 3 (lona)",r:[65.19,47.77,24.88,16.57]},
  {key:"abierta__taquilla-izq-abierta",view:"abierta",name:"Taquilla izquierda abierta",r:[3.59,15.86,21.04,40.70]},
  {key:"abierta__taquilla-der-abierta",view:"abierta",name:"Taquilla derecha abierta",r:[81.92,16.29,15.75,39.97]},
- {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[67.0,39.2,18.1,25.3]}
+ {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[67.0,39.2,18.1,25.3]},
+ {key:"arlequin__cartel-1",view:"arlequin",name:"Cartel 1 · 90×186",r:[4.66,13.04,38.74,79.17]},
+ {key:"arlequin__cartel-2",view:"arlequin",name:"Cartel 2 · 76×114",r:[46.99,13.38,42.78,46.37]},
+ {key:"arlequin__cartel-3a",view:"arlequin",name:"Cartel 3 izquierda · 76×53,5",r:[46.9,64.56,21.78,24.9]},
+ {key:"arlequin__cartel-3b",view:"arlequin",name:"Cartel 3 derecha · 76×53,5",r:[69.48,64.26,21.78,25.2]}
 ];
 const CART_STATUS=["pendiente","aprobado","en producción","instalado"];
 function cartFingerprint(st,k){const m=(st.slots||{})[k]||{},s=(st.schedule||{})[k]||{};return JSON.stringify([m.rev||"",!!m.hasImage,m.mode||"contain",s.title||"",s.installDate||"",s.removeDate||"",s.status||"",s.notes||""])}
-const cart={base:{},loaded:false,view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
+const cart={base:{},loaded:false,venue:"pavon",view:"taquilla",sel:null,night:false,slots:{},schedule:{},img:{},dirty:new Set(),imgDirty:new Set(),updatedAt:null,saving:false};
 const cartSlot=k=>CART_SLOTS.find(s=>s.key===k);
 const cartView=id=>CART_VIEWS.find(v=>v.id===id);
+const cartVenue=(id=cart.venue)=>CART_VENUES.find(v=>v.id===id)||CART_VENUES[0];
+const cartVViews=()=>CART_VIEWS.filter(v=>v.venue===cart.venue);
+const cartVSlots=()=>CART_SLOTS.filter(s=>cartView(s.view).venue===cart.venue);
 function canEditCart(){return roles().some(r=>["admin","gestion","carteleria"].includes(r))}
 function cartSched(k){return cart.schedule[k]||(cart.schedule[k]={date:"",next:"",title:"",installDate:"",removeDate:"",status:"",notes:""})}
 function cartMode(k){return (cart.slots[k]&&cart.slots[k].mode)||"contain"}
@@ -728,35 +740,38 @@ async function cartLoad(){
  cart.loaded=true;
 }
 
-async function carteleria(){
- if(!cart.loaded||!cart.dirty.size)await cartLoad();
- const q=new URLSearchParams((location.hash.split("?")[1])||"");const v=q.get("vista");if(v&&cartView(v))cart.view=v;const sop=q.get("soporte");if(sop&&cartSlot(sop)){cart.view=cartSlot(sop).view;cart.sel=sop;history.replaceState(null,"","#carteleria")}
+async function carteleria(keep){
+ if(!keep&&(!cart.loaded||!cart.dirty.size))await cartLoad();
+ const q=new URLSearchParams((location.hash.split("?")[1])||"");const tq=q.get("teatro");if(tq&&CART_VENUES.some(x=>x.id===tq)){cart.venue=tq;cart.view=CART_VIEWS.find(x=>x.venue===tq).id}const v=q.get("vista");if(v&&cartView(v)){cart.view=v;cart.venue=cartView(v).venue}const sop=q.get("soporte");if(sop&&cartSlot(sop)){cart.view=cartSlot(sop).view;cart.venue=cartView(cart.view).venue;cart.sel=sop;history.replaceState(null,"","#carteleria")}
+ if(cartView(cart.view).venue!==cart.venue)cart.view=cartVViews()[0].id;
  if(!cart.sel||cartSlot(cart.sel).view!==cart.view)cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;
- const edit=canEditCart();
- const withImg=CART_SLOTS.filter(s=>cart.img[s.key]).length;
- const upcoming=CART_SLOTS.map(s=>({s,n:cartNextDate(s.key)})).filter(x=>x.n).sort((a,b)=>a.n[1].localeCompare(b.n[1]));
+ const edit=canEditCart(),VS=cartVSlots(),ven=cartVenue();
+ const withImg=VS.filter(s=>cart.img[s.key]).length;
+ const upcoming=VS.map(s=>({s,n:cartNextDate(s.key)})).filter(x=>x.n).sort((a,b)=>a.n[1].localeCompare(b.n[1]));
  const next=upcoming[0];const nd=next?cartDaysTo(next.n[1]):null;
- const pend=CART_SLOTS.filter(s=>{const st=cartSched(s.key).status;return st&&st!=="instalado"}).length;
- app.innerHTML=pageHead("Cartelería","Fachada y soportes del Gran Teatro Pavón",
-   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar vista PNG</button><button type="button" id="cartExportAll">Exportar todas PNG</button>'+(edit?'<button type="button" id="cartMontaje">Confirmar montaje</button><button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+ const pend=VS.filter(s=>{const st=cartSched(s.key).status;return st&&st!=="instalado"}).length;
+ app.innerHTML=pageHead("Cartelería",ven.id==="pavon"?"Fachada y soportes del Gran Teatro Pavón":"Cartelera del Teatro Arlequín (Gran Vía)",
+   '<button type="button" id="cartShare">Compartir</button><button type="button" id="cartExport">Exportar vista PNG</button>'+(cartVViews().length>1?'<button type="button" id="cartExportAll">Exportar todas PNG</button>':'')+''+(edit?'<button type="button" id="cartMontaje">Confirmar montaje</button><button type="button" class="primary" id="cartSave">Guardar cambios</button>':''))+
+  '<div class="chip-row cart-venues" id="cartVenues">'+CART_VENUES.map(x=>{const n=CART_SLOTS.filter(s=>cartView(s.view).venue===x.id).length;return '<button type="button" class="chip'+(x.id===cart.venue?" on":"")+'" data-venue="'+x.id+'">'+esc(x.name)+' <i class="cnt">'+n+'</i></button>'}).join("")+'</div>'+
   '<div id="montajePanel"></div>'+
-  '<div class="kpi-row">'+kpi(withImg+"/"+CART_SLOTS.length,"Soportes con cartel")+kpi(upcoming.length,"Cambios programados")+(next?'<span class="kpi '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b><em>'+esc(next.n[0]+" · "+next.s.name)+'</em></span>':kpi(0,"Sin cambios próximos"))+kpi(pend,"Por instalar",pend?"warn":"")+'</div>'+
+  '<div class="kpi-row">'+kpi(withImg+"/"+VS.length,"Soportes con cartel")+kpi(upcoming.length,"Cambios programados")+(next?'<span class="kpi '+(nd<=3?"warn":"")+'"><b>'+(nd===0?"HOY":"D-"+nd)+'</b><em>'+esc(next.n[0]+" · "+next.s.name)+'</em></span>':kpi(0,"Sin cambios próximos"))+kpi(pend,"Por instalar",pend?"warn":"")+'</div>'+
   '<div class="cart-sync" id="cartSync"></div>'+
   '<div class="grid cart-grid">'+
    '<section class="card cart-preview"><div class="section-title"><div><small class="section-kicker">Previsualización</small><h2 id="cartViewName"></h2></div><div class="seg" id="cartNight"><button type="button" data-n="0">Día</button><button type="button" data-n="1">Noche</button></div></div>'+
-   '<div class="chip-row cart-views" id="cartViews">'+CART_VIEWS.map(v=>'<button type="button" class="chip" data-v="'+v.id+'">'+esc(v.name)+'</button>').join("")+'</div>'+
+   '<div class="chip-row cart-views" id="cartViews"'+(cartVViews().length<2?' hidden':'')+'>'+cartVViews().map(v=>'<button type="button" class="chip" data-v="'+v.id+'">'+esc(v.name)+'</button>').join("")+'</div>'+
    '<div class="cart-stage-wrap"><div class="cart-stage" id="cartStage"></div></div>'+
    '<p class="cart-hint">'+(edit?"Toca un soporte para editarlo. Los cambios se ven aquí antes de guardar.":"Vista de consulta.")+'</p>'+
    '<div class="chip-row" id="cartSlotChips"></div></section>'+
    '<section class="card cart-panel" id="cartPanel"></section>'+
   '</div>'+
   '<section class="card" style="margin-top:14px"><div class="section-title"><div><small class="section-kicker">Agenda</small><h2>Próximos cambios</h2></div></div><div class="list" id="cartUpcoming"></div></section>'+
-  '<section style="margin-top:18px"><div class="home-section-label"><span>Todos los soportes</span><span>'+CART_SLOTS.length+' soportes</span></div><div class="cart-cards" id="cartCards"></div></section>'+
+  '<section style="margin-top:18px"><div class="home-section-label"><span>Todos los soportes · '+esc(ven.short)+'</span><span>'+VS.length+' soportes</span></div><div class="cart-cards" id="cartCards"></div></section>'+
   (edit?'<div class="cart-savebar" id="cartSavebar"><span>Cambios sin guardar</span><button type="button" class="primary" id="cartSave2">Guardar</button></div>':'')+
   '<input type="file" id="cartFile" accept="image/*" hidden>';
  $("#cartViews").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;cart.view=c.dataset.v;cart.sel=CART_SLOTS.find(s=>s.view===cart.view).key;cartRender()};
+ $("#cartVenues").onclick=e=>{const c=e.target.closest("[data-venue]");if(!c||c.dataset.venue===cart.venue)return;cart.venue=c.dataset.venue;cart.view=cartVViews()[0].id;cart.sel=null;montaje.sel.clear();carteleria(true)};
  $("#cartNight").onclick=e=>{const b=e.target.closest("button");if(!b)return;cart.night=b.dataset.n==="1";cartRender()};
- $("#cartExport").onclick=()=>cartExport(false);$("#cartExportAll").onclick=()=>cartExportAll();
+ $("#cartExport").onclick=()=>cartExport(false);if($("#cartExportAll"))$("#cartExportAll").onclick=()=>cartExportAll();
  $("#cartShare").onclick=()=>cartExport(true);
  if(edit){$("#cartSave").onclick=cartSave;$("#cartSave2").onclick=cartSave;$("#cartMontaje").onclick=()=>montajePanel();
   $("#cartFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f)await cartSetFile(cart.sel,f)}}
@@ -771,8 +786,9 @@ async function montajePanel(){
  const p=$("#montajePanel");if(!p)return;
  if(!montaje.contacts){try{const d=await api("/api/contacts");montaje.contacts=d.contacts||[];montaje.live=!!d.live;montaje.devTo=d.devRecipient||""}catch(e){say(e.message);return}montaje.contacts.forEach(c=>{if(!(c.email in montaje.dest))montaje.dest[c.email]="to"})}
  if(!montaje.sel.size&&cart.sel)montaje.sel.add(cart.sel);
- const groups=CART_VIEWS.map(v=>({v,slots:CART_SLOTS.filter(s=>s.view===v.id)})).filter(g=>g.slots.length);
- p.innerHTML='<section class="card montaje-card"><div class="section-title"><div><small class="section-kicker">Confirmar montaje</small><h2>¿Qué se ha montado?</h2></div><button type="button" class="ghost" id="mjClose">Cerrar</button></div>'+
+ [...montaje.sel].forEach(k=>{if(!cartSlot(k)||cartView(cartSlot(k).view).venue!==cart.venue)montaje.sel.delete(k)});
+ const groups=cartVViews().map(v=>({v,slots:CART_SLOTS.filter(s=>s.view===v.id)})).filter(g=>g.slots.length);
+ p.innerHTML='<section class="card montaje-card"><div class="section-title"><div><small class="section-kicker">Confirmar montaje</small><h2>¿Qué se ha montado en el '+esc(cartVenue().short)+'?</h2></div><button type="button" class="ghost" id="mjClose">Cerrar</button></div>'+
   '<p class="muted" style="margin:0 0 12px">Marca los soportes cambiados y añade la foto real de cada uno. Al enviar, quedan como instalados con fecha de hoy y se avisa por correo.</p>'+
   groups.map(g=>'<div class="mj-group"><small class="chip-label">'+esc(g.v.name)+'</small>'+g.slots.map(s=>{const on=montaje.sel.has(s.key),t=cartSched(s.key).title;return '<div class="mj-slot'+(on?" on":"")+'"><label class="mj-check"><input type="checkbox" data-mj="'+s.key+'"'+(on?" checked":"")+'><span><b>'+esc(s.name)+'</b>'+(t?'<em>'+esc(t)+'</em>':'')+'</span></label>'+
    (on?'<div class="mj-photo">'+(montaje.photos[s.key]?'<img src="'+montaje.photos[s.key]+'" alt=""><button type="button" class="ghost" data-mj-del="'+s.key+'">Quitar foto</button>':'<label class="btn">Añadir foto<input type="file" accept="image/*" data-mj-file="'+s.key+'" hidden></label>')+'</div>':'')+'</div>'}).join("")+'</div>').join("")+
@@ -844,14 +860,14 @@ function cartPanel(){
 
 function cartUpcoming(){
  const t=localToday();
- const ev=[];CART_SLOTS.forEach(s=>{const sc=cartSched(s.key);[["Instalación",sc.installDate],["Retirada",sc.removeDate]].forEach(([a,d])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(d||"")&&d>=t)ev.push({s,a,d,title:sc.title})})});
+ const ev=[];cartVSlots().forEach(s=>{const sc=cartSched(s.key);[["Instalación",sc.installDate],["Retirada",sc.removeDate]].forEach(([a,d])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(d||"")&&d>=t)ev.push({s,a,d,title:sc.title})})});
  ev.sort((a,b)=>a.d.localeCompare(b.d));
  $("#cartUpcoming").innerHTML=ev.length?ev.slice(0,8).map(x=>{const n=cartDaysTo(x.d);return '<button type="button" class="item cart-up" data-k="'+x.s.key+'"><div><h3>'+esc(x.a)+' · '+esc(x.s.name)+'</h3><div class="item-meta"><span class="badge '+(n<=3?"warn":"")+'">'+(n===0?"HOY":"D-"+n)+'</span><span>'+fdate(x.d)+'</span>'+(x.title?'<span>'+esc(x.title)+'</span>':'')+'</div></div></button>'}).join(""):'<div class="notice">No hay instalaciones ni retiradas programadas. Añade fechas en la ficha de cada soporte.</div>';
  $("#cartUpcoming").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;cart.sel=b.dataset.k;cart.view=cartSlot(cart.sel).view;cartRender();$("#cartStage").scrollIntoView({behavior:"smooth",block:"center"})};
 }
 
 function cartCards(){
- $("#cartCards").innerHTML=CART_SLOTS.map(s=>{const im=cart.img[s.key],sc=cartSched(s.key);return '<button type="button" class="cart-card'+(s.key===cart.sel?" sel":"")+'" data-k="'+s.key+'"><div class="cart-thumb">'+(im?'<img src="'+im+'" alt="">':'<span>Sin cartel</span>')+'<em>'+esc(cartView(s.view).name)+'</em></div><b>'+esc(s.name)+'</b><small>'+esc(sc.title||"—")+'</small><div class="item-meta">'+(sc.status?'<span class="badge '+(sc.status==="instalado"?"ok":"warn")+'">'+esc(sc.status)+'</span>':'')+(sc.installDate?'<span>Inst. '+fdate(sc.installDate)+'</span>':'')+(sc.removeDate?'<span>Ret. '+fdate(sc.removeDate)+'</span>':'')+'</div></button>'}).join("");
+ $("#cartCards").innerHTML=cartVSlots().map(s=>{const im=cart.img[s.key],sc=cartSched(s.key);return '<button type="button" class="cart-card'+(s.key===cart.sel?" sel":"")+'" data-k="'+s.key+'"><div class="cart-thumb">'+(im?'<img src="'+im+'" alt="">':'<span>Sin cartel</span>')+'<em>'+esc(cartView(s.view).name)+'</em></div><b>'+esc(s.name)+'</b><small>'+esc(sc.title||"—")+'</small><div class="item-meta">'+(sc.status?'<span class="badge '+(sc.status==="instalado"?"ok":"warn")+'">'+esc(sc.status)+'</span>':'')+(sc.installDate?'<span>Inst. '+fdate(sc.installDate)+'</span>':'')+(sc.removeDate?'<span>Ret. '+fdate(sc.removeDate)+'</span>':'')+'</div></button>'}).join("");
  $("#cartCards").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;cart.sel=b.dataset.k;cart.view=cartSlot(cart.sel).view;cartRender();$("#cartStage").scrollIntoView({behavior:"smooth",block:"center"})};
 }
 
@@ -900,13 +916,14 @@ async function cartComposite(viewId,night){
   const mode=cartMode(s.key),ratio=mode==="cover"?Math.max(w/p.naturalWidth,h/p.naturalHeight):Math.min(w/p.naturalWidth,h/p.naturalHeight);const pw=p.naturalWidth*ratio,ph=p.naturalHeight*ratio;
   if(night){g.shadowColor="rgba(255,236,170,.55)";g.shadowBlur=24}g.drawImage(p,x+(w-pw)/2,y+(h-ph)/2,pw,ph);g.restore()}
  g.fillStyle="rgba(19,19,19,.78)";g.fillRect(0,H-Math.round(34*scale/1.2),W,Math.round(34*scale/1.2));g.fillStyle="#FFD400";g.font="600 "+Math.round(15*scale/1.2)+"px 'Plus Jakarta Sans',Arial";g.textBaseline="middle";
- g.fillText("Gran Teatro Pavón · "+v.name+" · "+new Date().toLocaleDateString("es-ES"),Math.round(14*scale/1.2),H-Math.round(17*scale/1.2));
+ g.fillText(cartVenue(v.venue).name+" · "+v.name+" · "+new Date().toLocaleDateString("es-ES"),Math.round(14*scale/1.2),H-Math.round(17*scale/1.2));
  return c.toDataURL("image/png");
 }
 // Todas las vistas en una sola imagen apaisada (proporción A4): Taquilla cerrada y Lona a la izquierda, Taquilla abierta y Columna 1 a la derecha
 async function cartExportAll(){
+ if(cart.venue!=="pavon")return cartExport(false);
  try{say("Preparando la imagen…");if(document.fonts&&document.fonts.ready)await document.fonts.ready;
-  const ims={};for(const v of CART_VIEWS)ims[v.id]=await cartLoadImg(await cartComposite(v.id,cart.night));
+  const ims={};for(const v of cartVViews())ims[v.id]=await cartLoadImg(await cartComposite(v.id,cart.night));
   const W=2339,H=1654,pad=56,gap=24,top=196,foot=60,avW=W-pad*2,avH=H-top-foot;
   const ar=id=>{const v=cartView(id);return v.w/v.h};const rT=ar("taquilla"),rL=ar("lona"),rA=ar("abierta"),rC=ar("columna");
   // altura común de la columna derecha (hR) y ancho de la izquierda (wL) para ocupar todo el ancho sin pasarse de alto
@@ -926,9 +943,9 @@ async function cartExportAll(){
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
   say("PNG descargado")}catch(e){say(e.message||"No se ha podido exportar")}}
 async function cartExport(share){
- try{const png=await cartComposite(cart.view,cart.night);const name="Pavon_"+cart.view+"_"+new Date().toLocaleDateString("sv")+".png";
+ try{const png=await cartComposite(cart.view,cart.night);const name=cartVenue().file+"_"+cart.view+"_"+new Date().toLocaleDateString("sv")+".png";
   const blob=await (await fetch(png)).blob();const file=new File([blob],name,{type:"image/png"});
-  if(share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Cartelería Gran Teatro Pavón",text:"Cartelería · "+cartView(cart.view).name});return}
+  if(share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Cartelería "+cartVenue().name,text:"Cartelería "+cartVenue().short+" · "+cartView(cart.view).name});return}
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
   say(share?"Imagen descargada: adjúntala en WhatsApp o en el correo":"PNG descargado")}catch(e){if(e&&e.name==="AbortError")return;say(e.message||"No se ha podido exportar")}
 }
@@ -1062,6 +1079,7 @@ const VENUE_STYLE={
  "Gran Teatro Pavón":{tag:"PAVÓN",bg:"#4A2C1A",fg:"#FFD968",line:"#4A2C1A",dark:"#D9A066"},
  "Gran Teatro CaixaBank Príncipe Pío":{tag:"P. PÍO",bg:"#1F5FBF",fg:"#FFFFFF",line:"#1F5FBF",dark:"#5B93EA"},
  "Teatro Serrano":{tag:"SERRANO",bg:"#1E8C5A",fg:"#FFFFFF",line:"#1E8C5A",dark:"#4CC08A"},
+ "Teatro Arlequín":{tag:"ARLEQUÍN",bg:"#131313",fg:"#FF3B3F",line:"#F4090D",dark:"#FF4D50"},
  "Gran Castillo de Pedraza":{tag:"CASTILLO",bg:"#9A6A3A",fg:"#FFFFFF",line:"#9A6A3A",dark:"#B8906A"},
  "Abono Teatro":{tag:"ABT",bg:"#BC2C4F",fg:"#FFD33C",line:"#BC2C4F",dark:"#E0506E"},
  "Soho City Madrid":{tag:"SOHO",bg:"#1B2A4A",fg:"#C9A24B",line:"#1B2A4A",dark:"#C9A24B"}};
@@ -1358,7 +1376,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v55";
+const YC_VERSION="yellow-control-v56";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

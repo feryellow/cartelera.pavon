@@ -1,7 +1,7 @@
 // Correo de confirmación de montaje, con la base de la plantilla Somos Yellow.
 // Las fotos van incrustadas en el propio correo (cid:), así se ven sin depender de la web.
 export type MontajeItem = { name: string; title: string; cid?: string };
-export type MontajeInput = { date: string; by: string; note: string; items: MontajeItem[]; appUrl: string; assetBase?: string; test?: boolean; devRecipient?: string; intendedTo?: string[]; intendedCc?: string[] };
+export type MontajeInput = { date: string; by: string; note: string; items: MontajeItem[]; appUrl: string; assetBase?: string; test?: boolean; devRecipient?: string; intendedTo?: string[]; intendedCc?: string[]; venue?: string };
 
 const e = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] as string));
 const Y = "#f4c300";
@@ -15,8 +15,9 @@ export function montajeTitle(items: MontajeItem[]) {
 
 export function renderMontaje(d: MontajeInput) {
   const base = (d.assetBase || d.appUrl).replace(/\/$/, "");
+  const venue = d.venue || "Gran Teatro Pavón";
   const title = montajeTitle(d.items);
-  const quick = d.note.trim() || `Montaje confirmado el ${fmt(d.date, { weekday: "long", day: "numeric", month: "long" })} en la fachada del Gran Teatro Pavón.`;
+  const quick = d.note.trim() || `Montaje confirmado el ${fmt(d.date, { weekday: "long", day: "numeric", month: "long" })} en la fachada del ${e(venue)}.`;
   const items = d.items.map((it, i) => `
   <tr><td class="yw-pad" style="padding:${i ? "22px" : "16px"} 32px 0;">
     <div style="font-size:10px; font-weight:bold; letter-spacing:0.03em; color:#777777;">${e(it.name.toUpperCase())} · INSTALADO</div>
@@ -28,7 +29,7 @@ export function renderMontaje(d: MontajeInput) {
 
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
-<title>Montaje realizado · Gran Teatro Pavón</title>
+<title>Montaje realizado · ${e(venue)}</title>
 <style>
   .yw-container { width: 520px; max-width: 520px; }
   @media only screen and (max-width: 560px) {
@@ -43,7 +44,7 @@ export function renderMontaje(d: MontajeInput) {
   [data-ogsc] .yw-dark-block { background: #111111 !important; }
 </style></head>
 <body style="margin:0; padding:0; background:#e8e8e8; font-family: Arial, Helvetica, sans-serif;">
-<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${e(title)} · Gran Teatro Pavón</div>
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${e(title)} · ${e(venue)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e8e8; padding:32px 0;">
 <tr><td align="center">
 <table role="presentation" width="520" class="yw-container yw-card" cellpadding="0" cellspacing="0" style="background:#ffffff;">
@@ -68,7 +69,7 @@ export function renderMontaje(d: MontajeInput) {
   <tr><td class="yw-pad" style="padding:0 32px;"><div style="height:3px; background:${Y};"></div></td></tr>
 
   <tr><td class="yw-pad" style="padding:20px 32px 0;">
-    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">CARTELERÍA · GRAN TEATRO PAVÓN · ${e(fmt(d.date, { weekday: "long", day: "numeric", month: "long" }).toUpperCase())}</div>
+    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">CARTELERÍA · ${e(venue.toUpperCase())} · ${e(fmt(d.date, { weekday: "long", day: "numeric", month: "long" }).toUpperCase())}</div>
     <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${e(title)}</div>
   </td></tr>
   ${devNote}
@@ -99,7 +100,7 @@ export function renderMontaje(d: MontajeInput) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="yw-dark-block" style="background:#111111;"><tr><td class="yw-pad" style="padding:24px 32px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" valign="middle">
         <div style="font-size:14px; font-weight:800; color:${Y}; margin-top:12px;">Lo hacemos y ya vemos.</div>
-        <div style="font-size:11px; color:#999999; margin-top:2px;">Cartelería del Gran Teatro Pavón · Yellow Control.</div>
+        <div style="font-size:11px; color:#999999; margin-top:2px;">Cartelería del ${e(venue)} · Yellow Control.</div>
       </td></tr></table>
     </td></tr></table>
   </td></tr>

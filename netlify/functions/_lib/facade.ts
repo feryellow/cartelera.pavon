@@ -9,6 +9,14 @@ export const FACADE_VIEWS = [
   { id: "abierta", name: "Taquilla abierta", img: "/assets/facade/abierta.jpg" },
   { id: "columna", name: "Columna 1", img: "/assets/columna1.jpg" },
 ];
+// Cartelera del Teatro Arlequín (Gran Vía): una sola vista con cuatro soportes
+export const ARLEQUIN_VIEWS = [{ id: "arlequin", name: "Cartelera Teatro Arlequín", img: "/assets/facade/arlequin.jpg" }];
+export const ARLEQUIN_SLOTS: { key: string; view: string; r: number[] }[] = [
+  { key: "arlequin__cartel-1", view: "arlequin", r: [4.66, 13.04, 38.74, 79.17] },
+  { key: "arlequin__cartel-2", view: "arlequin", r: [46.99, 13.38, 42.78, 46.37] },
+  { key: "arlequin__cartel-3a", view: "arlequin", r: [46.9, 64.56, 21.78, 24.9] },
+  { key: "arlequin__cartel-3b", view: "arlequin", r: [69.48, 64.26, 21.78, 25.2] },
+];
 export const FACADE_SLOTS: { key: string; view: string; r: number[] }[] = [
   { key: "taquilla__secundario-1", view: "taquilla", r: [19.06, 40.06, 13.54, 27.90] },
   { key: "taquilla__taquilla-izq", view: "taquilla", r: [35.77, 40.79, 11.67, 26.89] },
@@ -23,6 +31,9 @@ export const FACADE_SLOTS: { key: string; view: string; r: number[] }[] = [
   { key: "taquilla__columna_1", view: "columna", r: [67.0, 39.2, 18.1, 25.3] },
 ];
 
+const ALL_VIEWS = () => [...FACADE_VIEWS, ...ARLEQUIN_VIEWS];
+const ALL_SLOTS = () => [...FACADE_SLOTS, ...ARLEQUIN_SLOTS];
+
 async function slotBytes(key: string): Promise<Buffer | null> {
   const b = await carteleriaStore().get(`image_${key}`, { type: "arrayBuffer" }) as ArrayBuffer | null;
   if (!b) return null;
@@ -35,7 +46,7 @@ async function slotBytes(key: string): Promise<Buffer | null> {
 export async function facadeVersion(viewId: string) {
   const state: any = await carteleriaStore().get("state", { type: "json" }) || {};
   const parts: string[] = [];
-  for (const s of FACADE_SLOTS.filter((x) => x.view === viewId)) {
+  for (const s of ALL_SLOTS().filter((x) => x.view === viewId)) {
     const meta: any = await carteleriaStore().get(`imagemeta_${s.key}`, { type: "json" });
     parts.push(`${s.key}:${meta?.updatedAt || meta?.size || 0}:${state.slots?.[s.key]?.mode || "contain"}:${state.slots?.[s.key]?.hasImage ? 1 : 0}`);
   }
@@ -44,13 +55,13 @@ export async function facadeVersion(viewId: string) {
 }
 
 export async function facadeComposite(viewId: string, origin: string, width = 900): Promise<Buffer | null> {
-  const v = FACADE_VIEWS.find((x) => x.id === viewId); if (!v) return null;
+  const v = ALL_VIEWS().find((x) => x.id === viewId); if (!v) return null;
   const state: any = await carteleriaStore().get("state", { type: "json" }) || {};
   const r = await fetch(new URL(v.img, origin)); if (!r.ok) return null;
   const bg = await Jimp.read(Buffer.from(await r.arrayBuffer()));
   bg.resize({ w: width });
   const W = bg.bitmap.width, H = bg.bitmap.height;
-  for (const s of FACADE_SLOTS.filter((x) => x.view === viewId)) {
+  for (const s of ALL_SLOTS().filter((x) => x.view === viewId)) {
     const x = Math.round(s.r[0] / 100 * W), y = Math.round(s.r[1] / 100 * H), w = Math.round(s.r[2] / 100 * W), h = Math.round(s.r[3] / 100 * H);
     const box = new Jimp({ width: w, height: h, color: 0x050505ff });
     const bytes = state.slots?.[s.key]?.hasImage ? await slotBytes(s.key) : null;
