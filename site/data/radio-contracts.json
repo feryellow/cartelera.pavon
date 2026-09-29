@@ -8,10 +8,10 @@
       "provider": "Radio Blanca, S.A.U.",
       "brand": "KISS FM",
       "contractNumber": "M26/9001/0006644",
-      "startDate": "2026-10-01",
+      "startDate": "2026-09-01",
       "endDate": "2027-09-30",
       "source": "Contrato de publicidad Gran Teatro Pavón 2026-2027 + renovación enviada por email",
-      "notes": "KISS FM Madrid: 4 cuñas diarias L-D. Audio digital: 15.000 impresiones mensuales con IP Madrid.",
+      "notes": "KISS FM Madrid: 4 cuñas diarias L-D. Audio digital: 15.000 impresiones mensuales con IP Madrid. Septiembre de 2026 añadido con las mismas condiciones que el septiembre del contrato (4 cuñas diarias, 120), a petición de Fer; pendiente de confirmar con Kiss FM.",
       "lines": [
         {
           "id": "kiss-madrid-22",
@@ -21,6 +21,7 @@
           "duration": "22\"",
           "unit": "cuñas",
           "monthly": {
+            "2026-09": 120,
             "2026-10": 124,
             "2026-11": 120,
             "2026-12": 124,
