@@ -127,7 +127,7 @@ function radioWeekPanel(rows,month,contract){
  const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),weeks=[];let d=1;
  while(d<=last){const dt=new Date(y,m-1,d),mon=d-((dt.getDay()+6)%7),start=Math.max(1,mon),end=Math.min(last,mon+6);if(!weeks.some(w=>w.start===start))weeks.push({start,end});d=end+1}
  const inRange=(r,w)=>{const a=r.startDate||month+"-01",b=r.endDate||a,s=month+"-"+String(w.start).padStart(2,"0"),e=month+"-"+String(w.end).padStart(2,"0");return a<=e&&b>=s};
- return '<div class="radio-weeks">'+weeks.map((w,i)=>{const rr=rows.filter(r=>inRange(r,w));return '<div class="radio-week"><div><small>SEMANA '+(i+1)+'</small><b>'+w.start+'–'+w.end+' '+radioMonthLabel(month).split(" ")[0]+'</b></div><span>'+rr.length+' asignación'+(rr.length===1?'':'es')+'</span>'+(rr.length?'<p>'+rr.map(r=>esc(r.spectacle||"Sin espectáculo")+' · '+radioFmt(r.plannedSpots)+' '+esc(r.unit||radioLine(contract,r.lineId)?.unit||"cuñas")).join(" · ")+'</p>':'')+'</div>'}).join("")+'</div>'
+ return '<div class="radio-weeks">'+weeks.map((w,i)=>{const rr=rows.filter(r=>inRange(r,w));return '<div class="radio-week"><div><small>SEMANA '+(i+1)+'</small><b>'+w.start+'–'+w.end+' '+radioMonthLabel(month).split(" ")[0]+'</b></div><span>'+rr.length+' asignación'+(rr.length===1?'':'es')+'</span>'+(rr.length?'<p>'+rr.map(r=>esc(r.spectacle||r.campaignName||r.spotName||"Sin espectáculo")+' · '+radioFmt(r.plannedSpots)+' '+esc(r.unit||radioLine(contract,r.lineId)?.unit||"cuñas")).join(" · ")+'</p>':'')+'</div>'}).join("")+'</div>'
 }
 function radioSpectacleReport(rows,contract){
  const map=new Map();rows.forEach(r=>{const k=r.spectacle||r.campaignName||"Sin espectáculo";const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas",key=k+"|"+unit;const x=map.get(key)||{name:k,unit,planned:0,actual:0};x.planned+=radioNum(r.plannedSpots);x.actual+=radioNum(r.actualSpots);map.set(key,x)});
@@ -157,7 +157,7 @@ function radioMailOpen(contract,month,rows){
 
 function radioPrint(contract,month,rows){
  const units=[...new Set(contract.lines.map(l=>l.unit))],summaries=units.map(u=>({u,...radioContractTotal(contract,month,rows,u)}));
- const bySpectacle=new Map();rows.forEach(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas",k=(r.spectacle||"Sin espectáculo")+"|"+unit,x=bySpectacle.get(k)||{name:r.spectacle||"Sin espectáculo",unit,planned:0,actual:0};x.planned+=radioNum(r.plannedSpots);x.actual+=radioNum(r.actualSpots);bySpectacle.set(k,x)});
+ const bySpectacle=new Map();rows.forEach(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas",k=(r.spectacle||r.campaignName||"Sin espectáculo")+"|"+unit,x=bySpectacle.get(k)||{name:r.spectacle||r.campaignName||"Sin espectáculo",unit,planned:0,actual:0};x.planned+=radioNum(r.plannedSpots);x.actual+=radioNum(r.actualSpots);bySpectacle.set(k,x)});
  const w=window.open("","_blank","width=980,height=760");if(!w){say("El navegador ha bloqueado la ventana del informe");return}
  const lines=contract.lines.filter(l=>radioNum(l.monthly?.[month])>0).map(l=>{const x=radioLineStats(contract,l,month,rows);return '<tr><td><b>'+esc(l.station)+'</b><br><small>'+esc(l.program)+'</small></td><td>'+radioFmt(x.capacity)+'</td><td>'+radioFmt(x.planned)+'</td><td>'+radioFmt(x.actual)+'</td><td>'+radioFmt(x.remaining)+'</td></tr>'}).join("");
  const specs=[...bySpectacle.values()].sort((a,b)=>b.planned-a.planned).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+radioFmt(x.planned)+' '+esc(x.unit)+'</td><td>'+radioFmt(x.actual)+'</td></tr>').join("");
@@ -363,7 +363,7 @@ async function revistas(){
  const done=r=>["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase());
  // Miniatura por revista y mes; al tocarla se abre la ficha con la página en grande
  const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<button type="button" class="mag-cover empty" data-add-revista="'+esc(mag)+'|'+m+'"><span class="mag-img"><i>+</i></span><span class="mag-name">'+esc(mag)+'</span><span class="mag-show">Sin página</span></button>';
-  return '<button type="button" class="mag-cover" data-mag-open="'+r.id+'"><span class="mag-img media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></span><span class="mag-name"><i class="mag-dot '+(done(r)?"ok":"warn")+'"></i>'+esc(mag)+'</span><span class="mag-show">'+esc(r.spectacle||"Sin espectáculo")+'</span></button>'};
+  return '<button type="button" class="mag-cover" data-mag-open="'+r.id+'"><span class="mag-img media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></span><span class="mag-name"><i class="mag-dot '+(done(r)?"ok":"warn")+'"></i>'+esc(mag)+'</span><span class="mag-show">'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</span></button>'};
  const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(m)+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
  app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">+ Nueva página</button>')+moduleKpis(rows,"Páginas este mes")+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
  magChips(months,cur);const openForm=r=>{$("#revistasFormCard").innerHTML=revistaForm(r);bindRevistaForm(r&&r.id?r:null,rows)};
@@ -379,7 +379,7 @@ function magSheet(r,openForm){
  const el=document.createElement("div");el.id="magSheet";el.className="mag-sheet";
  el.innerHTML='<div class="mag-sheet-box" role="dialog" aria-label="Página de revista"><button type="button" class="ghost mag-sheet-x" aria-label="Cerrar">×</button>'+
   '<div class="mag-sheet-img">'+(r.assetKey?'<span class="muted">Cargando…</span>':'<span class="muted">Sin imagen</span>')+'</div>'+
-  '<div class="mag-sheet-info"><small class="section-kicker">'+esc(r.magazine||"")+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
+  '<div class="mag-sheet-info"><small class="section-kicker">'+esc(r.magazine||"")+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
   '<div class="item-meta"><span class="badge '+(done?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+(r.contact?'<span>'+esc(r.contact)+'</span>':'')+'</div>'+(r.notes?'<p class="mag-sheet-notes">'+esc(r.notes)+'</p>':'')+
   '<div class="actions-row"><button type="button" class="primary" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-sheet-del>Quitar</button></div></div></div>';
  document.body.appendChild(el);document.body.classList.add("sheet-open");
@@ -773,8 +773,8 @@ async function archivo(){
 // muestra una vista previa y no se guarda nada hasta pulsar «Añadir».
 const IMPORT_MODULES={hitos:"Calendario (hito)",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas",radio:"Radio"};
 function importDecode(t){t=String(t||"").trim();if(!t)return null;try{if(t.startsWith("{")||t.startsWith("["))return JSON.parse(t);const b=t.replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(decodeURIComponent(escape(atob(b))))}catch{return null}}
-function importItems(d){const list=Array.isArray(d)?d:(d&&d.items)||[];return list.filter(x=>x&&IMPORT_MODULES[x.module]&&((x.data&&typeof x.data==="object")||(x.op==="keepOnly"&&x.match)))}
-function importLabel(x){if(x.op==="keepOnly")return x.label||"Dejar solo una";const r=x.data;if(x.module==="hitos"){const t=r.title||r.spectacle||"";return (t.toLowerCase().startsWith(String(r.type||"").toLowerCase())?t:(r.type||"Hito")+" · "+t)+" · "+fdate(r.date)+(r.time?" "+r.time:"")}return (r.spectacle||r.campaignName||r.magazine||"Registro")+" · "+[r.venue,r.position,r.magazine,r.month,r.startDate&&fdate(r.startDate)].filter(Boolean).join(" · ")}
+function importItems(d){const list=Array.isArray(d)?d:(d&&d.items)||[];return list.filter(x=>x&&IMPORT_MODULES[x.module]&&((x.data&&typeof x.data==="object")||((x.op==="keepOnly"||x.op==="splitWeeks")&&x.match)))}
+function importLabel(x){if(x.op==="keepOnly")return x.label||"Dejar solo una";if(x.op==="splitWeeks")return x.label||"Repartir por semanas";const r=x.data;if(x.module==="hitos"){const t=r.title||r.spectacle||"";return (t.toLowerCase().startsWith(String(r.type||"").toLowerCase())?t:(r.type||"Hito")+" · "+t)+" · "+fdate(r.date)+(r.time?" "+r.time:"")}return (r.spectacle||r.campaignName||r.magazine||"Registro")+" · "+[r.venue,r.position,r.magazine,r.month,r.startDate&&fdate(r.startDate)].filter(Boolean).join(" · ")}
 async function importar(){
  const q=new URLSearchParams(location.hash.split("?")[1]||"").get("d");
  app.innerHTML=pageHead("Importar","Añade de una vez datos preparados: revisa la lista y pulsa Añadir")+'<section class="card"><div id="impBody"></div></section>';
@@ -806,11 +806,25 @@ async function importar(){
    x.fillData=keep?Object.fromEntries(Object.entries(x.fill||{}).filter(([k])=>!String(keep[k]??"").trim())):{};
    x.same=!x.drop.length&&!Object.keys(x.fillData).length;
    x.detail=keep?"Se queda: "+(keep.spectacle||x.fill?.spectacle||"sin espectáculo")+" · "+(keep.venue||x.fill?.venue||"")+(x.drop.length?" · quita "+x.drop.length:" · ya hay solo una"):"No hay ninguna página que cumpla"}
-  body.innerHTML=(d.note?'<p class="muted" style="margin:0 0 10px">'+esc(d.note)+'</p>':'')+'<div class="list">'+items.map((x,i)=>{const dp=x.op==="keepOnly"||(x.matches&&x.matches.length)?!!x.same:dup(x);return '<label class="item imp-row'+(dp?" dup":"")+'"><input type="checkbox" data-imp="'+i+'"'+(dp?"":" checked")+'><div><h3>'+esc(importLabel(x))+'</h3><div class="item-meta"><span class="badge">'+esc(IMPORT_MODULES[x.module])+'</span>'+(x.detail?'<span>'+esc(x.detail)+'</span>':'')+(x.data&&x.data.venue?'<span>'+esc(x.data.venue)+'</span>':'')+(x.data&&x.data.spotName?'<span>'+esc(x.data.spotName)+'</span>':'')+(x.asset?'<span class="badge">Con audio</span>':'')+(dp?'<span class="badge warn">Ya existe</span>':'')+(x.matches&&x.matches.length&&!dp?'<span class="badge">'+(x.matches.length===1&&x.matches[0].date===x.data.date&&(x.matches[0].time||"")===(x.data.time||"")?"Completa":"Sustituye a")+': '+x.matches.map(r=>esc((r.title||r.type)+" · "+fdate(r.date)+(r.time?" "+r.time:""))).join(" / ")+'</span>':'')+'</div></div></label>'}).join("")+'</div>'+
+  // «Repartir por semanas»: la cuña que ya existe se reparte en una asignación por semana (misma pieza y mismo audio)
+  const SKIP=["id","createdAt","createdBy","updatedAt","updatedBy","deletedAt"];
+  for(const x of items.filter(x=>x.op==="splitWeeks")){
+   const fit=r=>Object.entries(x.match).every(([k,v])=>norm(r[k])===norm(v));
+   const rows=(existing[x.module]||[]).filter(r=>fit(r)&&!r.deletedAt).sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||"")));
+   x.rows=rows;const tot=x.weeks.reduce((a,w)=>a+Number(w.plannedSpots||0),0);
+   x.same=rows.length===x.weeks.length&&x.weeks.every((w,i)=>rows[i].startDate===w.startDate&&rows[i].endDate===w.endDate&&Number(rows[i].plannedSpots||0)===Number(w.plannedSpots));
+   x.detail=rows.length?tot+" cuñas en "+x.weeks.length+" semana"+(x.weeks.length>1?"s":"")+" ("+x.weeks.map(w=>w.plannedSpots).join(" · ")+")":"No está esta cuña en la app: carga antes las cuñas";
+   if(!rows.length)x.same=true}
+  body.innerHTML=(d.note?'<p class="muted" style="margin:0 0 10px">'+esc(d.note)+'</p>':'')+'<div class="list">'+items.map((x,i)=>{const dp=x.op==="keepOnly"||x.op==="splitWeeks"||(x.matches&&x.matches.length)?!!x.same:dup(x);return '<label class="item imp-row'+(dp?" dup":"")+'"><input type="checkbox" data-imp="'+i+'"'+(dp?"":" checked")+'><div><h3>'+esc(importLabel(x))+'</h3><div class="item-meta"><span class="badge">'+esc(IMPORT_MODULES[x.module])+'</span>'+(x.detail?'<span>'+esc(x.detail)+'</span>':'')+(x.data&&x.data.venue?'<span>'+esc(x.data.venue)+'</span>':'')+(x.data&&x.data.spotName?'<span>'+esc(x.data.spotName)+'</span>':'')+(x.asset?'<span class="badge">Con audio</span>':'')+(dp?'<span class="badge warn">Ya existe</span>':'')+(x.matches&&x.matches.length&&!dp?'<span class="badge">'+(x.matches.length===1&&x.matches[0].date===x.data.date&&(x.matches[0].time||"")===(x.data.time||"")?"Completa":"Sustituye a")+': '+x.matches.map(r=>esc((r.title||r.type)+" · "+fdate(r.date)+(r.time?" "+r.time:""))).join(" / ")+'</span>':'')+'</div></div></label>'}).join("")+'</div>'+
    '<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="impGo">Añadir seleccionados</button></div><div id="impRes"></div>';
   $("#impGo").onclick=async()=>{const sel=$$("[data-imp]").filter(c=>c.checked).map(c=>items[+c.dataset.imp]);if(!sel.length){say("No hay nada seleccionado");return}
    const b=$("#impGo");b.disabled=true;b.textContent="Añadiendo…";let ok=0;const errs=[];
    for(const x of sel){try{
+     if(x.op==="splitWeeks"){if(!x.rows.length)throw new Error("no está la cuña");
+      for(let i=0;i<x.weeks.length;i++){const w=x.weeks[i],r=x.rows[i];
+       if(r)await api("/api/control?module="+x.module+"&id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(w)});
+       else{const base=Object.fromEntries(Object.entries(x.rows[0]).filter(([k])=>!SKIP.includes(k)));await api("/api/control?module="+x.module,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...base,...w})})}}
+      ok++;continue}
      if(x.op==="keepOnly"){if(x.keep&&Object.keys(x.fillData).length)await api("/api/control?module="+x.module+"&id="+x.keep.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.fillData)});
       for(const r of x.drop)await api("/api/control?module="+x.module+"&id="+r.id,{method:"DELETE"});ok++;continue}
      const data={...x.data};
@@ -1129,7 +1143,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v41";
+const YC_VERSION="yellow-control-v42";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
