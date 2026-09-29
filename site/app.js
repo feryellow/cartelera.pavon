@@ -896,11 +896,9 @@ async function cartSave(){
   const updatedAt=new Date().toISOString();
   for(const k of cart.dirty){slots[k]={mode:cartMode(k),hasImage:!!cart.img[k],rev:updatedAt,by:state.actor?.email||""};schedule[k]={...cartSched(k)}}
   await api("/api/state",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({slots,schedule,updatedAt})});
-  const changedViews=[...new Set([...cart.dirty].map(k=>cartSlot(k)?.view).filter(Boolean))];
   cart.dirty.clear();cart.imgDirty.clear();cart.updatedAt=updatedAt;cart.saving=false;
-  await cartLoad();cartRender();say("Cartelería guardada");
-  // 4. Aviso por correo con la vista modificada (no bloquea el guardado)
-  try{for(const v of changedViews.slice(0,2)){const png=await cartComposite(v,false);await fetch("/api/email-update",{method:"POST",headers:headers({"content-type":"application/json"}),body:JSON.stringify({page:v,pngDataUrl:png,updatedAt})})}}catch{}
+  await cartLoad();cartRender();say("Cartelería guardada · no se ha enviado ningún correo");
+  // Guardar ya no envía correo: el aviso a los compañeros sale solo con «Confirmar montaje»
  }catch(e){cart.saving=false;cartSyncState();say(e.message||"No se han podido guardar los cambios")}
 }
 
@@ -1384,7 +1382,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v57";
+const YC_VERSION="yellow-control-v58";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
