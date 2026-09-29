@@ -32,7 +32,7 @@ export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
     for (const r of await listRecords(m)) {
       const location = m === "radio" ? [r.venue, r.station].filter(Boolean).join(" · ")
         : m === "hometicket" ? [r.venue, r.position].filter(Boolean).join(" · ")
-        : m === "revistas" ? [r.magazine, r.venue].filter(Boolean).join(" · ")
+        : m === "revistas" ? [r.magazine === "Revista Teatros" ? "Teatros" : r.magazine, r.venue].filter(Boolean).join(" · ")
         : [r.venue, r.location || r.support].filter(Boolean).join(" · ");
       const title = r.spectacle || r.campaignName || LABEL[m];
       const base = { module: LABEL[m], moduleKey: m, title, location, status: r.status || "activo", recordId: r.id, auto: true, venue: r.venue || "" };
