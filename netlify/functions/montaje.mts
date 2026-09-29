@@ -3,7 +3,7 @@ import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { assetStore, carteleriaStore, controlStore } from "./_lib/store.ts";
 import { madridToday } from "./_lib/dates.ts";
-import { SLOT_NAMES } from "./_lib/calendar.ts";
+import { SLOT_NAMES, slotVenue } from "./_lib/calendar.ts";
 import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
 import { renderMontaje, montajeTitle } from "./_lib/montaje-mail.ts";
 import { getContacts } from "./_lib/contacts.ts";
@@ -19,6 +19,9 @@ export default async (req: Request) => {
 
   const slots = (Array.isArray(body?.slots) ? body.slots : []).filter((s: any) => s && SLOT_NAMES[s.key]);
   if (!slots.length) return Response.json({ error: "Marca al menos un soporte." }, { status: 400 });
+  const venues = [...new Set(slots.map((s: any) => slotVenue(s.key)))] as string[];
+  if (venues.length > 1) return Response.json({ error: "Confirma el montaje de cada teatro por separado." }, { status: 400 });
+  const venue = venues[0];
   const allowed = new Set((await getContacts()).map((c) => c.email.toLowerCase()));
   const pick = (v: any) => [...new Set((Array.isArray(v) ? v : []).map((x: any) => String(x).trim().toLowerCase()).filter((x: string) => allowed.has(x)))] as string[];
   const to = pick(body.to), cc = pick(body.cc).filter((x) => !to.includes(x));
@@ -53,8 +56,8 @@ export default async (req: Request) => {
   const items = slots.map((s: any, i: number) => ({ name: SLOT_NAMES[s.key], title: after.schedule[s.key]?.title || "", cid: photos[s.key] ? `foto${i}` : undefined }));
   const appUrl = (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, "");
   const rcp = mailRecipients();
-  const html = renderMontaje({ date, by: auth.actor!.email, note, items, appUrl, devRecipient: rcp.live ? "" : rcp.to[0], intendedTo: to, intendedCc: cc });
-  const result: any = await sendPavonMail({ subject: `Montaje realizado · ${montajeTitle(items)} · Gran Teatro Pavón`, html, attachments, to, cc });
+  const html = renderMontaje({ date, by: auth.actor!.email, note, items, appUrl, devRecipient: rcp.live ? "" : rcp.to[0], intendedTo: to, intendedCc: cc, venue });
+  const result: any = await sendPavonMail({ subject: `Montaje realizado · ${montajeTitle(items)} · ${venue}`, html, attachments, to, cc });
 
   const record = { id, date, by: auth.actor!.email, note, slots: slots.map((s: any) => s.key), photos, to, cc, sent: !!result.sent, sentTo: result.to || [], createdAt: new Date().toISOString() };
   await controlStore().setJSON(`montaje_${id}`, record);

@@ -15,9 +15,10 @@ export default async(req:Request)=>{
   let body:any;try{body=await req.json();}catch{return Response.json({error:"Invalid JSON"},{status:400});}
   const page=String(body?.page||"carteleria").slice(0,80);
   const png=typeof body?.pngDataUrl==="string"?parseDataUrl(body.pngDataUrl):null;
-  const subject=`Pavón · actualización de cartelería · ${page}`;
-  const html=`<div style="font-family:Arial,sans-serif"><h2>Gran Teatro Pavón · Cartelería</h2><p>Se ha confirmado una actualización en <strong>${page}</strong>.</p><p>Fecha: ${new Date().toLocaleString("es-ES",{timeZone:"Europe/Madrid"})}</p><p>Actualizado por: ${auth.actor!.email}</p></div>`;
-  const result=await sendPavonMail({subject,html,attachments:png?[{filename:`Pavon_${page.replace(/[^a-z0-9_-]+/gi,"_")}.png`,content:png}]:[]});
+  const venue=page.startsWith("arlequin")?"Teatro Arlequín":"Gran Teatro Pavón",short=venue==="Teatro Arlequín"?"Arlequin":"Pavon";
+  const subject=`${venue==="Teatro Arlequín"?"Arlequín":"Pavón"} · actualización de cartelería · ${page}`;
+  const html=`<div style="font-family:Arial,sans-serif"><h2>${venue} · Cartelería</h2><p>Se ha confirmado una actualización en <strong>${page}</strong>.</p><p>Fecha: ${new Date().toLocaleString("es-ES",{timeZone:"Europe/Madrid"})}</p><p>Actualizado por: ${auth.actor!.email}</p></div>`;
+  const result=await sendPavonMail({subject,html,attachments:png?[{filename:`${short}_${page.replace(/[^a-z0-9_-]+/gi,"_")}.png`,content:png}]:[]});
   if(!result.sent){
     const id=crypto.randomUUID();
     await controlStore().setJSON(`outbox_${id}`,{id,createdAt:new Date().toISOString(),page,subject,reason:result.reason||"send_failed",retryable:true});

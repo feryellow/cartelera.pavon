@@ -1,8 +1,8 @@
 import { carteleriaStore, controlStore } from "./store.ts";
 import { listRecords } from "./records.ts";
-import { SLOT_NAMES } from "./calendar.ts";
+import { SLOT_NAMES, slotVenue } from "./calendar.ts";
 import { loadContracts } from "./radio.ts";
-import { FACADE_VIEWS, FACADE_SLOTS } from "./facade.ts";
+import { FACADE_VIEWS, FACADE_SLOTS, ARLEQUIN_VIEWS, ARLEQUIN_SLOTS } from "./facade.ts";
 
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
@@ -43,16 +43,19 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     const slot = SLOT_NAMES[key] || key;
     cart.push({ title: v?.title || slot, detail: `${v?.title ? slot + " · " : ""}${when}${rem && rem <= last ? " · retirado el " + fmt(rem) : ""}`, date: inst, img: hasImg ? { kind: "cart", key } : undefined, small: true });
   }
-  // Último montaje del mes: si tiene fotos reales, esas son la imagen de la fachada
-  let lastMont: any = null;
+  // Último montaje del mes de cada teatro: si tiene fotos reales, esas son la imagen de la fachada
+  const monts: any[] = [];
   const list = await controlStore().list({ prefix: "montaje_" });
   for (const b of list.blobs) {
     const r: any = await controlStore().get(b.key, { type: "json" });
-    if (!r?.date || r.date < first || r.date > last) continue;
-    if (!lastMont || String(r.createdAt || r.date) > String(lastMont.createdAt || lastMont.date)) lastMont = r;
+    if (r?.date && r.date >= first && r.date <= last) monts.push(r);
   }
+  const lastMontOf = (venue: string) => monts.filter((r) => (r.slots || []).some((k: string) => slotVenue(k) === venue))
+    .sort((a, b) => String(b.createdAt || b.date).localeCompare(String(a.createdAt || a.date)))[0] || null;
+  const photosOf = (m: any, venue: string) => m ? (Object.entries(m.photos || {}) as [string, string][]).filter(([k]) => slotVenue(k) === venue) : [];
+  const lastMont = lastMontOf("Gran Teatro Pavón");
   const facade: Line[] = [];
-  const photos = lastMont ? Object.entries(lastMont.photos || {}) as [string, string][] : [];
+  const photos = photosOf(lastMont, "Gran Teatro Pavón");
   if (photos.length) photos.forEach(([slot, k]) => facade.push({ title: SLOT_NAMES[slot] || slot, detail: `Foto del montaje · ${fmt(lastMont.date)}`, img: { kind: "asset", key: k }, wide: true }));
   else for (const v of FACADE_VIEWS) {
     const withPoster = FACADE_SLOTS.filter((x) => x.view === v.id && state.slots?.[x.key]?.hasImage).length;
@@ -63,8 +66,16 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const nImg = FACADE_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
   sections.push({ key: "carteleria", name: "Fachada Gran Teatro Pavón", lines: facadeLines, count: `${nImg} de ${FACADE_SLOTS.length} soportes` });
 
+  // Cartelera del Teatro Arlequín: solo aparece si tiene algún cartel o montaje en el mes
+  const arMont = lastMontOf("Teatro Arlequín"), arPhotos = photosOf(arMont, "Teatro Arlequín");
+  const arImg = ARLEQUIN_SLOTS.filter((x) => state.slots?.[x.key]?.hasImage).length;
+  const arLines: Line[] = arPhotos.length
+    ? arPhotos.map(([slot, k]) => ({ title: SLOT_NAMES[slot] || slot, detail: `Foto del montaje · ${fmt(arMont.date)}`, img: { kind: "asset" as const, key: k }, wide: true }))
+    : arImg ? ARLEQUIN_VIEWS.map((v) => ({ title: v.name, detail: `${arImg} ${arImg === 1 ? "cartel" : "carteles"}${arMont ? " · último montaje el " + fmt(arMont.date) : ""}`, img: { kind: "facade" as const, key: v.id }, wide: true })) : [];
+  if (arLines.length) sections.push({ key: "carteleria-arlequin", name: "Cartelera Teatro Arlequín", lines: arLines, count: `${arImg} de ${ARLEQUIN_SLOTS.length} soportes` });
+
 // Home Ticket: una miniatura compuesta por teatro y mes.
-  const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Gran Castillo de Pedraza", "Abono Teatro"];
+  const HT_VENUES = ["Gran Teatro Pavón", "Gran Teatro CaixaBank Príncipe Pío", "Teatro Serrano", "Teatro Arlequín", "Gran Castillo de Pedraza", "Abono Teatro"];
   const POS_ORDER = ["Home Ticket XL · 520 × 856", "HT Superior · 520 × 420", "HT Inferior · 520 × 420"];
   const rowMonth = (r:any) => r.month || String(r.startDate || "").slice(0,7) || String(r.endDate || "").slice(0,7);
   const ht = (await listRecords("hometicket")).filter((r:any) => rowMonth(r) === month || (!r.month && overlaps(r)));
@@ -125,6 +136,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   const htComplete = [...htByVenue.values()].filter((p) => p.size >= 3).length;
   const totals: { label: string; value: number | string; note?: string }[] = [
     { label: "soportes fachada Gran Teatro Pavón", value: `${withImg} de ${FACADE_SLOTS.length}` },
+    ...(arImg ? [{ label: "soportes cartelera Teatro Arlequín", value: `${arImg} de ${ARLEQUIN_SLOTS.length}` }] : []),
     { label: "Home Ticket", value: htByVenue.size, note: `${htComplete} ${htComplete === 1 ? "completo" : "completos"}` },
     { label: actual ? "cuñas certificadas" : "cuñas asignadas", value: actual || planned },
     { label: "Revistas Teatros", value: rev.length },
