@@ -716,8 +716,7 @@ const CART_SLOTS=[
  {key:"taquilla__columna_1",view:"columna",name:"Columna 1",r:[67.0,39.2,18.1,25.3]},
  {key:"arlequin__cartel-1",view:"arlequin",name:"Cartel 1 · 90×186",r:[4.66,13.04,38.74,79.17]},
  {key:"arlequin__cartel-2",view:"arlequin",name:"Cartel 2 · 76×114",r:[46.99,13.38,42.78,46.37]},
- {key:"arlequin__cartel-3a",view:"arlequin",name:"Cartel 3 izquierda · 76×53,5",r:[46.9,64.56,21.78,24.9]},
- {key:"arlequin__cartel-3b",view:"arlequin",name:"Cartel 3 derecha · 76×53,5",r:[69.48,64.26,21.78,25.2]}
+ {key:"arlequin__cartel-3",view:"arlequin",name:"Cartel 3 · 76×53,5",r:[46.9,64.26,44.36,25.2]}
 ];
 const CART_STATUS=["pendiente","aprobado","en producción","instalado"];
 function cartFingerprint(st,k){const m=(st.slots||{})[k]||{},s=(st.schedule||{})[k]||{};return JSON.stringify([m.rev||"",!!m.hasImage,m.mode||"contain",s.title||"",s.installDate||"",s.removeDate||"",s.status||"",s.notes||""])}

@@ -9,13 +9,12 @@ export const FACADE_VIEWS = [
   { id: "abierta", name: "Taquilla abierta", img: "/assets/facade/abierta.jpg" },
   { id: "columna", name: "Columna 1", img: "/assets/columna1.jpg" },
 ];
-// Cartelera del Teatro Arlequín (Gran Vía): una sola vista con cuatro soportes
+// Cartelera del Teatro Arlequín (Gran Vía): una sola vista con tres soportes
 export const ARLEQUIN_VIEWS = [{ id: "arlequin", name: "Cartelera Teatro Arlequín", img: "/assets/facade/arlequin.jpg" }];
 export const ARLEQUIN_SLOTS: { key: string; view: string; r: number[] }[] = [
   { key: "arlequin__cartel-1", view: "arlequin", r: [4.66, 13.04, 38.74, 79.17] },
   { key: "arlequin__cartel-2", view: "arlequin", r: [46.99, 13.38, 42.78, 46.37] },
-  { key: "arlequin__cartel-3a", view: "arlequin", r: [46.9, 64.56, 21.78, 24.9] },
-  { key: "arlequin__cartel-3b", view: "arlequin", r: [69.48, 64.26, 21.78, 25.2] },
+  { key: "arlequin__cartel-3", view: "arlequin", r: [46.9, 64.26, 44.36, 25.2] },
 ];
 export const FACADE_SLOTS: { key: string; view: string; r: number[] }[] = [
   { key: "taquilla__secundario-1", view: "taquilla", r: [19.06, 40.06, 13.54, 27.90] },

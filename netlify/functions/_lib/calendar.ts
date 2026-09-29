@@ -10,7 +10,7 @@ export const SLOT_NAMES: Record<string, string> = {
   "taquilla__secundario-2": "Columna 3", "lona__lona": "Lona", "lona__sec1": "Secundario 1 (lona)", "lona__sec2": "Secundario 2 (lona)", "lona__sec3": "Secundario 3 (lona)",
   "abierta__taquilla-izq-abierta": "Taquilla izquierda abierta", "abierta__taquilla-der-abierta": "Taquilla derecha abierta", "taquilla__columna_1": "Columna 1",
   "arlequin__cartel-1": "Cartel 1 Arlequín (90×186)", "arlequin__cartel-2": "Cartel 2 Arlequín (76×114)",
-  "arlequin__cartel-3a": "Cartel 3 izquierda Arlequín (76×53,5)", "arlequin__cartel-3b": "Cartel 3 derecha Arlequín (76×53,5)",
+  "arlequin__cartel-3": "Cartel 3 Arlequín (76×53,5)",
 };
 // Cada soporte de cartelería pertenece a un teatro: los del Arlequín llevan el prefijo arlequin__
 export const slotVenue = (key: string) => key.startsWith("arlequin__") ? "Teatro Arlequín" : "Gran Teatro Pavón";
