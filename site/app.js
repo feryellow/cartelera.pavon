@@ -561,6 +561,8 @@ function bindHTAll(v,m){
 const MAGAZINES=["Revista Teatros","AEscena","Godot"];
 // Nombre que se muestra (el valor guardado sigue siendo el mismo para no perder las páginas ya subidas)
 const magName=m=>m==="Revista Teatros"?"Teatros":(m||"");
+// Intercambios puntuales con revistas sin acuerdo: cualquier nombre fuera de MAGAZINES
+const isXchg=r=>r&&(r.deal==="intercambio"||!MAGAZINES.includes(r.magazine));
 function monthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
 function monthLabel(m){const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});return t.charAt(0).toUpperCase()+t.slice(1)}
 function monthRange(m){const [y,mo]=m.split("-").map(Number);const last=new Date(y,mo,0).getDate();return {startDate:m+"-01",endDate:m+"-"+String(last).padStart(2,"0")}}
@@ -571,14 +573,17 @@ async function revistas(){
  // meses con registros fuera del rango visible también se muestran
  rows.forEach(r=>{if(r.month&&!months.includes(r.month))months.push(r.month)});months.sort();
  const find=(mag,m)=>rows.find(r=>r.magazine===mag&&r.month===m);
+ const xchg=m=>rows.filter(r=>r.month===m&&isXchg(r)).sort((a,b)=>String(a.magazine).localeCompare(String(b.magazine)));
+ const xcell=r=>'<button type="button" class="mag-cover xchg" data-mag-open="'+r.id+'"><span class="mag-img media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></span><span class="mag-name"><i class="mag-dot '+(done(r)?"ok":"warn")+'"></i>'+esc(r.magazine||"Revista")+'</span><span class="mag-show">'+esc(r.spectacle||"Sin espectáculo")+'</span></button>';
  const done=r=>["recibido","entregado","listo"].includes(String(r.materialStatus||"").toLowerCase());
  // Miniatura por revista y mes; al tocarla se abre la ficha con la página en grande
  const cell=(mag,m)=>{const r=find(mag,m);if(!r)return '<button type="button" class="mag-cover empty" data-add-revista="'+esc(mag)+'|'+m+'"><span class="mag-img"><i>+</i></span><span class="mag-name">'+esc(magName(mag))+'</span><span class="mag-show">Sin página</span></button>';
   return '<button type="button" class="mag-cover" data-mag-open="'+r.id+'"><span class="mag-img media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="revistas" data-kind="image"></span><span class="mag-name"><i class="mag-dot '+(done(r)?"ok":"warn")+'"></i>'+esc(magName(mag))+'</span><span class="mag-show">'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</span></button>'};
- const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(magName(m))+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+'</div>').join("");
- app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.map(magName).join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newRevista" class="primary">+ Nueva página</button>')+moduleKpis(rows,"Páginas este mes")+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
+ const grid='<div class="mag-head"><span></span>'+MAGAZINES.map(m=>'<span>'+esc(magName(m))+'</span>').join("")+'</div>'+months.map(m=>'<div class="mag-month'+(m===cur?' current':'')+'" data-month="'+m+'"><div class="mag-label">'+esc(monthLabel(m))+'</div>'+MAGAZINES.map(mag=>cell(mag,m)).join("")+(xchg(m).length?'<div class="mag-extra"><small>Intercambios · '+xchg(m).length+'</small><div>'+xchg(m).map(xcell).join("")+'</div></div>':'')+'</div>').join("");
+ app.innerHTML=pageHead("Revistas de Teatros","Página de publicidad mensual en "+MAGAZINES.map(magName).join(", ").replace(/, ([^,]*)$/," y $1"),'<button id="newXchg">+ Intercambio</button><button id="newRevista" class="primary">+ Nueva página</button>')+moduleKpis(rows,"Páginas este mes")+'<div class="grid two-col"><section class="card mag-calendar">'+grid+'</section><section class="card" id="revistasFormCard">'+revistaForm()+'</section></div>';
  magChips(months,cur);const openForm=r=>{$("#revistasFormCard").innerHTML=revistaForm(r);bindRevistaForm(r&&r.id?r:null,rows)};
  $("#newRevista").onclick=()=>openForm({month:cur});
+ $("#newXchg").onclick=()=>{openForm({month:cur,deal:"intercambio"});$("#revistasFormCard").scrollIntoView({behavior:"smooth",block:"start"})};
  $$("[data-add-revista]").forEach(b=>b.onclick=()=>{const [magazine,month]=b.dataset.addRevista.split("|");openForm({magazine,month})});
  $$("[data-edit-revista]").forEach(b=>b.onclick=()=>openForm(rows.find(x=>x.id===b.dataset.editRevista)));
  $$("[data-mag-open]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.magOpen);if(r)magSheet(r,openForm)});
@@ -590,7 +595,7 @@ function magSheet(r,openForm){
  const el=document.createElement("div");el.id="magSheet";el.className="mag-sheet";
  el.innerHTML='<div class="mag-sheet-box" role="dialog" aria-label="Página de revista"><button type="button" class="ghost mag-sheet-x" aria-label="Cerrar">×</button>'+
   '<div class="mag-sheet-img">'+(r.assetKey?'<span class="muted">Cargando…</span>':'<span class="muted">Sin imagen</span>')+'</div>'+
-  '<div class="mag-sheet-info"><small class="section-kicker">'+esc(magName(r.magazine))+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
+  '<div class="mag-sheet-info"><small class="section-kicker">'+esc(magName(r.magazine))+(isXchg(r)?' · intercambio':'')+' · '+esc(monthLabel(r.month||""))+'</small><h2>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h2>'+(r.venue?'<p class="muted">'+esc(r.venue)+'</p>':'')+
   '<div class="item-meta"><span class="badge '+(done?"ok":"warn")+'">'+esc(r.materialStatus||"pendiente")+'</span>'+(r.deliveryDate?'<span>Entrega: '+fdate(r.deliveryDate)+'</span>':'')+(r.contact?'<span>'+esc(r.contact)+'</span>':'')+'</div>'+(r.notes?'<p class="mag-sheet-notes">'+esc(r.notes)+'</p>':'')+
   '<div class="actions-row"><button type="button" class="primary" data-edit-revista="'+r.id+'">Editar</button><button type="button" class="danger" data-sheet-del>Quitar</button></div></div></div>';
  document.body.appendChild(el);document.body.classList.add("sheet-open");
@@ -601,15 +606,18 @@ function magSheet(r,openForm){
  if(r.assetKey)blobUrl(r.assetKey,"revistas").then(u=>{const box=el.querySelector(".mag-sheet-img");if(box)box.innerHTML=u?'<img src="'+u+'" alt="'+esc(r.spectacle||"Página")+'">':'<span class="muted">Sin imagen</span>'});
 }
 function revistaForm(r={}){const monthOpts=[];const now=new Date();for(let i=-1;i<=12;i++){const m=monthKey(new Date(now.getFullYear(),now.getMonth()+i,1));monthOpts.push(m)}if(r.month&&!monthOpts.includes(r.month))monthOpts.unshift(r.month);
- return '<div class="section-title"><h2>'+(r.id?"Editar página":"Nueva página")+'</h2></div><form id="revistaForm" class="form-grid">'+venueSelect(r.venue)+'<label>Revista<select name="magazine">'+MAGAZINES.map(x=>'<option value="'+esc(x)+'" '+(x===r.magazine?"selected":"")+'>'+esc(magName(x))+'</option>').join("")+'</select></label><label>Mes<select name="month">'+monthOpts.map(m=>'<option value="'+m+'" '+(m===(r.month||monthKey(now))?"selected":"")+'>'+esc(monthLabel(m))+'</option>').join("")+'</select></label>'+input("spectacle","Espectáculo anunciado",r.spectacle)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto de la revista",r.contact)+'<label class="wide">Cartel / página<input id="revistaAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRevista">Limpiar</button></div></form>'}
-function bindRevistaForm(existing,rows=[]){const f=$("#revistaForm");if(!f)return;$("#cancelRevista").onclick=()=>{$("#revistasFormCard").innerHTML=revistaForm();bindRevistaForm(null,rows)};
+ const xg=isXchg(r)&&(r.id||r.deal==="intercambio");
+ return '<div class="section-title"><h2>'+(r.id?(xg?"Editar intercambio":"Editar página"):(xg?"Nuevo intercambio":"Nueva página"))+'</h2></div><form id="revistaForm" class="form-grid">'+venueSelect(r.venue)+'<label>Revista<select name="magazine" id="revMag">'+MAGAZINES.map(x=>'<option value="'+esc(x)+'" '+(!xg&&x===r.magazine?"selected":"")+'>'+esc(magName(x))+'</option>').join("")+'<option value="__otra" '+(xg?"selected":"")+'>Otra revista (intercambio)</option></select></label><label id="revOtherBox"'+(xg?'':' hidden')+'>Nombre de la revista<input name="otherMagazine" value="'+esc(xg?(r.magazine||""):"")+'" placeholder="Ej.: Madrid Teatro"></label><label>Mes<select name="month">'+monthOpts.map(m=>'<option value="'+m+'" '+(m===(r.month||monthKey(now))?"selected":"")+'>'+esc(monthLabel(m))+'</option>').join("")+'</select></label>'+input("spectacle","Espectáculo anunciado",r.spectacle)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto de la revista",r.contact)+'<label class="wide">Cartel / página<input id="revistaAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRevista">Limpiar</button></div></form>'}
+function bindRevistaForm(existing,rows=[]){const f=$("#revistaForm");if(!f)return;
+ const ms=$("#revMag"),ob=$("#revOtherBox");if(ms&&ob)ms.onchange=()=>{ob.hidden=ms.value!=="__otra";if(!ob.hidden)ob.querySelector("input").focus()};$("#cancelRevista").onclick=()=>{$("#revistasFormCard").innerHTML=revistaForm();bindRevistaForm(null,rows)};
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#revistaAsset")?.files?.[0];Object.assign(data,monthRange(data.month));data.status="activo";
+  if(data.magazine==="__otra"){const n=String(data.otherMagazine||"").trim();if(!n){say("Escribe el nombre de la revista");return}data.magazine=n;data.deal="intercambio"}else data.deal="acuerdo";delete data.otherMagazine;
   // una sola página por revista y mes: si ya existe, se actualiza esa
   const target=existing||rows.find(r=>r.magazine===data.magazine&&r.month===data.month)||null;
   try{const assetKey=await uploadAsset(file,"revistas",target?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||target?.assetName||""}
    if(target?.id)await api("/api/control?module=revistas&id="+target.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
    else await api("/api/control?module=revistas",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
-   say("Página guardada");revistas()}catch(err){say(err.message)}}}
+   say(data.deal==="intercambio"?"Intercambio guardado":"Página guardada");revistas()}catch(err){say(err.message)}}}
 
 // ===== Yellow Control: componentes =====
 function yPlayer(src,name){const w=document.createElement("div");w.className="yplayer";const play='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',pause='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
@@ -1382,7 +1390,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v58";
+const YC_VERSION="yellow-control-v59";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

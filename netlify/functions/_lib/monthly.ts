@@ -122,8 +122,12 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   }
 
   // Revistas: una página por revista y mes
+  // Intercambios puntuales: revistas sin acuerdo; van en la misma sección, detrás de las del acuerdo
+  const AGREED = ["Revista Teatros", "AEscena", "Godot"];
+  const isX = (r: any) => r.deal === "intercambio" || !AGREED.includes(r.magazine);
   const rev = (await listRecords("revistas")).filter((r) => r.month === month);
-  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: rev.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))).map((r) => ({ kicker: r.magazine === "Revista Teatros" ? "Teatros" : (r.magazine || "Revista"), title: r.spectacle || "Sin espectáculo", detail: short(r.venue), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+  const revAgreed = rev.filter((r) => !isX(r)), revX = rev.filter(isX);
+  sections.push({ key: "revistas", name: "Revistas de Teatros", lines: [...revAgreed.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine))), ...revX.sort((a, b) => String(a.magazine).localeCompare(String(b.magazine)))].map((r) => ({ kicker: r.magazine === "Revista Teatros" ? "Teatros" : (r.magazine || "Revista"), title: r.spectacle || "Sin espectáculo", detail: [isX(r) ? "Intercambio" : "", short(r.venue)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
 
   // Comunicación: notas de prensa, ruedas de prensa, estrenos… (hitos del Calendario)
   const hitos = (await listRecords("hitos")).filter((r) => r.date >= first && r.date <= last).sort((a, b) => String(a.date).localeCompare(String(b.date)));
@@ -139,7 +143,8 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     ...(arImg ? [{ label: "soportes cartelera Teatro Arlequín", value: `${arImg} de ${ARLEQUIN_SLOTS.length}` }] : []),
     { label: "Home Ticket", value: htByVenue.size, note: `${htComplete} ${htComplete === 1 ? "completo" : "completos"}` },
     { label: actual ? "cuñas certificadas" : "cuñas asignadas", value: actual || planned },
-    { label: "Revistas Teatros", value: rev.length },
+    { label: "Revistas Teatros", value: revAgreed.length },
+    ...(revX.length ? [{ label: "intercambios en revistas", value: revX.length }] : []),
     { label: "campañas taxis", value: sections.find((x) => x.key === "taxis")?.lines.length || 0 },
     { label: "campañas intercambiadores", value: sections.find((x) => x.key === "intercambiadores")?.lines.length || 0 },
   ];
