@@ -327,6 +327,20 @@ function htCompositeKey(v,m){
  return "htcomp_"+slug+"_"+m.replace("-","")
 }
 function htBase(v){return HT_BASES[v]||""}
+// Base de repuesto (mismo tamaño que la del Pavón) para los teatros cuya imagen base falta o está vacía:
+// así la vista final, el PNG y la miniatura del resumen funcionan igual mientras se sube la buena.
+const htFallbackCache={};
+function htFallbackBase(v){
+ if(htFallbackCache[v])return htFallbackCache[v];
+ const W=1043,H=1508,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+ g.fillStyle="#ffffff";g.fillRect(0,0,W,H);g.strokeStyle="#111111";g.lineWidth=4;g.strokeRect(24,120,W-48,H-190);
+ g.fillStyle="#111111";g.font="700 40px 'Plus Jakarta Sans', Arial";g.textAlign="center";g.fillText("HOME TICKET",W/2,78);
+ g.font="400 64px Anton, Impact, sans-serif";g.fillText(venueShort(v).toUpperCase(),W/2,300);
+ g.font="600 26px 'Plus Jakarta Sans', Arial";g.fillStyle="#8a8478";g.fillText(v,W/2,350);
+ for(const k of Object.keys(HT_COORDS)){const q=HT_COORDS[k];g.fillStyle="#111111";g.fillRect(q.x*W,q.y*H,q.w*W,q.h*H)}
+ return htFallbackCache[v]=c.toDataURL("image/png")
+}
+window.htFallbackBase=htFallbackBase;
 
 function htMockup(rows,v,m){
  const base=htBase(v);
@@ -338,7 +352,7 @@ function htMockup(rows,v,m){
    '</div>'
  }).join("");
  return '<div class="ht-compose-card"><div class="ht-compose-top"><div><small class="section-kicker">'+esc(monthLabel(m))+'</small><h3>Vista final</h3></div><button type="button" data-ht-export="'+esc(v)+'">Exportar PNG</button></div>'+
-   '<div class="ht-compose-stage"><img src="'+base+'" alt="Base Home Ticket · '+esc(v)+'">'+overlays+'</div></div>'
+   '<div class="ht-compose-stage"><img src="'+base+'" alt="Base Home Ticket · '+esc(v)+'" onerror="this.onerror=null;this.src=htFallbackBase('+esc(JSON.stringify(v))+')">'+overlays+'</div></div>'
 }
 function htSlot(rows,v,m,p){
  const r=htRecord(rows,v,m,p);
@@ -355,13 +369,15 @@ async function htLoadImage(url){
 }
 async function htCompositeBlob(v,m,rows){
  const baseUrl=htBase(v);if(!baseUrl)throw new Error("Este espacio no tiene una base Home Ticket.");
- const base=await htLoadImage(baseUrl),canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+ const base=await htLoadImage(baseUrl).catch(()=>htLoadImage(htFallbackBase(v))),canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
  canvas.width=base.naturalWidth||base.width;canvas.height=base.naturalHeight||base.height;ctx.drawImage(base,0,0,canvas.width,canvas.height);
  for(const p of HT_POS){
    const r=htRecord(rows,v,m,p);if(!r?.assetKey)continue;
    const u=await blobUrl(r.assetKey,"hometicket");if(!u)continue;
-   const im=await htLoadImage(u),c=HT_COORDS[p.css];
-   ctx.drawImage(im,Math.round(c.x*canvas.width),Math.round(c.y*canvas.height),Math.round(c.w*canvas.width),Math.round(c.h*canvas.height))
+   const im=await htLoadImage(u).catch(()=>null),c=HT_COORDS[p.css];if(!im)continue;
+   // la pieza entra entera en su hueco, sin deformarse (centrada sobre negro)
+   const bx=c.x*canvas.width,by=c.y*canvas.height,bw=c.w*canvas.width,bh=c.h*canvas.height,k=Math.min(bw/im.naturalWidth,bh/im.naturalHeight),dw=im.naturalWidth*k,dh=im.naturalHeight*k;
+   ctx.fillStyle="#000";ctx.fillRect(bx,by,bw,bh);ctx.drawImage(im,Math.round(bx+(bw-dw)/2),Math.round(by+(bh-dh)/2),Math.round(dw),Math.round(dh))
  }
  return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("No se ha podido generar el PNG.")),"image/png"))
 }
@@ -379,8 +395,8 @@ async function htPutComposite(v,m,rows){
  return k
 }
 async function htRefreshComposite(v,m){
- const d=await api("/api/control?module=hometicket"),rows=d.rows||[];
- await htPutComposite(v,m,rows);
+ // La pieza ya está guardada: si la composición falla, se avisa pero no se bloquea el guardado
+ let rows=[];try{const d=await api("/api/control?module=hometicket");rows=d.rows||[];await htPutComposite(v,m,rows)}catch(e){console.warn(e);say("Pieza guardada. La vista final no se ha podido actualizar ahora.")}
  return rows
 }
 async function htDownload(v,m,rows){
@@ -1266,7 +1282,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v44";
+const YC_VERSION="yellow-control-v45";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
