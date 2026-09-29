@@ -123,6 +123,37 @@ function radioAssignments(rows,contract){
  if(!rows.length)return '<div class="notice">Todavía no hay asignaciones para este mes. El inventario está disponible para repartir entre espectáculos.</div>';
  return rows.slice().sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||""))).map(r=>{const l=radioLine(contract,r.lineId),unit=r.unit||l?.unit||"cuñas";return '<div class="item radio-assignment" data-id="'+r.id+'"><div><div class="item-meta"><span class="badge">'+esc(l?.station||r.station||"Radio")+'</span><span>'+esc(l?.program||"")+'</span></div><h3>'+esc(r.spectacle||r.campaignName||"Sin espectáculo")+'</h3><div class="item-meta"><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span><span><b>'+radioFmt(r.plannedSpots)+'</b> '+esc(unit)+' planificadas</span>'+(radioNum(r.actualSpots)?'<span><b>'+radioFmt(r.actualSpots)+'</b> reales</span>':'')+'<span>'+esc(r.spotName||"Sin nombre de cuña")+'</span>'+statusBadge(r.materialStatus||r.status)+'</div><div class="media-preview" data-asset="'+esc(r.assetKey||"")+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||"")+'"></div></div><div class="item-actions"><button data-edit-radio="'+r.id+'">Editar</button><button class="danger" data-del-radio="'+r.id+'">Quitar</button></div></div>'}).join("")
 }
+// Semanas del mes (lunes a domingo, recortadas al mes)
+function radioWeeks(month){const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),weeks=[];let d=1;
+ while(d<=last){const dt=new Date(y,m-1,d),mon=d-((dt.getDay()+6)%7),start=Math.max(1,mon),end=Math.min(last,mon+6);if(!weeks.some(w=>w.start===start))weeks.push({start,end});d=end+1}
+ return weeks.map(w=>({...w,s:month+"-"+String(w.start).padStart(2,"0"),e:month+"-"+String(w.end).padStart(2,"0")}))}
+const radioName=r=>r.spectacle||r.campaignName||r.spotName||"Sin espectáculo";
+// Suma por espectáculo (planificadas; si hay certificadas, también), de mayor a menor
+function radioTally(rows){const m=new Map();rows.forEach(r=>{const k=radioName(r),x=m.get(k)||{name:k,p:0,a:0};x.p+=radioNum(r.plannedSpots);x.a+=radioNum(r.actualSpots);m.set(k,x)});return [...m.values()].filter(x=>x.p||x.a).sort((a,b)=>b.p-a.p||a.name.localeCompare(b.name))}
+function radioBar(v,max){const pc=max?Math.max(0,Math.min(100,v/max*100)):0;return '<span class="rsum-bar"><i style="width:'+pc.toFixed(1)+'%"></i></span>'}
+function radioSummary(contract,month,rows){
+ const units=[...new Set((contract.lines||[]).filter(l=>radioNum(l.monthly?.[month])>0).map(l=>l.unit))],main=units.includes("cuñas")?"cuñas":units[0]||"cuñas";
+ const tot=radioContractTotal(contract,month,rows,main),weeks=radioWeeks(month),mon=radioMonthLabel(month).split(" ")[0].toLowerCase();
+ const byUnit=rows.filter(r=>(r.unit||radioLine(contract,r.lineId)?.unit||"cuñas")===main);
+ const weekHtml=weeks.map((w,i)=>{const rr=byUnit.filter(r=>{const a=r.startDate||month+"-01",b=r.endDate||a;return a<=w.e&&b>=w.s}),t=radioTally(rr),sum=t.reduce((a,x)=>a+x.p,0),max=Math.max(1,...t.map(x=>x.p));
+  return '<div class="rsum-week"><div class="rsum-week-head"><b>Semana '+(i+1)+'</b><span>'+w.start+'–'+w.end+' '+esc(mon)+'</span><strong>'+radioFmt(sum)+' '+esc(main)+'</strong></div>'+
+   (t.length?t.map(x=>'<div class="rsum-row"><span class="rsum-name">'+esc(x.name)+'</span>'+radioBar(x.p,max)+'<b>'+radioFmt(x.p)+'</b></div>').join(""):'<p class="muted" style="margin:4px 0 0">Sin cuñas esta semana</p>')+'</div>'}).join("");
+ const all=radioTally(byUnit),cap=tot.capacity||1;
+ const totalHtml='<div class="rsum-total"><div class="rsum-week-head"><b>Total del mes</b><span>de '+radioFmt(tot.capacity)+' '+esc(main)+' contratadas</span><strong>'+radioFmt(tot.planned)+'</strong></div>'+
+  all.map(x=>'<div class="rsum-row"><span class="rsum-name">'+esc(x.name)+'</span>'+radioBar(x.p,cap)+'<b>'+radioFmt(x.p)+'</b><em>'+Math.round(x.p/cap*100)+' %</em></div>').join("")+
+  '<div class="rsum-row rsum-foot"><span class="rsum-name">'+(tot.capacity-tot.planned>0?'Sin asignar':'Contrato completo')+'</span>'+radioBar(tot.planned,cap)+'<b>'+radioFmt(Math.max(0,tot.capacity-tot.planned))+'</b><em>'+Math.round(tot.planned/cap*100)+' % usado</em></div>'+
+  (tot.actual?'<p class="muted" style="margin:8px 0 0">Certificadas por la emisora: <b>'+radioFmt(tot.actual)+'</b> de '+radioFmt(tot.planned)+' planificadas.</p>':'<p class="muted" style="margin:8px 0 0">Cifras planificadas; falta el certificado de emisión.</p>')+'</div>';
+ return '<section class="card rsum"><div class="section-title"><div><small class="section-kicker">Resumen de '+esc(radioMonthLabel(month).toLowerCase())+'</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2></div><div class="rsum-big"><strong>'+radioFmt(tot.planned)+'</strong><span>/ '+radioFmt(tot.capacity)+' '+esc(main)+'</span></div></div>'+
+  '<div class="rsum-grid"><div class="rsum-weeks">'+weekHtml+'</div>'+totalHtml+'</div></section>'
+}
+// Cada cuña (audio) una sola vez, aunque esté repartida en varias semanas
+function radioAudios(rows){const seen=new Map();rows.forEach(r=>{const k=r.assetKey||("n:"+(r.spotName||radioName(r)));const x=seen.get(k)||{r,total:0,weeks:0};x.total+=radioNum(r.plannedSpots);x.weeks++;seen.set(k,x)});
+ const list=[...seen.values()].sort((a,b)=>b.total-a.total);
+ if(!list.length)return "";
+ return '<details class="card rsum-audios" id="radioAudios"><summary><b>Cuñas del mes · audios</b> <span class="badge">'+list.length+'</span></summary><div class="list" style="margin-top:10px">'+list.map(({r,total,weeks})=>'<div class="item"><div style="width:100%"><h3>'+esc(radioName(r))+'</h3><div class="item-meta"><span>'+esc(r.spotName||"")+'</span><span><b>'+radioFmt(total)+'</b> cuñas en '+weeks+' '+(weeks===1?"semana":"semanas")+'</span></div>'+(r.assetKey?'<div class="media-preview" data-lazy-asset="'+esc(r.assetKey)+'" data-module="radio" data-kind="audio" data-name="'+esc(r.assetName||r.spotName||"")+'"></div>':'<p class="muted" style="margin:6px 0 0">Sin audio subido</p>')+'</div></div>').join("")+'</div></details>'}
+// Asignaciones para editar: compactas y sin reproductor
+function radioEditList(rows,contract){if(!rows.length)return "";
+ return '<details class="card rsum-edit"><summary><b>Asignaciones por semana · editar</b> <span class="badge">'+rows.length+'</span></summary><div class="rsum-edit-list">'+rows.slice().sort((a,b)=>String(a.startDate||"").localeCompare(String(b.startDate||""))||radioName(a).localeCompare(radioName(b))).map(r=>'<div class="rsum-edit-row"><span>'+(r.startDate?fdate(r.startDate)+' → '+fdate(r.endDate||r.startDate):'Sin fechas')+'</span><b>'+esc(radioName(r))+'</b><em>'+radioFmt(r.plannedSpots)+'</em><span class="rsum-edit-actions"><button type="button" data-edit-radio="'+r.id+'">Editar</button><button type="button" class="danger" data-del-radio="'+r.id+'">Quitar</button></span></div>').join("")+'</div></details>'}
 function radioWeekPanel(rows,month,contract){
  const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),weeks=[];let d=1;
  while(d<=last){const dt=new Date(y,m-1,d),mon=d-((dt.getDay()+6)%7),start=Math.max(1,mon),end=Math.min(last,mon+6);if(!weeks.some(w=>w.start===start))weeks.push({start,end});d=end+1}
@@ -172,22 +203,23 @@ async function radio(){
  const contract=radioContract(radioView.contractId),months=radioMonths(contract);
  if(!radioView.month||!months.includes(radioView.month))radioView.month=radioDefaultMonth(months,current);
  const month=radioView.month,monthRows=radioRows(rows,contract.id,month),legacy=rows.filter(r=>!r.contractId);
- app.innerHTML=pageHead("Radio","Control contractual, reparto por espectáculo, materiales y consumo",'<button id="radioMail" class="btn">Preparar correo</button><button id="radioPrint" class="btn">Informe mensual</button><button id="newRadio" class="primary">+ Nueva asignación</button>')+
- radioContractTabs(contracts,contract.id)+
- '<section class="card radio-contract-head radio-contract-head-compact"><div><small class="section-kicker">Contrato activo</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2><p>'+esc(radioValidity(contract.endDate))+'</p></div></section>'+
- radioMonthTabs(contract,month)+radioInventoryKpis(contract,month,monthRows)+
- '<section id="radioMailPanel" class="card radio-mail-panel hidden"></section>'+
- '<div class="grid radio-main-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Inventario contractual</small><h2>'+esc(radioMonthLabel(month))+'</h2></div><span class="badge">'+monthRows.length+' asignaciones</span></div>'+radioLineTable(contract,month,monthRows)+'</section>'+
- '<section class="card" id="radioFormCard">'+radioForm({},contract,month)+'</section></div>'+
- '<div class="grid two-col radio-bottom-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Planificación</small><h2>Asignaciones del mes</h2></div></div><div class="list">'+radioAssignments(monthRows,contract)+'</div></section>'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Control semanal</small><h2>Semanas del mes</h2></div></div>'+radioWeekPanel(monthRows,month,contract)+'<div class="section-title radio-report-title"><div><small class="section-kicker">Informe</small><h2>Consumo por espectáculo</h2></div></div>'+radioSpectacleReport(monthRows,contract)+'</section></div>'+
- (legacy.length?'<section class="card radio-legacy"><div class="section-title"><h2>Registros anteriores sin contrato</h2><span class="badge">'+legacy.length+'</span></div><p class="muted">Se conservan para no perder información. Puedes editarlos y asignarlos a uno de los tres contratos cuando corresponda.</p><div class="list">'+radioAssignments(legacy,{lines:[]})+'</div></section>':"");
+ app.innerHTML=pageHead("Radio","Resumen de cuñas por mes y semana, reparto por espectáculo y audios",'<button id="radioMail" class="btn">Preparar correo</button><button id="radioPrint" class="btn">Informe mensual</button><button id="newRadio" class="primary">+ Nueva asignación</button>')+
+  radioContractTabs(contracts,contract.id)+radioMonthTabs(contract,month)+
+  '<section id="radioMailPanel" class="card radio-mail-panel hidden"></section>'+
+  radioSummary(contract,month,monthRows)+
+  radioAudios(monthRows)+
+  radioEditList(monthRows,contract)+
+  '<details class="card rsum-edit" id="radioFormBox"><summary><b>Nueva asignación / editar</b> <span class="muted">· '+esc(contract.venue)+' · '+esc(contract.brand)+'</span></summary><div id="radioFormCard" style="margin-top:12px">'+radioForm({},contract,month)+'</div></details>'+
+  '<details class="card rsum-edit"><summary><b>Inventario del contrato</b> <span class="muted">· emisoras y programas</span></summary>'+radioInventoryKpis(contract,month,monthRows)+radioLineTable(contract,month,monthRows)+'</details>'+
+  (legacy.length?'<details class="card radio-legacy"><summary><b>Registros anteriores sin contrato</b> <span class="badge">'+legacy.length+'</span></summary><p class="muted">Se conservan para no perder información. Puedes editarlos y asignarlos a un contrato.</p><div class="list">'+radioAssignments(legacy,{lines:[]})+'</div></details>':"");
  $$("[data-radio-contract]").forEach(b=>b.onclick=()=>{radioView.contractId=b.dataset.radioContract;radioView.month="";radio()});
  $$("[data-radio-month]").forEach(b=>b.onclick=()=>{radioView.month=b.dataset.radioMonth;radio()});
  requestAnimationFrame(()=>{const strip=$(".radio-months"),active=$(".radio-months .chip.on");if(strip&&active)active.scrollIntoView({block:"nearest",inline:"center"})});
  $("#radioMail").onclick=()=>radioMailOpen(contract,month,monthRows);
  $("#radioPrint").onclick=()=>radioPrint(contract,month,monthRows);
- bindRadio(rows,contract,month);await hydrateMedia("radio")
+ bindRadio(rows,contract,month);
+ const au=$("#radioAudios");if(au)au.addEventListener("toggle",async()=>{if(!au.open)return;for(const el of $$("[data-lazy-asset]",au)){el.dataset.asset=el.dataset.lazyAsset;el.removeAttribute("data-lazy-asset")}await hydrateMedia("radio")});
+ if(legacy.length)await hydrateMedia("radio")
 }
 function localToday(){return new Date().toLocaleDateString("sv")}
 function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
@@ -224,8 +256,9 @@ const MAX_UPLOAD_MB=5.5;
 function checkFileSize(file){if(file&&file.size>MAX_UPLOAD_MB*1024*1024)throw new Error("«"+file.name+"» pesa "+(file.size/1048576).toFixed(1)+" MB. El máximo es "+MAX_UPLOAD_MB+" MB: comprímelo (audio en MP3, PDF optimizado) y vuelve a intentarlo.")}
 async function uploadAsset(file,moduleName,existing){if(!file)return existing||"";checkFileSize(file);const k=crypto.randomUUID().replaceAll("-","");const r=await fetch("/api/asset?key="+k+"&module="+moduleName,{method:"PUT",headers:headers({"content-type":file.type||"application/octet-stream"}),body:file});if(!r.ok)throw new Error(await r.text());return k}
 function bindRadio(rows,selectedContract,selectedMonth){
- $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth)};
- $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);if(!r)return;$("#radioFormCard").innerHTML=radioForm(r,selectedContract,selectedMonth);bindRadioForm(r,rows,selectedContract,selectedMonth)});
+ const openBox=()=>{const bx=$("#radioFormBox");if(bx){bx.open=true;bx.scrollIntoView({behavior:"smooth",block:"start"})}};
+ $("#newRadio").onclick=()=>{$("#radioFormCard").innerHTML=radioForm({},selectedContract,selectedMonth);bindRadioForm(null,rows,selectedContract,selectedMonth);openBox()};
+ $$("[data-edit-radio]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editRadio);if(!r)return;$("#radioFormCard").innerHTML=radioForm(r,selectedContract,selectedMonth);bindRadioForm(r,rows,selectedContract,selectedMonth);openBox()});
  $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta asignación?"))return;const _u="/api/control?module=radio&id="+b.dataset.delRadio;await api(_u,{method:"DELETE"});sayUndo("Asignación quitada",_u,()=>radio());radio()});
  bindRadioForm(null,rows,selectedContract,selectedMonth)
 }
@@ -422,20 +455,22 @@ async function homeTicket(){
  const editId=new URLSearchParams(location.hash.split("?")[1]||"").get("edit"),editRow=editId&&rows.find(r=>r.id===editId);
  if(editRow){htView=editRow.venue;htMonth=htRowMonth(editRow)||htMonth}
  if(htView&&!htSpaces.includes(htView))htView="";
- if(!htView)htView=htSpaces[0]||"";
+ // Al entrar solo se ven los nombres de los espacios; el Home Ticket se abre al tocar uno
  const monthTabs='<div class="chip-row ht-month-tabs"><span class="chip-label">Mes</span>'+months.map(m=>'<button type="button" class="chip'+(m===htMonth?" on":"")+'" data-ht-month="'+m+'">'+esc(htMonthShort(m))+'</button>').join("")+'</div>';
- const venueTabs='<div class="chip-row ht-tabs"><span class="chip-label">Espacio</span>'+htSpaces.map(v=>'<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+'</button>').join("")+'</div>';
+ const cnt=v=>rows.filter(r=>r.venue===v&&htRowMonth(r)===htMonth).length;
+ const venueTabs='<div class="chip-row ht-tabs"><span class="chip-label">Espacio</span>'+htSpaces.map(v=>'<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(cnt(v)?' <small style="opacity:.6">'+cnt(v)+'</small>':'')+'</button>').join("")+'</div>'+(htView?'':'<p class="muted" style="margin:6px 0 0">Elige un espacio para ver su Home Ticket de '+esc(monthLabel(htMonth).toLowerCase())+'.</p>');
  const v=htView,m=htMonth,mine=rows.filter(r=>r.venue===v&&htRowMonth(r)===m);
- const work=v?'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket · '+esc(monthLabel(m))+'</small><h2>'+esc(v)+'</h2></div><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button></div>'+
+ const work=v?'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket · '+esc(monthLabel(m))+'</small><h2>'+esc(v)+'</h2></div><div class="actions-row"><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button><button type="button" class="ghost" data-ht-close>Cerrar</button></div></div>'+
   '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div>'+
   '<div class="ht-workbench">'+htMockup(rows,v,m)+'<div class="ht-slots">'+HT_POS.map(p=>htSlot(rows,v,m,p)).join("")+'</div></div>'+
   (mine.length?'<details class="ht-history"><summary>Registros de '+esc(monthLabel(m))+' ('+mine.length+')</summary><div class="list">'+htItems(mine)+'</div></details>':'')+
   '</div>':'';
- app.innerHTML=pageHead("Home Ticket","Base por teatro, piezas por mes y exportación PNG")+moduleKpis(rows.filter(r=>htRowMonth(r)===m),"Piezas en "+monthLabel(m))+
+ app.innerHTML=pageHead("Home Ticket","Base por teatro, piezas por mes y exportación PNG")+
   '<section class="card">'+monthTabs+venueTabs+work+'</section>';
 
  $$("[data-ht-month]").forEach(b=>b.onclick=()=>{htMonth=b.dataset.htMonth;homeTicket()});
- $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=b.dataset.htTab;homeTicket()});
+ $$("[data-ht-tab]").forEach(b=>b.onclick=()=>{htView=htView===b.dataset.htTab?"":b.dataset.htTab;homeTicket()});
+ $$("[data-ht-close]").forEach(b=>b.onclick=()=>{htView="";homeTicket()});
  const panelOf=v=>$('[data-ht-panel="'+CSS.escape(v)+'"]');
  const open=(v,html,bind)=>{$$(".ht-panel").forEach(x=>x.innerHTML="");const p=panelOf(v);p.innerHTML='<div class="ht-form card">'+html+'</div>';bind(p);p.scrollIntoView({behavior:"smooth",block:"start"})};
  $$("[data-edit-ht]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editHt);if(!r)return;open(r.venue,htForm(r,htMonth),()=>bindHTForm(r,htMonth))});
@@ -1292,7 +1327,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v46";
+const YC_VERSION="yellow-control-v47";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
