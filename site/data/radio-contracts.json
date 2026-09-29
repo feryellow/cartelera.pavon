@@ -8,10 +8,10 @@
       "provider": "Radio Blanca, S.A.U.",
       "brand": "KISS FM",
       "contractNumber": "M26/9001/0006644",
-      "startDate": "2026-09-01",
+      "startDate": "2026-10-01",
       "endDate": "2027-09-30",
-      "source": "Contrato de publicidad Gran Teatro Pavón 2026-2027 + renovación enviada por email",
-      "notes": "KISS FM Madrid: 4 cuñas diarias L-D. Audio digital: 15.000 impresiones mensuales con IP Madrid. Septiembre de 2026 añadido con las mismas condiciones que el septiembre del contrato (4 cuñas diarias, 120), a petición de Fer; pendiente de confirmar con Kiss FM.",
+      "source": "Contrato de publicidad M26/9001/0006644 firmado el 24/09/2026 (OC CONTRATO KISS TEATRO PAVÓN 2026-2027)",
+      "notes": "Contrato del 01/10/2026 al 30/09/2027. KISS FM Madrid: 4 cuñas diarias de 22\" en rotación L-D (1.460 en el año). Digital: 12 unidades de Web local, 1 al mes; según el email de renovación, unas 15.000 escuchas al mes con IP Madrid (pendiente de confirmar con Kiss FM, y también la duración). Septiembre de 2026 (120 cuñas) queda fuera de este contrato: se mantiene a petición de Fer, pendiente de confirmar con Kiss FM. Los certificados de emisión hay que pedirlos cada mes; hay 10 días desde la factura para reclamar.",
       "lines": [
         {
           "id": "kiss-madrid-22",
@@ -38,10 +38,10 @@
         },
         {
           "id": "kiss-digital-madrid",
-          "station": "KISS FM Audio Digital",
-          "program": "Audio digital · IP Madrid",
+          "station": "KISS FM Digital (web y app)",
+          "program": "Web local · IP Madrid · 1 paquete al mes (15.000 según el email de renovación)",
           "timeSlot": "Digital",
-          "duration": "—",
+          "duration": "pendiente",
           "unit": "impresiones",
           "monthly": {
             "2026-10": 15000,
@@ -58,7 +58,19 @@
             "2027-09": 15000
           }
         }
-      ]
+      ],
+      "signedDate": "2026-09-24",
+      "client": "Abonoteatro S.L.",
+      "agent": "Diego Rodríguez",
+      "pricing": {
+        "radioNet": 8752.7,
+        "digitalNet": 1440.0,
+        "totalNet": 10192.7,
+        "vat": 2140.47,
+        "total": 12333.17,
+        "currency": "EUR",
+        "payment": "Transferencia 30 días (las condiciones generales dicen 10 días desde factura; pendiente de aclarar)"
+      }
     },
     {
       "id": "principe-kiss-2026",
