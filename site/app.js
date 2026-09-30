@@ -34,6 +34,7 @@ async function authenticate(){
  catch{gate.classList.remove("hidden");return false}
 }
 $("#loginForm").addEventListener("submit",async e=>{e.preventDefault();$("#loginError").textContent="";try{await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#loginEmail").value,password:$("#loginPassword").value})}).then(async r=>{if(!r.ok)throw new Error((await r.json()).error||"No se ha podido iniciar sesión")});if(await authenticate())route()}catch(err){$("#loginError").textContent=err.message}});
+{const rb=$("#recoverBtn");if(rb)rb.onclick=async()=>{const em=$("#loginEmail").value.trim();if(!em){$("#loginError").textContent="Escribe tu correo arriba y vuelve a pulsar";return}rb.disabled=true;try{const r=await fetch("/api/recover",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:em})});$("#loginError").textContent=r.ok?"Si ese correo tiene acceso, te llegará un enlace para crear una contraseña nueva.":"No se ha podido enviar. Inténtalo de nuevo."}catch{$("#loginError").textContent="No se ha podido enviar. Inténtalo de nuevo."}finally{rb.disabled=false}}}
 $("#keyForm").addEventListener("submit",async e=>{e.preventDefault();try{sessionStorage.setItem("pavon_edit_key",$("#legacyKey").value.trim())}catch{};if(await authenticate())route();else $("#loginError").textContent="Clave no válida"});
 document.addEventListener("click",e=>{if(e.target.closest(".nav-logout"))$("#logoutBtn").click()});
 $("#logoutBtn").addEventListener("click",async()=>{try{await fetch("/api/logout",{method:"POST"})}catch{};try{sessionStorage.removeItem("pavon_edit_key")}catch{};state.actor=null;gate.classList.remove("hidden")});
@@ -1402,7 +1403,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v63";
+const YC_VERSION="yellow-control-v64";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
