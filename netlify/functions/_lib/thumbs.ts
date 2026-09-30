@@ -4,9 +4,15 @@ import { facadeComposite, facadeVersion } from "./facade.ts";
 
 // Miniaturas JPEG pequeñas para incrustar en los correos (cid:). Se guardan en caché para no
 // recalcularlas cada mes. Devuelve base64 o "" si la imagen no existe o no se puede leer.
-export type ImgRef = { kind: "asset" | "cart" | "facade" | "collage" | "blank"; key: string; refs?: ImgRef[] };
+export type ImgRef = { kind: "asset" | "cart" | "facade" | "collage" | "blank" | "static"; key: string; refs?: ImgRef[]; play?: boolean };
 
 async function rawBytes(ref: ImgRef): Promise<Uint8Array | null> {
+  // Imagen publicada en la propia web (p. ej. la portada de un vídeo en /assets/campanas/)
+  if (ref.kind === "static") {
+    if (!/^\/assets\/[\w./-]+\.(jpe?g|png)$/i.test(ref.key)) return null;
+    const r = await fetch(new URL(ref.key, (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, ""))).catch(() => null);
+    return r && r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
+  }
   if (ref.kind === "asset") {
     const meta: any = await assetStore().get(`meta_${ref.key}`, { type: "json" });
     if (meta?.contentType && !/^image\//.test(meta.contentType)) return null;
@@ -28,11 +34,12 @@ async function version(ref: ImgRef): Promise<string> {
   if (ref.kind === "blank") return "1";
   if (ref.kind === "collage") return "recto2-" + (await Promise.all((ref.refs || []).map((r) => version(r).catch(() => "0")))).join("-").slice(0, 120);
   if (ref.kind === "facade") return facadeVersion(ref.key);
+  if (ref.kind === "static") return "s1" + (ref.play ? "p" : "");
   const meta: any = ref.kind === "asset" ? await assetStore().get(`meta_${ref.key}`, { type: "json" }) : await carteleriaStore().get(`imagemeta_${ref.key}`, { type: "json" });
   return String(meta?.updatedAt || meta?.size || "0").replace(/[^0-9A-Za-z]/g, "");
 }
 export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string> {
-  const cacheKey = `thumbv_${ref.kind}_${ref.key}_${await version(ref).catch(() => "0")}_${w}x${h}`;
+  const cacheKey = `thumbv_${ref.kind}_${ref.key.replace(/[^\w-]/g, "_")}${ref.play ? "_play" : ""}_${await version(ref).catch(() => "0")}_${w}x${h}`;
   try { const c = await controlStore().get(cacheKey, { type: "text" }); if (c) return c; } catch {}
   try {
     if (ref.kind === "blank") {
@@ -54,6 +61,7 @@ export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string
     img.scaleToFit({ w, h });
     const frame = new Jimp({ width: w, height: h, color: 0xf3f3f1ff });
     frame.composite(img, Math.round((w - img.bitmap.width) / 2), Math.round((h - img.bitmap.height) / 2));
+    if (ref.play) drawPlay(frame, w, h);
     const out = await frame.getBuffer("image/jpeg", { quality: 78 });
     const b64 = Buffer.from(out).toString("base64");
     try { await controlStore().set(cacheKey, b64); } catch {}
@@ -61,6 +69,16 @@ export async function thumbBase64(ref: ImgRef, w = 300, h = 400): Promise<string
   } catch { return ""; }
 }
 
+// Botón de reproducir en el centro de la miniatura de un vídeo (círculo negro y triángulo amarillo)
+function drawPlay(f: any, w: number, h: number) {
+  const r = Math.round(Math.min(w, h) * 0.13), cx = Math.round(w / 2), cy = Math.round(h / 2);
+  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+    const d = Math.sqrt(x * x + y * y); if (d > r) continue;
+    const px = cx + x, py = cy + y; if (px < 0 || py < 0 || px >= w || py >= h) continue;
+    const t = r * 0.5, inTri = x > -t * 0.6 && x < t && Math.abs(y) < (t - x) * 0.62;
+    f.setPixelColor(inTri ? 0xf4c300ff : 0x111111e6, px, py);
+  }
+}
 async function readImage(ref: ImgRef) {
   if (ref.kind === "facade") { const buf = await facadeComposite(ref.key, (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, ""), 912); return buf ? Jimp.read(buf) : null; }
   const bytes = await rawBytes(ref); return bytes ? Jimp.read(Buffer.from(bytes)) : null;
