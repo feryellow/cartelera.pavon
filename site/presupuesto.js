@@ -53,7 +53,7 @@ async function load(){
  try{const d=await api("/api/budget?year="+P.year,{cache:"no-store"});P.me=d.me;P.doc=d.doc;P.base=d.doc.updatedAt||null;P.dirty=false;return "ok"}
  catch(e){if(e.status===401)return "login";if(e.status===403)return "forbidden";throw e}}
 
-function loginCard(msg){return '<section class="card bud-lock"><h2>Acceso restringido</h2><p class="muted">'+esc(msg)+'</p><form id="budLogin" class="stack" style="max-width:360px"><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Entrar al presupuesto</button></form><div id="budErr" class="error"></div></section>'}
+function loginCard(msg){return '<section class="card bud-lock"><h2>Acceso restringido</h2><p class="muted">'+esc(msg)+'</p><form id="budLogin" class="stack" style="max-width:360px"><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Entrar al presupuesto</button><button type="button" class="ghost" id="budForgot">He olvidado la contraseña / no tengo contraseña</button></form><div id="budErr" class="error"></div></section>'}
 
 async function save(what){
  if(!P.dirty){say("No hay cambios que guardar");return}
@@ -65,7 +65,17 @@ window.presupuesto=async function(ctx){
  if(ctx){CTX=ctx;({api,esc,pageHead,say,app,state,VENUES,$,$$}=ctx)}
  const st=await load();
  if(st!=="ok"){app.innerHTML=pageHead("Presupuesto","Control del presupuesto de publicidad")+loginCard(st==="login"?"Esta sección solo se abre con tu usuario y contraseña de Yellow Control, aunque el resto de la app esté abierta.":"Tu usuario no tiene acceso a esta sección. Solo pueden entrar las personas autorizadas.");
-  const f=$("#budLogin");if(f)f.onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(f).entries());$("#budErr").textContent="";try{const r=await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(v)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"No se ha podido iniciar sesión");window.presupuesto(CTX)}catch(err){$("#budErr").textContent=err.message}};return}
+  const f=$("#budLogin"),err=m=>{const x=$("#budErr");if(x)x.textContent=m};
+  if(f){const btn=f.querySelector('button[type="submit"]');
+   f.onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(f).entries());err("");btn.disabled=true;btn.textContent="Entrando…";
+    try{const r=await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(v)});const d=await r.json().catch(()=>({}));
+     if(!r.ok){const m=String(d.error||"");throw new Error(/invalid|grant|password|credential|401/i.test(m+r.status)?"Email o contraseña incorrectos. Si no la recuerdas, pulsa «He olvidado la contraseña».":/confirm/i.test(m)?"Tu cuenta aún no está confirmada: abre el correo de invitación de Netlify.":"No se ha podido iniciar sesión ("+(m||r.status)+").")}
+     const st2=await load();if(st2==="ok"){render();return}
+     err(st2==="forbidden"?"Has entrado, pero tu usuario no tiene acceso al presupuesto.":"La contraseña es correcta, pero el navegador no ha guardado la sesión. Prueba a recargar la página; si sigue igual, avísame.")}
+    catch(x){err(x.message)}finally{btn.disabled=false;btn.textContent="Entrar al presupuesto"}};
+   $("#budForgot").onclick=async()=>{const em=String(f.elements.email.value||"").trim();if(!em){err("Escribe tu email arriba y vuelve a pulsar.");return}
+    try{const r=await fetch("/api/recover",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:em})});err(r.ok?"Te llegará un correo de Netlify (no-reply) con un enlace para crear la contraseña. Mira también en spam. Al abrirlo, crea la contraseña y vuelve aquí.":"No se ha podido enviar el correo. Inténtalo de nuevo.")}catch{err("No se ha podido enviar el correo. Inténtalo de nuevo.")}}}
+  return}
  render()};
 
 function totals(){const L=P.doc.lines||[],plan=L.reduce((a,l)=>a+lineTotal(l),0),real=L.reduce((a,l)=>a+lineTotal(l,"real"),0);
