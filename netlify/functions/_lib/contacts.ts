@@ -15,6 +15,7 @@ const DEFAULT: Contact[] = [
   { name: "Ana Álvarez (Abonoteatro)", email: "ana.alvarez@abonoteatro.com" },
   { name: "Luis Álvarez", email: "luis@wonderlandgroup.es" },
   { name: "Cristina (La Estación)", email: "cristina@laestacion.com" },
+  { name: "Shuang Cai", email: "shuang@grancastillodepedraza.com" },
 ];
 export const EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i;
 
