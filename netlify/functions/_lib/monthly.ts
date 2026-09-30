@@ -2,12 +2,13 @@ import { carteleriaStore, controlStore } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { SLOT_NAMES, slotVenue } from "./calendar.ts";
 import { loadContracts } from "./radio.ts";
+import { mediaUrl } from "./media.ts";
 import { FACADE_VIEWS, FACADE_SLOTS, ARLEQUIN_VIEWS, ARLEQUIN_SLOTS } from "./facade.ts";
 
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
-export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
+export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; link?: string; linkLabel?: string; links?: { label: string; url: string }[]; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
 export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
 export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number | string; note?: string }[]; sections: Section[] };
 
@@ -109,7 +110,9 @@ export async function monthSummary(month: string, origin: string): Promise<Month
       if (u === "cuñas") { planned += p; actual += q; }
       const nm = (r: any) => r.spectacle || r.campaignName || "Sin espectáculo";
       const bySpec = new Map<string, number>(); rr.forEach((r) => bySpec.set(nm(r), (bySpec.get(nm(r)) || 0) + n(r.plannedSpots)));
-      rLines.push({ stat: { used: p, cap, cert: q, unit: u, parts: [...bySpec].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]) }, title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
+      // Enlace a cada cuña que suena este mes (una vez por audio)
+      const audios = new Map<string, string>(); rr.filter((r) => r.assetKey && n(r.plannedSpots) > 0).forEach((r) => { if (!audios.has(r.assetKey)) audios.set(r.assetKey, r.spotName || nm(r)); });
+      rLines.push({ links: [...audios].map(([k, label]) => ({ label, url: mediaUrl(origin, k, "radio") })), stat: { used: p, cap, cert: q, unit: u, parts: [...bySpec].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]) }, title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
     }
   }
   radio.filter((r) => !r.contractId && overlaps(r)).forEach((r) => rLines.push({ title: r.spectacle || "Sin espectáculo", detail: [short(r.venue), r.station, r.frequency, range(r.startDate, r.endDate)].filter(Boolean).join(" · ") }));
@@ -118,7 +121,12 @@ export async function monthSummary(month: string, origin: string): Promise<Month
   // Taxis e intercambiadores
   for (const [m, name] of [["taxis", "Taxis"], ["intercambiadores", "Intercambiadores"]] as const) {
     const rows = (await listRecords(m)).filter(overlaps);
-    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: (r.posterKey || r.assetKey) ? { kind: "asset" as const, key: r.posterKey || r.assetKey } : undefined })) });
+    // Vídeos: miniatura con su portada (subida o la publicada en /assets/campanas/) y enlace para verlo
+    const isVid = (r: any) => /\.(mp4|mov|m4v|webm)$/i.test(r.assetName || "") || /^video\//.test(r.assetType || "");
+    const poster = (r: any): ImgRef | undefined => r.posterKey ? { kind: "asset", key: r.posterKey, play: isVid(r) }
+      : isVid(r) ? (r.assetName ? { kind: "static", key: `/assets/campanas/${String(r.assetName).replace(/\.[^.]+$/, "")}.jpg`, play: true } : undefined)
+      : r.assetKey ? { kind: "asset", key: r.assetKey } : undefined;
+    sections.push({ key: m, name, lines: rows.map((r) => ({ title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: poster(r), wide: isVid(r) || undefined, link: isVid(r) && r.assetKey ? mediaUrl(origin, r.assetKey, m) : undefined, linkLabel: isVid(r) ? "▶ Ver vídeo" : undefined })) });
   }
 
   // Revistas: una página por revista y mes

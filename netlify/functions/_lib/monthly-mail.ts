@@ -61,7 +61,8 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
       ${c.note ? `<div style="font-size:12px; color:#555555; margin-top:4px; line-height:1.35;">${e(c.note)}</div>` : ""}</td></tr></table>`;
   const kpiRows: string[] = [];
   for (let i = 0; i < cards.length; i += 2) kpiRows.push(`<tr>${cards.slice(i, i + 2).map((c, j) => `<td width="50%" valign="top" class="yw-stack yw-kpi" style="width:50%; padding:0 ${j ? 0 : 6}px 12px ${j ? 6 : 0}px;">${card(c)}</td>`).join("")}${cards.slice(i, i + 2).length < 2 ? `<td width="50%" class="yw-stack" style="width:50%;"></td>` : ""}</tr>`);
-  const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}</div></td></tr>`;
+  const linkBtn = (l: Line) => l.link ? `<div style="margin-top:6px;"><a href="${e(l.link)}" target="_blank" style="display:inline-block; background:#111111; color:${Y}; font-size:12px; font-weight:800; text-decoration:none; padding:5px 10px; border-radius:4px;">${e(l.linkLabel || "Abrir")}</a></div>` : "";
+  const textRow = (l: Line, i: number) => `<tr><td class="yw-pad" style="padding:${i ? "10px" : "14px"} 32px 0;"><div style="font-size:13px; color:#111111; line-height:1.5;${i ? " border-top:1px solid #eeeeee; padding-top:10px;" : ""}"><b>${e(l.title)}</b>${l.detail ? ` · <span style="color:#444444;">${e(l.detail)}</span>` : ""}${l.link ? ` · <a href="${e(l.link)}" target="_blank" style="color:#111111; font-weight:800;">${e(l.linkLabel || "Abrir")}</a>` : ""}</div></td></tr>`;
   // Cuadrículas: carteles de fachada 4 por fila (cuadradas y pequeñas), resto 3 por fila (3:4),
   // fotos de montaje 2 por fila (4:3)
   const grid = (items: Line[]) => {
@@ -71,9 +72,9 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
         const chunk = list.slice(i, i + per);
         rows.push(`<tr>${chunk.map((l) => `<td width="${pct}%" valign="top" style="width:${pct}%; padding:0 10px 14px 0;">
           ${l.kicker ? `<div style="font-size:15px; font-weight:800; color:#111111; margin:0 0 6px; line-height:1.2;">${e(l.kicker)}</div>` : ""}
-          <img src="cid:${e((l as any).cid)}" width="${iw}" height="${Math.round(iw * ratio)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">
+          ${l.link ? `<a href="${e(l.link)}" target="_blank" style="text-decoration:none;">` : ""}<img src="cid:${e((l as any).cid)}" width="${iw}" height="${Math.round(iw * ratio)}" alt="${e(l.title)}" style="display:block; width:100%; max-width:${iw}px; height:auto; border:1px solid #e3e3e3;">${l.link ? "</a>" : ""}
           <div style="font-size:${cap}px; font-weight:800; color:#111111; margin-top:6px; line-height:1.3;">${e(l.title)}</div>
-          ${l.detail ? `<div style="font-size:${cap - 1}px; color:#666666; margin-top:2px; line-height:1.35;">${e(l.detail)}</div>` : ""}</td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
+          ${l.detail ? `<div style="font-size:${cap - 1}px; color:#666666; margin-top:2px; line-height:1.35;">${e(l.detail)}</div>` : ""}${linkBtn(l)}</td>`).join("")}${chunk.length < per ? `<td width="${pct * (per - chunk.length)}%" style="width:${pct * (per - chunk.length)}%;"></td>` : ""}</tr>`);
       }
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed; width:100%;">${rows.join("")}</table>`;
     };
@@ -117,6 +118,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
         <td width="44%" style="width:44%; font-size:12px; color:#111111; padding:3px 8px 3px 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${e(nme)}</td>
         <td style="padding:3px 0;">${bar(v, max, 7, "#111111")}</td>
         <td width="36" align="right" style="width:36px; font-size:12px; font-weight:800; color:#111111; padding:3px 0 3px 8px;">${fm(v)}</td></tr>`).join("")}</table>` : ""}
+      ${l.links?.length ? `<div style="margin-top:10px; font-size:11px; font-weight:800; letter-spacing:0.04em; color:#555555;">CUÑAS QUE SUENAN</div>${l.links.map((x) => `<div style="margin-top:5px;"><a href="${e(x.url)}" target="_blank" style="display:inline-block; background:#111111; color:${Y}; font-size:12px; font-weight:800; text-decoration:none; padding:5px 10px; border-radius:4px;">▶ ${e(x.label)}</a></div>`).join("")}` : ""}
     </td></tr></table></td></tr>`;
   }).join("");
   const sections = s.sections.map((sec) => {
