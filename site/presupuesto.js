@@ -63,6 +63,7 @@ function mark(){P.dirty=true;const b=$("#budSave");if(b)b.classList.add("primary
 
 window.presupuesto=async function(ctx){
  if(ctx){CTX=ctx;({api,esc,pageHead,say,app,state,VENUES,$,$$}=ctx)}
+ {const vq=new URLSearchParams(location.hash.split("?")[1]||"").get("vaciar");if(/^\d{4}$/.test(vq||""))P.year=vq}
  const st=await load();
  if(st!=="ok"){app.innerHTML=pageHead("Presupuesto","Control del presupuesto de publicidad")+loginCard(st==="login"?"Esta sección solo se abre con tu usuario y contraseña de Yellow Control, aunque el resto de la app esté abierta.":"Tu usuario no tiene acceso a esta sección. Solo pueden entrar las personas autorizadas.");
   const f=$("#budLogin"),err=m=>{const x=$("#budErr");if(x)x.textContent=m};
@@ -96,7 +97,13 @@ function alerts(t){const a=[];
 
 function bar(parts,max){return '<div class="bud-bar">'+parts.map(([v,c])=>v>0?'<i style="width:'+(v/max*100).toFixed(2)+'%;background:'+c+'"></i>':'').join("")+'</div>'}
 
+// Vaciar un año: no hay botón. Solo con el enlace #presupuesto?vaciar=AAAA y escribiendo VACIAR.
+function clearCard(y){const n=(P.doc.lines||[]).length;
+ app.innerHTML=pageHead("Presupuesto","Vaciar el presupuesto de "+y)+'<section class="card bud-lock"><h2>Vaciar '+esc(y)+'</h2><p class="muted">Se quitan las '+n+' líneas y el presupuesto anual de '+esc(y)+'. La versión actual queda guardada como copia en el servidor.</p><form id="budClr" class="stack" style="max-width:360px"><label>Escribe VACIAR para confirmar<input name="ok" autocomplete="off" required></label><button class="danger" type="submit">Vaciar '+esc(y)+'</button><a class="btn" href="#presupuesto">Cancelar</a></form></section>';
+ $("#budClr").onsubmit=async e=>{e.preventDefault();if(String(e.currentTarget.elements.ok.value).trim().toUpperCase()!=="VACIAR"){say("Escribe VACIAR para confirmar");return}
+  P.doc={...P.doc,lines:[],annualBudget:0,monthsLoaded:[],loose:[],notes:"",source:""};P.dirty=true;await save("Vaciado "+y);history.replaceState(null,"","#presupuesto");render()}}
 function render(){
+ const vq=new URLSearchParams(location.hash.split("?")[1]||"").get("vaciar");if(vq&&vq===P.year){clearCard(vq);return}
  const t=totals(),D=P.doc,avail=t.annual-t.plan;
  const years=[String(+P.year-1),P.year,String(+P.year+1)];
  app.innerHTML=pageHead("Presupuesto","Publicidad "+P.year+" · importes netos · todo el grupo · has entrado como "+esc(P.me?.email||""),'<button type="button" id="budImport">Importar Excel</button><button type="button" id="budExport">Exportar Excel</button><button type="button" id="budNew">+ Nueva línea</button><button type="button" id="budSave"'+(P.dirty?' class="primary"':'')+'>Guardar</button>')+
