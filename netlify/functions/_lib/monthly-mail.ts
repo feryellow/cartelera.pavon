@@ -24,12 +24,23 @@ function quickRead(s: MonthSummary) {
 }
 
 // Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
+// Tamaño de cada miniatura según el tipo de línea (el mismo en la preparación y en el envío)
+const thumbArgs = (l: Line): [number, number] | null => l.img?.kind === "facade" ? null : l.collage ? [912, 0] : [l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400];
+const thumbOf = (l: Line) => { const a = thumbArgs(l); return a ? thumbBase64(l.img!, a[0], a[1]) : thumbBase64(l.img!); };
+// Prepara (y deja en caché) las miniaturas del mes por tandas, para que el envío no supere el tiempo
+// máximo de una función: se llama varias veces hasta que devuelve left = 0.
+export async function warmMonthlyThumbs(s: MonthSummary, budgetMs = 6500) {
+  const t0 = Date.now(), lines = s.sections.flatMap((x) => x.lines).filter((l) => l.img).slice(0, 36);
+  let done = 0;
+  for (const l of lines) { if (Date.now() - t0 > budgetMs) break; await thumbOf(l); done++; }
+  return { total: lines.length, done, left: lines.length - done };
+}
 export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string; intro?: string }) {
   const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   let n = 0;
   for (const sec of s.sections) for (const l of sec.lines) {
     if (!l.img || n >= 36) continue;
-    const b64 = l.img.kind === "facade" ? await thumbBase64(l.img) : l.collage ? await thumbBase64(l.img, 912, 0) : await thumbBase64(l.img, l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400);
+    const b64 = await thumbOf(l);
     if (!b64) continue;
     const cid = `img${n++}@yc`; (l as any).cid = cid;
     attachments.push({ filename: `imagen-${n}.jpg`, content: b64, content_id: cid, content_type: "image/jpeg" });

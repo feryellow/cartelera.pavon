@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { monthSummary } from "./_lib/monthly.ts";
-import { buildMonthlyMail } from "./_lib/monthly-mail.ts";
+import { buildMonthlyMail, warmMonthlyThumbs } from "./_lib/monthly-mail.ts";
 import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { getContacts } from "./_lib/contacts.ts";
@@ -19,6 +19,8 @@ export default async (req: Request) => {
   }
   if (req.method === "POST") {
     const auth = await requireAccess(req, "admin", true); if (auth.response) return auth.response;
+    // Paso previo: preparar miniaturas por tandas (la app lo repite hasta que no queda ninguna)
+    if (url.searchParams.get("warm") === "1") return Response.json(await warmMonthlyThumbs(await monthSummary(month, url.origin)));
     // Destinatarios extra elegidos en Archivo: solo se aceptan direcciones de la agenda de contactos.
     let body: any = {}; try { body = await req.json(); } catch {}
     const agenda = new Map((await getContacts()).map((c) => [c.email.toLowerCase(), c.email]));
