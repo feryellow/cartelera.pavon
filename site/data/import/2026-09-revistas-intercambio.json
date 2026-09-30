@@ -1,0 +1,163 @@
+{
+ "note": "Intercambios de septiembre en Evasión (4) y Sensación (3). Material entregado el 16 de septiembre.",
+ "items": [
+  {
+   "module": "revistas",
+   "op": "dropAll",
+   "match": {
+    "magazine": "EVASION",
+    "month": "2026-09"
+   },
+   "label": "Quitar la primera prueba de Evasión (se sustituye abajo)"
+  },
+  {
+   "module": "revistas",
+   "op": "dropAll",
+   "match": {
+    "magazine": "Sensacion",
+    "month": "2026-09"
+   },
+   "label": "Quitar la primera prueba de Sensación (se sustituye abajo)"
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Evasión",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "PEGADOS",
+    "venue": "Gran Teatro Pavón",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-evasion-pegados.jpg",
+    "name": "Evasión septiembre 2026 · PEGADOS.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Evasión",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "LA COPA ROTA",
+    "venue": "Teatro Serrano",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-evasion-la-copa-rota.jpg",
+    "name": "Evasión septiembre 2026 · LA COPA ROTA.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Evasión",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "TANTRA",
+    "venue": "Teatro Arlequín",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-evasion-tantra.jpg",
+    "name": "Evasión septiembre 2026 · TANTRA.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Evasión",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "WE WILL ROCK YOU",
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-evasion-wwry.jpg",
+    "name": "Evasión septiembre 2026 · WE WILL ROCK YOU.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Sensación",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "PEGADOS",
+    "venue": "Gran Teatro Pavón",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-sensacion-pegados.jpg",
+    "name": "Sensación septiembre 2026 · PEGADOS.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Sensación",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "TANTRA",
+    "venue": "Teatro Arlequín",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-sensacion-tantra.jpg",
+    "name": "Sensación septiembre 2026 · TANTRA.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "revistas",
+   "data": {
+    "magazine": "Sensación",
+    "deal": "intercambio",
+    "month": "2026-09",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-30",
+    "status": "activo",
+    "spectacle": "WE WILL ROCK YOU",
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "deliveryDate": "2026-09-16",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/revistas/2026-09-sensacion-wwry.jpg",
+    "name": "Sensación septiembre 2026 · WE WILL ROCK YOU.jpg",
+    "type": "image/jpeg"
+   }
+  }
+ ]
+}
