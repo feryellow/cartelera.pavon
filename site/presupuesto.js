@@ -89,7 +89,7 @@ function bar(parts,max){return '<div class="bud-bar">'+parts.map(([v,c])=>v>0?'<
 function render(){
  const t=totals(),D=P.doc,avail=t.annual-t.plan;
  const years=[String(+P.year-1),P.year,String(+P.year+1)];
- app.innerHTML=pageHead("Presupuesto","Publicidad "+P.year+" · solo "+esc(P.me?.email||""),'<button type="button" id="budImport">Importar Excel</button><button type="button" id="budExport">Exportar Excel</button><button type="button" id="budNew">+ Nueva línea</button><button type="button" id="budSave"'+(P.dirty?' class="primary"':'')+'>Guardar</button>')+
+ app.innerHTML=pageHead("Presupuesto","Publicidad "+P.year+" · importes netos · todo el grupo · has entrado como "+esc(P.me?.email||""),'<button type="button" id="budImport">Importar Excel</button><button type="button" id="budExport">Exportar Excel</button><button type="button" id="budNew">+ Nueva línea</button><button type="button" id="budSave"'+(P.dirty?' class="primary"':'')+'>Guardar</button>')+
   '<div class="chip-row" id="budYears">'+years.map(y=>'<button type="button" class="chip'+(y===P.year?' on':'')+'" data-y="'+y+'">'+y+'</button>').join("")+'<span id="budDirty" class="badge warn" '+(P.dirty?'':'hidden')+'>Cambios sin guardar</span>'+(D.updatedAt?'<span class="muted" style="font-size:12px">Guardado '+new Date(D.updatedAt).toLocaleString("es-ES")+' · '+esc(D.updatedBy||"")+'</span>':'')+'</div>'+
   (!t.L.length?'<section class="card"><h2>Sin datos para '+P.year+'</h2><p class="muted">Importa el Excel de control o crea la primera línea.</p></section>':
   '<div class="bud-kpis">'+

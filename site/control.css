@@ -900,3 +900,4 @@ button.bud-kpi{cursor:pointer}
 .bud-mgrid>div>span:first-child{font-size:11px;font-weight:700}
 @media(max-width:900px){.bud-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bud-months{gap:3px}.bud-m small{display:none}}
 .chip-row [hidden],.badge[hidden]{display:none!important}
+.mag-sheet-box.bud-edit{display:block!important;grid-template-columns:none!important}.bud-edit h2{margin:0 0 14px}
