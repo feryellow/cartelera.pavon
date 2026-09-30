@@ -16,6 +16,10 @@ const DEFAULT: Contact[] = [
   { name: "Luis Álvarez", email: "luis@wonderlandgroup.es" },
   { name: "Cristina (La Estación)", email: "cristina@laestacion.com" },
   { name: "Shuang Cai", email: "shuang@grancastillodepedraza.com" },
+  { name: "Natalia (Taquilla Gran Teatro CaixaBank Príncipe Pío)", email: "taquilla@laestacion.com" },
+  { name: "Rachel", email: "rachel@granteatropavon.com" },
+  { name: "Oscar Pastor de la Torre", email: "oscar.pastor@laestacion.com" },
+  { name: "Miriam Álvarez", email: "miriam@wonderlandgroup.es" },
 ];
 export const EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i;
 
