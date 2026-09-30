@@ -61,16 +61,7 @@
       ],
       "signedDate": "2026-09-24",
       "client": "Abonoteatro S.L.",
-      "agent": "Diego Rodríguez",
-      "pricing": {
-        "radioNet": 8752.7,
-        "digitalNet": 1440.0,
-        "totalNet": 10192.7,
-        "vat": 2140.47,
-        "total": 12333.17,
-        "currency": "EUR",
-        "payment": "Transferencia 30 días (las condiciones generales dicen 10 días desde factura; pendiente de aclarar)"
-      }
+      "agent": "Diego Rodríguez"
     },
     {
       "id": "principe-kiss-2026",
