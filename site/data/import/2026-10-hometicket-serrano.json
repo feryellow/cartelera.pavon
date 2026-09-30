@@ -1,0 +1,185 @@
+{
+ "note": "Home Ticket del Teatro Serrano de octubre a diciembre. XL: El último verso hasta el 4 de octubre y de nuevo desde el 2 de noviembre. Superior: Gag Movie. Inferior: Voilá.",
+ "items": [
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "Home Ticket XL · 520 × 856",
+    "month": "2026-10",
+    "spectacle": "EL ÚLTIMO VERSO",
+    "startDate": "2026-10-01",
+    "endDate": "2026-10-04",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Función el 2 de octubre. Se quita el 5 de octubre; el hueco queda pendiente hasta el 2 de noviembre.",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-el-ultimo-verso-5f.jpg",
+    "name": "El último verso · 5 funciones.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Superior · 520 × 420",
+    "month": "2026-10",
+    "spectacle": "GAG MOVIE",
+    "startDate": "2026-10-01",
+    "endDate": "2026-10-31",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-gag-movie.jpg",
+    "name": "Gag Movie.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Inferior · 520 × 420",
+    "month": "2026-10",
+    "spectacle": "VOILÁ",
+    "startDate": "2026-10-01",
+    "endDate": "2026-10-31",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-voila.jpg",
+    "name": "Voilá.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "Home Ticket XL · 520 × 856",
+    "month": "2026-11",
+    "spectacle": "EL ÚLTIMO VERSO",
+    "startDate": "2026-11-02",
+    "endDate": "2026-11-30",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Vuelve la semana del 2 de noviembre (funciones 6 y 13 nov, 11 y 18 dic).",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-el-ultimo-verso-4f.jpg",
+    "name": "El último verso · 4 funciones.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Superior · 520 × 420",
+    "month": "2026-11",
+    "spectacle": "GAG MOVIE",
+    "startDate": "2026-11-01",
+    "endDate": "2026-11-30",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-gag-movie.jpg",
+    "name": "Gag Movie.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Inferior · 520 × 420",
+    "month": "2026-11",
+    "spectacle": "VOILÁ",
+    "startDate": "2026-11-01",
+    "endDate": "2026-11-30",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-voila.jpg",
+    "name": "Voilá.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "Home Ticket XL · 520 × 856",
+    "month": "2026-12",
+    "spectacle": "EL ÚLTIMO VERSO",
+    "startDate": "2026-12-01",
+    "endDate": "2026-12-18",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Última función el 18 de diciembre.",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-el-ultimo-verso-4f.jpg",
+    "name": "El último verso · 4 funciones.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Superior · 520 × 420",
+    "month": "2026-12",
+    "spectacle": "GAG MOVIE",
+    "startDate": "2026-12-01",
+    "endDate": "2026-12-31",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-gag-movie.jpg",
+    "name": "Gag Movie.jpg",
+    "type": "image/jpeg"
+   }
+  },
+  {
+   "module": "hometicket",
+   "data": {
+    "venue": "Teatro Serrano",
+    "position": "HT Inferior · 520 × 420",
+    "month": "2026-12",
+    "spectacle": "VOILÁ",
+    "startDate": "2026-12-01",
+    "endDate": "2026-12-31",
+    "status": "activo",
+    "fit": "cover",
+    "notes": "Por ahora",
+    "materialStatus": "entregado"
+   },
+   "asset": {
+    "url": "/assets/hometicket/piezas/serrano-voila.jpg",
+    "name": "Voilá.jpg",
+    "type": "image/jpeg"
+   }
+  }
+ ]
+}

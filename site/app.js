@@ -1088,6 +1088,9 @@ async function importar(){
    history.replaceState(null,"","#importar");
    $("#impRes").innerHTML='<div class="notice" style="margin-top:12px;text-align:left">'+ok+(ok===1?" registro añadido o actualizado.":" registros añadidos o actualizados.")+(sel.some(x=>(x.dropIds&&x.dropIds.length)||(x.drop&&x.drop.length))?" Lo que se ha quitado queda en Archivo, en «Registros quitados».":"")+(errs.length?'<br>No se han podido añadir: '+errs.map(esc).join("<br>"):'')+'</div><div class="actions-row" style="margin-top:10px"><a class="btn primary" href="#'+(sel.some(x=>x.module==="hitos")?"calendario":sel[0].module)+'">'+(sel.some(x=>x.module==="hitos")?"Ver el Calendario":"Ver "+esc(IMPORT_MODULES[sel[0].module]))+'</a></div>';
    b.textContent="Hecho";say(ok+" añadidos")}};
+ // Enlace corto: #importar?f=<nombre> carga el paquete preparado en /data/import/<nombre>.json
+ const fq=new URLSearchParams(location.hash.split("?")[1]||"").get("f");
+ if(fq&&/^[\w.-]+$/.test(fq)){body.innerHTML='<p class="muted">Cargando datos…</p>';try{const r=await fetch("/data/import/"+fq+".json",{cache:"no-store"});if(!r.ok)throw new Error("No encuentro el paquete «"+fq+"» ("+r.status+")");show(await r.json())}catch(e){body.innerHTML='<p class="notice">'+esc(e.message)+'</p>'}return}
  show(importDecode(q));
 }
 
@@ -1397,7 +1400,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v61";
+const YC_VERSION="yellow-control-v62";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
