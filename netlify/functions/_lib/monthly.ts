@@ -8,9 +8,9 @@ import { FACADE_VIEWS, FACADE_SLOTS, ARLEQUIN_VIEWS, ARLEQUIN_SLOTS } from "./fa
 // Resumen de toda la publicidad de un mes (YYYY-MM): Cartelería, Home Ticket, Radio, Taxis,
 // Intercambiadores, Revistas y comunicación (hitos). Lo usan la sección Archivo y el correo mensual.
 import type { ImgRef } from "./thumbs.ts";
-export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; link?: string; linkLabel?: string; links?: { label: string; url: string }[]; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
+export type Line = { title: string; detail: string; date?: string; time?: string; kicker?: string; img?: ImgRef; wide?: boolean; small?: boolean; empty?: boolean; collage?: boolean; link?: string; linkLabel?: string; links?: { label: string; url: string; show?: string }[]; stat?: { used: number; cap: number; cert: number; unit: string; parts: [string, number][] } };
 export type Section = { key: string; name: string; lines: Line[]; note?: string; count?: string };
-export type MonthSummary = { month: string; label: string; first: string; last: string; totals: { label: string; value: number | string; note?: string }[]; sections: Section[] };
+export type MonthSummary = { month: string; show?: string; label: string; first: string; last: string; totals: { label: string; value: number | string; note?: string }[]; sections: Section[] };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const fmt = (iso: string) => iso ? new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: "UTC" }).replace(".", "") : "";
@@ -26,7 +26,7 @@ export function monthBounds(month: string) {
 }
 export function previousMonth(isoDay: string) { const [y, m] = isoDay.split("-").map(Number); const d = new Date(Date.UTC(y, m - 2, 1)); return d.toISOString().slice(0, 7); }
 
-export async function monthSummary(month: string, origin: string): Promise<MonthSummary> {
+export async function monthSummary(month: string, origin: string, show = ""): Promise<MonthSummary> {
   const { first, last, label } = monthBounds(month);
   const overlaps = (r: any) => { const s = r.startDate || r.endDate, e = r.endDate || r.startDate; return !!s && s <= last && e >= first; };
   const sections: Section[] = [];
@@ -111,8 +111,8 @@ export async function monthSummary(month: string, origin: string): Promise<Month
       const nm = (r: any) => r.spectacle || r.campaignName || "Sin espectáculo";
       const bySpec = new Map<string, number>(); rr.forEach((r) => bySpec.set(nm(r), (bySpec.get(nm(r)) || 0) + n(r.plannedSpots)));
       // Enlace a cada cuña que suena este mes (una vez por audio)
-      const audios = new Map<string, string>(); rr.filter((r) => r.assetKey && n(r.plannedSpots) > 0).forEach((r) => { if (!audios.has(r.assetKey)) audios.set(r.assetKey, r.spotName || nm(r)); });
-      rLines.push({ links: [...audios].map(([k, label]) => ({ label, url: mediaUrl(origin, k, "radio") })), stat: { used: p, cap, cert: q, unit: u, parts: [...bySpec].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]) }, title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
+      const audios = new Map<string, [string, string]>(); rr.filter((r) => r.assetKey && n(r.plannedSpots) > 0).forEach((r) => { if (!audios.has(r.assetKey)) audios.set(r.assetKey, [r.spotName || nm(r), nm(r)]); });
+      rLines.push({ links: [...audios].map(([k, [label, sh]]) => ({ label, show: sh, url: mediaUrl(origin, k, "radio") })), stat: { used: p, cap, cert: q, unit: u, parts: [...bySpec].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]) }, title: `${short(c.venue)} · ${c.brand}`, detail: !p ? `sin asignar · ${cap.toLocaleString("es-ES")} ${u} contratadas` : `${p.toLocaleString("es-ES")} de ${cap.toLocaleString("es-ES")} ${u} asignadas${q ? " · " + q.toLocaleString("es-ES") + " certificadas" : ""}${bySpec.size ? " · " + [...bySpec].map(([s, v]) => `${s} (${v})`).join(", ") : ""}` });
     }
   }
   radio.filter((r) => !r.contractId && overlaps(r)).forEach((r) => rLines.push({ title: r.spectacle || "Sin espectáculo", detail: [short(r.venue), r.station, r.frequency, range(r.startDate, r.endDate)].filter(Boolean).join(" · ") }));
@@ -157,5 +157,45 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     { label: "campañas intercambiadores", value: sections.find((x) => x.key === "intercambiadores")?.lines.length || 0 },
     { label: "inputs de comunicación", value: hitos.length },
   ];
-  return { month, label: label.charAt(0).toUpperCase() + label.slice(1), first, last, totals, sections };
+  const Label = label.charAt(0).toUpperCase() + label.slice(1);
+  if (show.trim()) return byShow({ month, label: Label, first, last, totals, sections }, show.trim(), cart, ht);
+  return { month, label: Label, first, last, totals, sections };
+}
+
+// Informe de un espectáculo: toda la publicidad del mes en la que aparece (cartelería, Home Ticket,
+// cuñas de radio, taxis, intercambiadores, revistas y comunicación), con sus propios comprobantes.
+const nrm = (v: unknown) => String(v ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+function byShow(s: MonthSummary, show: string, cart: Line[], ht: any[]): MonthSummary {
+  const q = nrm(show), hit = (...t: unknown[]) => t.some((x) => nrm(x).includes(q));
+  const out: Section[] = [];
+  const cs = cart.filter((l) => hit(l.title));
+  if (cs.length) out.push({ key: "carteleria", name: "Cartelería", lines: cs, count: `${cs.length} ${cs.length === 1 ? "soporte" : "soportes"}` });
+  const hp = ht.filter((r: any) => hit(r.spectacle));
+  if (hp.length) out.push({ key: "hometicket", name: "Home Ticket", lines: hp.map((r: any) => ({ title: short(r.venue), detail: [HT_NAMES[r.position] || r.position, range(r.startDate, r.endDate)].filter(Boolean).join(" · "), img: r.assetKey ? { kind: "asset" as const, key: r.assetKey } : undefined })) });
+  let spots = 0;
+  const radio = (s.sections.find((x) => x.key === "radio")?.lines || []).flatMap((l) => {
+    if (!l.stat) return hit(l.title, l.detail) ? [l] : [];
+    const parts = l.stat.parts.filter(([nme]) => hit(nme)); if (!parts.length) return [];
+    const used = parts.reduce((a, [, v]) => a + v, 0); if (l.stat.unit === "cuñas") spots += used;
+    return [{ ...l, detail: `${used.toLocaleString("es-ES")} ${l.stat.unit} de ${show}`, stat: { ...l.stat, used, cert: 0, parts }, links: (l.links || []).filter((x) => hit(x.show, x.label)) }];
+  });
+  if (radio.length) out.push({ key: "radio", name: "Radio", lines: radio });
+  const keep = (key: string) => (s.sections.find((x) => x.key === key)?.lines || []).filter((l) => hit(l.title, l.detail, l.kicker));
+  const tx = keep("taxis"), ic = keep("intercambiadores"), rv = keep("revistas"), hi = keep("hitos");
+  if (tx.length) out.push({ key: "taxis", name: "Taxis", lines: tx });
+  if (ic.length) out.push({ key: "intercambiadores", name: "Intercambiadores", lines: ic });
+  if (rv.length) out.push({ key: "revistas", name: "Revistas", lines: rv });
+  if (hi.length) out.push({ key: "hitos", name: "Comunicación", lines: hi });
+  const rvX = rv.filter((l) => /Intercambio/.test(l.detail || "")).length;
+  const totals = [
+    ...(cs.length ? [{ label: "soportes de cartelería", value: cs.length }] : []),
+    ...(hp.length ? [{ label: "piezas de Home Ticket", value: hp.length }] : []),
+    { label: "cuñas asignadas", value: spots },
+    { label: "Revistas Teatros", value: rv.length - rvX },
+    ...(rvX ? [{ label: "intercambios en revistas", value: rvX }] : []),
+    { label: "campañas taxis", value: tx.length },
+    { label: "campañas intercambiadores", value: ic.length },
+    { label: "inputs de comunicación", value: hi.length },
+  ];
+  return { ...s, show, label: `${s.label} · ${show}`, totals, sections: out };
 }
