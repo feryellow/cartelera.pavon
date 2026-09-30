@@ -155,6 +155,7 @@ export async function monthSummary(month: string, origin: string): Promise<Month
     ...(revX.length ? [{ label: "intercambios en revistas", value: revX.length }] : []),
     { label: "campañas taxis", value: sections.find((x) => x.key === "taxis")?.lines.length || 0 },
     { label: "campañas intercambiadores", value: sections.find((x) => x.key === "intercambiadores")?.lines.length || 0 },
+    { label: "inputs de comunicación", value: hitos.length },
   ];
   return { month, label: label.charAt(0).toUpperCase() + label.slice(1), first, last, totals, sections };
 }

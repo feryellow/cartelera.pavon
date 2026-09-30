@@ -16,8 +16,10 @@ function quickRead(s: MonthSummary) {
   const xr = t["intercambios en revistas"];
   if (xr) parts.push(`${xr.value} ${Number(xr.value) === 1 ? "intercambio" : "intercambios"} en otras revistas`);
   if (h && Number(h.value)) parts.push(`${parseInt(String(h.note || "0"), 10) || 0} Home Tickets completos de ${h.value}`);
-  if (tx) parts.push(`${tx.value} ${Number(tx.value) === 1 ? "campaña" : "campañas"} en taxis`);
-  if (ic) parts.push(`${ic.value} ${Number(ic.value) === 1 ? "campaña" : "campañas"} en intercambiadores`);
+  if (tx && Number(tx.value)) parts.push(`${tx.value} ${Number(tx.value) === 1 ? "campaña" : "campañas"} en taxis`);
+  if (ic && Number(ic.value)) parts.push(`${ic.value} ${Number(ic.value) === 1 ? "campaña" : "campañas"} en intercambiadores`);
+  const hc = t["inputs de comunicación"];
+  if (hc && Number(hc.value)) parts.push(`${hc.value} ${Number(hc.value) === 1 ? "input" : "inputs"} de comunicación`);
   return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; falta el certificado de emisión." : "");
 }
 
@@ -54,7 +56,10 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   if (xv) cards.push({ big: String(xv.value), label: Number(xv.value) === 1 ? "intercambio en revistas" : "intercambios en revistas" });
   const htc = T["Home Ticket"];
   if (htc && Number(htc.value)) { const done = parseInt(String(htc.note || "0"), 10) || 0; cards.push({ big: String(done), label: done === 1 ? "Home Ticket completo" : "Home Tickets completos", note: `de ${htc.value} ${Number(htc.value) === 1 ? "teatro" : "teatros"} con Home Ticket` }); }
-  for (const k of ["campañas taxis", "campañas intercambiadores"]) { const x = T[k]; if (x) cards.push({ big: String(x.value), label: Number(x.value) === 1 ? k.replace("campañas", "campaña") : k }); }
+  // Solo las campañas que hay ese mes; si no hay taxis, su hueco lo ocupan los inputs de comunicación
+  for (const k of ["campañas taxis", "campañas intercambiadores"]) { const x = T[k]; if (x && Number(x.value)) cards.push({ big: String(x.value), label: Number(x.value) === 1 ? k.replace("campañas", "campaña") : k }); }
+  const hi = T["inputs de comunicación"];
+  if (hi && Number(hi.value)) cards.push({ big: String(hi.value), label: Number(hi.value) === 1 ? "input de comunicación" : "inputs de comunicación" });
   const card = (c: typeof cards[number]) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efeb; border-radius:10px;"><tr><td style="padding:16px 16px 18px;">
       ${c.text ? `<div style="font-size:18px; font-weight:800; color:#111111; line-height:1.2;">${e(c.big)}</div>` : `<div style="font-size:44px; font-weight:800; color:#111111; line-height:1; letter-spacing:-0.02em;">${e(c.big)}</div>`}
       ${c.label ? `<div style="font-size:15px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${e(c.label)}</div>` : ""}
