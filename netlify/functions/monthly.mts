@@ -31,7 +31,7 @@ export default async (req: Request) => {
     const mail = await buildMonthlyMail(s, { appUrl: origin, test: !real, devRecipient: rcp.live || real ? "" : rcp.to[0], intro });
     const r: any = await sendPavonMail({ subject: `${real ? "" : "[Prueba] "}Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments, extra });
     await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `monthly-${month}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Resumen mensual enviado también a ${extra.join(", ")}` : "Resumen mensual (prueba)" });
-    return Response.json({ sent: !!r.sent, to: r.to || [], reason: r.sent ? "" : r.reason || "" });
+    return Response.json({ sent: !!r.sent, to: r.to || [], bcc: r.bcc || [], reason: r.sent ? "" : r.reason || "" });
   }
   return new Response("Method not allowed", { status: 405 });
 };
