@@ -96,6 +96,17 @@ function radioMonthLabel(m){if(!m)return"—";const [y,mo]=m.split("-").map(Numb
 function radioDefaultMonth(months,current){if(!months?.length)return"";if(months.includes(current))return current;return months.find(m=>m>=current)||months[months.length-1]}
 function radioValidity(endDate){if(!endDate)return"";const txt=new Date(endDate+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});return "Válido hasta el "+txt}
 function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+// Divide una asignación de radio en bloques de lunes a domingo, cortando también en el cambio de mes,
+// y reparte las cuñas planificadas y emitidas en proporción a los días (redondeo por restos mayores).
+function radioSplit(data){
+ const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ const parts=[];let d=new Date(data.startDate+"T12:00:00");const end=new Date(data.endDate+"T12:00:00");
+ while(d<=end){const s=new Date(d);let e=new Date(d);while(true){const n=new Date(e);n.setDate(n.getDate()+1);if(n>end||n.getDay()===1||n.getMonth()!==e.getMonth())break;e=n}
+  parts.push({s:iso(s),e:iso(e),days:Math.round((e-s)/864e5)+1});d=new Date(e);d.setDate(d.getDate()+1)}
+ const share=total=>{const tot=parts.reduce((a,p)=>a+p.days,0),raw=parts.map(p=>total*p.days/tot),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);
+  raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){base[i]++;left--}});return base};
+ const pl=share(radioNum(data.plannedSpots)),ac=share(radioNum(data.actualSpots));
+ return parts.map((p,i)=>({...data,startDate:p.s,endDate:p.e,inventoryMonth:p.s.slice(0,7),plannedSpots:pl[i],actualSpots:ac[i]}))}
 function radioWeekKey(v){if(!v)return"";const d=new Date(v+"T12:00:00"),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
 function radioFmt(n){return new Intl.NumberFormat("es-ES").format(radioNum(n))}
 function radioRows(rows,contractId,month){return rows.filter(r=>r.contractId===contractId&&r.inventoryMonth===month)}
@@ -286,19 +297,26 @@ function bindRadioForm(existing,rows,selectedContract,selectedMonth){
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{
    const c=radioContract(data.contractId),l=radioLine(c,data.lineId);data.plannedSpots=radioNum(data.plannedSpots);data.actualSpots=radioNum(data.actualSpots);
    if(c&&!l)throw new Error("Elige una emisora / programa del acuerdo.");
+   // Reparto automático: si las fechas cruzan de semana o de mes, la app divide la asignación en
+   // bloques semanales (lunes a domingo, sin pasar de mes) y reparte las cuñas según los días de cada uno.
+   let chunks=[{...data}];
    if(c&&l){
-     if(!data.inventoryMonth||!l.monthly?.[data.inventoryMonth])throw new Error("Ese programa no tiene inventario contratado en el mes seleccionado.");
-     if(data.startDate&&data.startDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de inicio debe estar dentro del mes de inventario.");
-     if(data.endDate&&data.endDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de fin debe estar dentro del mismo mes. Divide la campaña en dos asignaciones si cruza de mes.");
      if(data.startDate&&data.endDate&&data.startDate>data.endDate)throw new Error("La fecha de fin no puede ser anterior al inicio.");
-     if(data.startDate&&data.endDate&&radioWeekKey(data.startDate)!==radioWeekKey(data.endDate))throw new Error("Para mantener el control semanal exacto, una asignación no puede cruzar de semana. Divide el reparto en dos bloques.");
-     const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===data.inventoryMonth),st=radioLineStats(c,l,data.inventoryMonth,others);
-     if(data.plannedSpots>st.remaining)throw new Error("Supera el inventario disponible: quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+".");
-     data.venue=c.venue;data.station=l.station;data.duration=l.duration;data.timeSlot=l.timeSlot;data.unit=l.unit;data.frequency=data.plannedSpots+" "+l.unit;
+     if(data.startDate&&data.endDate)chunks=radioSplit(data);
+     else if(data.startDate)data.inventoryMonth=data.startDate.slice(0,7),chunks=[{...data}];
+     const byMonth={};chunks.forEach(x=>{byMonth[x.inventoryMonth]=(byMonth[x.inventoryMonth]||0)+x.plannedSpots});
+     for(const [m,tot] of Object.entries(byMonth)){
+      if(!l.monthly?.[m])throw new Error("El programa "+l.station+" · "+l.program+" no tiene inventario contratado en "+radioMonthLabel(m)+".");
+      const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===m),st=radioLineStats(c,l,m,others);
+      if(tot>st.remaining)throw new Error("Supera el inventario disponible en "+radioMonthLabel(m)+": quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+" y el reparto pide "+radioFmt(tot)+".")}
+     chunks.forEach(x=>{x.venue=c.venue;x.station=l.station;x.duration=l.duration;x.timeSlot=l.timeSlot;x.unit=l.unit;x.frequency=x.plannedSpots+" "+l.unit});
+     if(chunks.length>1&&!confirm("Las fechas cruzan "+(Object.keys(byMonth).length>1?"de mes y ":"")+"de semana. Se guardará repartido en "+chunks.length+" bloques:\n\n"+chunks.map(x=>fdate(x.startDate)+" – "+fdate(x.endDate)+": "+x.plannedSpots+" "+l.unit).join("\n")+"\n\n¿Guardar así?"))return;
    }
-   const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}
-   if(existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
-   else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey)chunks.forEach(x=>{x.assetKey=assetKey;x.assetName=file?.name||existing?.assetName||""});
+   for(let i=0;i<chunks.length;i++){
+    if(i===0&&existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(chunks[0])});
+    else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(chunks[i])})}
+   if(chunks.length>1){say("Asignación repartida en "+chunks.length+" bloques semanales");radio();return}
    say("Asignación de radio guardada");radio()
  }catch(err){say(err.message)}}
 }
@@ -1406,7 +1424,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v69";
+const YC_VERSION="yellow-control-v70";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
