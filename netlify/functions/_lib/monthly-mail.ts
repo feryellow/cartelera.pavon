@@ -24,7 +24,7 @@ function quickRead(s: MonthSummary) {
 }
 
 // Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
-export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
+export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string; intro?: string }) {
   const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   let n = 0;
   for (const sec of s.sections) for (const l of sec.lines) {
@@ -37,7 +37,7 @@ export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; tes
   return { html: renderMonthly(s, o), attachments };
 }
 
-export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
+export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string; intro?: string }) {
   const base = o.appUrl.replace(/\/$/, "");
   const kpis = s.totals.filter((x) => typeof x.value === "string" || x.value > 0).slice(0, 6);
   // Comprobantes en tarjetas, dos por fila (una por fila en el móvil), como el modelo de Fer:
@@ -177,6 +177,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES</div>
     <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">Resumen de ${e(s.label.toLowerCase())}</div>
   </td></tr>
+  ${o.intro?.trim() ? `<tr><td class="yw-pad" style="padding:14px 32px 0;">${o.intro.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 10px; font-size:14px; color:#222222; line-height:1.6;">${e(p.trim()).replace(/\n/g, "<br>")}</p>`).join("")}</td></tr>` : ""}
   ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:8px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">${kpiRows.join("")}</table></td></tr>` : ""}
   <tr><td class="yw-pad" style="padding:16px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="yw-dark-block" style="background:#111111;"><tr><td style="padding:20px 20px;">

@@ -25,7 +25,8 @@ export default async (req: Request) => {
     const extra = [...new Set((Array.isArray(body?.extra) ? body.extra : []).map((x: any) => agenda.get(String(x).trim().toLowerCase())).filter(Boolean))] as string[];
     const s = await monthSummary(month, url.origin), rcp = mailRecipients();
     const real = extra.length > 0;
-    const mail = await buildMonthlyMail(s, { appUrl: origin, test: !real, devRecipient: rcp.live || real ? "" : rcp.to[0] });
+    const intro = String(body?.intro || "").slice(0, 2000);
+    const mail = await buildMonthlyMail(s, { appUrl: origin, test: !real, devRecipient: rcp.live || real ? "" : rcp.to[0], intro });
     const r: any = await sendPavonMail({ subject: `${real ? "" : "[Prueba] "}Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments, extra });
     await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `monthly-${month}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Resumen mensual enviado también a ${extra.join(", ")}` : "Resumen mensual (prueba)" });
     return Response.json({ sent: !!r.sent, to: r.to || [], reason: r.sent ? "" : r.reason || "" });
