@@ -1083,6 +1083,8 @@ async function importar(){
      if(x.poster&&x.poster.url){const pr=await fetch(x.poster.url,{cache:"no-cache"});if(pr.ok){const pb=await pr.blob();data.posterKey=await uploadAsset(new File([pb],x.poster.name||"portada.jpg",{type:pb.type||"image/jpeg"}),x.module);data.posterName=x.poster.name||""}}
      if(x.keepId){await api("/api/control?module="+x.module+"&id="+x.keepId,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.merged)});for(const id of x.dropIds)await api("/api/control?module="+x.module+"&id="+id,{method:"DELETE"});ok++;continue}
      await api("/api/control?module="+x.module,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});ok++}catch(e){errs.push(importLabel(x)+": "+e.message)}}
+   // Home Ticket: se recompone la imagen de cada teatro y mes importados (la que va al resumen mensual)
+   for(const pr of [...new Set(sel.filter(x=>x.module==="hometicket"&&x.data&&x.data.venue&&x.data.month).map(x=>x.data.venue+"|"+x.data.month))]){const [v,m]=pr.split("|");try{await htRefreshComposite(v,m)}catch{}}
    history.replaceState(null,"","#importar");
    $("#impRes").innerHTML='<div class="notice" style="margin-top:12px;text-align:left">'+ok+(ok===1?" registro añadido o actualizado.":" registros añadidos o actualizados.")+(sel.some(x=>(x.dropIds&&x.dropIds.length)||(x.drop&&x.drop.length))?" Lo que se ha quitado queda en Archivo, en «Registros quitados».":"")+(errs.length?'<br>No se han podido añadir: '+errs.map(esc).join("<br>"):'')+'</div><div class="actions-row" style="margin-top:10px"><a class="btn primary" href="#'+(sel.some(x=>x.module==="hitos")?"calendario":sel[0].module)+'">'+(sel.some(x=>x.module==="hitos")?"Ver el Calendario":"Ver "+esc(IMPORT_MODULES[sel[0].module]))+'</a></div>';
    b.textContent="Hecho";say(ok+" añadidos")}};
@@ -1395,7 +1397,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v60";
+const YC_VERSION="yellow-control-v61";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
