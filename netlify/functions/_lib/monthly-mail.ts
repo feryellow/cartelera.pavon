@@ -24,12 +24,23 @@ function quickRead(s: MonthSummary) {
 }
 
 // Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
-export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
+// Tamaño de cada miniatura según el tipo de línea (el mismo en la preparación y en el envío)
+const thumbArgs = (l: Line): [number, number] | null => l.img?.kind === "facade" ? null : l.collage ? [912, 0] : [l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400];
+const thumbOf = (l: Line) => { const a = thumbArgs(l); return a ? thumbBase64(l.img!, a[0], a[1]) : thumbBase64(l.img!); };
+// Prepara (y deja en caché) las miniaturas del mes por tandas, para que el envío no supere el tiempo
+// máximo de una función: se llama varias veces hasta que devuelve left = 0.
+export async function warmMonthlyThumbs(s: MonthSummary, budgetMs = 6500) {
+  const t0 = Date.now(), lines = s.sections.flatMap((x) => x.lines).filter((l) => l.img).slice(0, 36);
+  let done = 0;
+  for (const l of lines) { if (Date.now() - t0 > budgetMs) break; await thumbOf(l); done++; }
+  return { total: lines.length, done, left: lines.length - done };
+}
+export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string; intro?: string }) {
   const attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   let n = 0;
   for (const sec of s.sections) for (const l of sec.lines) {
     if (!l.img || n >= 36) continue;
-    const b64 = l.img.kind === "facade" ? await thumbBase64(l.img) : l.collage ? await thumbBase64(l.img, 912, 0) : await thumbBase64(l.img, l.wide ? 432 : l.small ? 240 : 300, l.wide ? 324 : l.small ? 240 : 400);
+    const b64 = await thumbOf(l);
     if (!b64) continue;
     const cid = `img${n++}@yc`; (l as any).cid = cid;
     attachments.push({ filename: `imagen-${n}.jpg`, content: b64, content_id: cid, content_type: "image/jpeg" });
@@ -37,7 +48,7 @@ export async function buildMonthlyMail(s: MonthSummary, o: { appUrl: string; tes
   return { html: renderMonthly(s, o), attachments };
 }
 
-export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string }) {
+export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boolean; devRecipient?: string; intro?: string }) {
   const base = o.appUrl.replace(/\/$/, "");
   const kpis = s.totals.filter((x) => typeof x.value === "string" || x.value > 0).slice(0, 6);
   // Comprobantes en tarjetas, dos por fila (una por fila en el móvil), como el modelo de Fer:
@@ -177,6 +188,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES</div>
     <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">Resumen de ${e(s.label.toLowerCase())}</div>
   </td></tr>
+  ${o.intro?.trim() ? `<tr><td class="yw-pad" style="padding:14px 32px 0;">${o.intro.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 10px; font-size:14px; color:#222222; line-height:1.6;">${e(p.trim()).replace(/\n/g, "<br>")}</p>`).join("")}</td></tr>` : ""}
   ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:8px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">${kpiRows.join("")}</table></td></tr>` : ""}
   <tr><td class="yw-pad" style="padding:16px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="yw-dark-block" style="background:#111111;"><tr><td style="padding:20px 20px;">
