@@ -13,7 +13,7 @@ const DEFAULT: Contact[] = [
   { name: "Taquilla Gran Teatro Pavón", email: "taquilla@granteatropavon.com" },
   { name: "Juan Carlos Cueto Luardo", email: "cueto@abonoteatro.com" },
   { name: "Ana Álvarez (Abonoteatro)", email: "ana.alvarez@abonoteatro.com" },
-  { name: "Luis (Wonderland Group)", email: "luis@wonderlandgroup.es" },
+  { name: "Luis Álvarez", email: "luis@wonderlandgroup.es" },
   { name: "Cristina (La Estación)", email: "cristina@laestacion.com" },
 ];
 export const EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i;
