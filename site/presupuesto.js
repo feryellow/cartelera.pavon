@@ -97,16 +97,17 @@ function alerts(t){const a=[];
 
 function bar(parts,max){return '<div class="bud-bar">'+parts.map(([v,c])=>v>0?'<i style="width:'+(v/max*100).toFixed(2)+'%;background:'+c+'"></i>':'').join("")+'</div>'}
 
-// Vaciar un año: no hay botón. Solo con el enlace #presupuesto?vaciar=AAAA y escribiendo VACIAR.
+// Vaciar un año: botón «Vaciar año» (o enlace #presupuesto?vaciar=AAAA); siempre hay que escribir VACIAR.
 function clearCard(y){const n=(P.doc.lines||[]).length;
- app.innerHTML=pageHead("Presupuesto","Vaciar el presupuesto de "+y)+'<section class="card bud-lock"><h2>Vaciar '+esc(y)+'</h2><p class="muted">Se quitan las '+n+' líneas y el presupuesto anual de '+esc(y)+'. La versión actual queda guardada como copia en el servidor.</p><form id="budClr" class="stack" style="max-width:360px"><label>Escribe VACIAR para confirmar<input name="ok" autocomplete="off" required></label><button class="danger" type="submit">Vaciar '+esc(y)+'</button><a class="btn" href="#presupuesto">Cancelar</a></form></section>';
+ app.innerHTML=pageHead("Presupuesto","Vaciar el presupuesto de "+y)+'<section class="card bud-lock"><h2>Vaciar '+esc(y)+'</h2><p class="muted">Se quitan las '+n+' líneas y el presupuesto anual de '+esc(y)+'. La versión actual queda guardada como copia en el servidor.</p><form id="budClr" class="stack" style="max-width:360px"><label>Escribe VACIAR para confirmar<input name="ok" autocomplete="off" required></label><button class="danger" type="submit">Vaciar '+esc(y)+'</button><button type="button" id="budClrNo">Cancelar</button></form></section>';
+ $("#budClrNo").onclick=()=>{history.replaceState(null,"","#presupuesto");render()};
  $("#budClr").onsubmit=async e=>{e.preventDefault();if(String(e.currentTarget.elements.ok.value).trim().toUpperCase()!=="VACIAR"){say("Escribe VACIAR para confirmar");return}
   P.doc={...P.doc,lines:[],annualBudget:0,monthsLoaded:[],loose:[],notes:"",source:""};P.dirty=true;await save("Vaciado "+y);history.replaceState(null,"","#presupuesto");render()}}
 function render(){
  const vq=new URLSearchParams(location.hash.split("?")[1]||"").get("vaciar");if(vq&&vq===P.year){clearCard(vq);return}
  const t=totals(),D=P.doc,avail=t.annual-t.plan;
  const years=[String(+P.year-1),P.year,String(+P.year+1)];
- app.innerHTML=pageHead("Presupuesto","Publicidad "+P.year+" · importes netos · todo el grupo · has entrado como "+esc(P.me?.email||""),'<button type="button" id="budImport">Importar Excel</button><button type="button" id="budExport">Exportar Excel</button><button type="button" id="budNew">+ Nueva línea</button><button type="button" id="budSave"'+(P.dirty?' class="primary"':'')+'>Guardar</button>')+
+ app.innerHTML=pageHead("Presupuesto","Publicidad "+P.year+" · importes netos · todo el grupo · has entrado como "+esc(P.me?.email||""),'<button type="button" id="budImport">Importar Excel</button><button type="button" id="budExport">Exportar Excel</button><button type="button" id="budNew">+ Nueva línea</button><button type="button" id="budSave"'+(P.dirty?' class="primary"':'')+'>Guardar</button>'+((D.lines||[]).length?'<button type="button" id="budClear" class="danger">Vaciar '+esc(P.year)+'</button>':''))+
   '<div class="chip-row" id="budYears">'+years.map(y=>'<button type="button" class="chip'+(y===P.year?' on':'')+'" data-y="'+y+'">'+y+'</button>').join("")+'<span id="budDirty" class="badge warn" '+(P.dirty?'':'hidden')+'>Cambios sin guardar</span>'+(D.updatedAt?'<span class="muted" style="font-size:12px">Guardado '+new Date(D.updatedAt).toLocaleString("es-ES")+' · '+esc(D.updatedBy||"")+'</span>':'')+'</div>'+
   (!t.L.length?'<section class="card"><h2>Sin datos para '+P.year+'</h2><p class="muted">Importa el Excel de control o crea la primera línea.</p></section>':
   '<div class="bud-kpis">'+
@@ -130,6 +131,7 @@ function render(){
  $("#budImport").onclick=()=>$("#budFile").click();
  $("#budFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f)await importFile(f)};
  $("#budExport").onclick=exportFile;
+ const bc=$("#budClear");if(bc)bc.onclick=()=>{if(P.dirty&&!confirm("Hay cambios sin guardar. ¿Seguir y perderlos?"))return;clearCard(P.year)};
  const an=$("#budAnnual");if(an)an.onclick=()=>{const v=prompt("Presupuesto anual "+P.year+" (en euros):",P.doc.annualBudget||"");if(v==null)return;P.doc.annualBudget=num(v);mark();render()};
  $$(".bud-table tbody tr").forEach(tr=>tr.onclick=()=>editLine(tr.dataset.id));
 }
