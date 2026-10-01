@@ -1106,7 +1106,7 @@ async function importar(){
       for(const r of x.drop)await api("/api/control?module="+x.module+"&id="+r.id,{method:"DELETE"});ok++;continue}
      const data={...x.data};
      // Archivo adjunto preparado (p. ej. el audio de una cuña): se descarga de la propia web y se sube a la biblioteca
-     if(x.asset&&x.asset.url){const fr=await fetch(x.asset.url,{cache:"no-cache"});if(!fr.ok)throw new Error("no se ha podido leer el archivo "+(x.asset.name||""));const bl=await fr.blob();const file=new File([bl],x.asset.name||"archivo",{type:x.asset.type||bl.type||"application/octet-stream"});data.assetKey=await uploadAsset(file,x.module);data.assetName=file.name}
+     if(x.asset&&x.asset.url){const ck=x.module+"|"+x.asset.url;if(!importar.up)importar.up={};if(importar.up[ck]){data.assetKey=importar.up[ck];data.assetName=x.asset.name||""}else{const fr=await fetch(x.asset.url,{cache:"no-cache"});if(!fr.ok)throw new Error("no se ha podido leer el archivo "+(x.asset.name||""));const bl=await fr.blob();const file=new File([bl],x.asset.name||"archivo",{type:x.asset.type||bl.type||"application/octet-stream"});data.assetKey=importar.up[ck]=await uploadAsset(file,x.module);data.assetName=file.name}}
      if(x.poster&&x.poster.url){const pr=await fetch(x.poster.url,{cache:"no-cache"});if(pr.ok){const pb=await pr.blob();data.posterKey=await uploadAsset(new File([pb],x.poster.name||"portada.jpg",{type:pb.type||"image/jpeg"}),x.module);data.posterName=x.poster.name||""}}
      if(x.keepId){await api("/api/control?module="+x.module+"&id="+x.keepId,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.merged)});for(const id of x.dropIds)await api("/api/control?module="+x.module+"&id="+id,{method:"DELETE"});ok++;continue}
      await api("/api/control?module="+x.module,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});ok++}catch(e){errs.push(importLabel(x)+": "+e.message)}}
@@ -1427,7 +1427,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v71";
+const YC_VERSION="yellow-control-v72";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
