@@ -901,3 +901,4 @@ button.bud-kpi{cursor:pointer}
 @media(max-width:900px){.bud-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bud-months{gap:3px}.bud-m small{display:none}}
 .chip-row [hidden],.badge[hidden]{display:none!important}
 .mag-sheet-box.bud-edit{display:block!important;grid-template-columns:none!important}.bud-edit h2{margin:0 0 14px}
+.ar-show{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 8px}.ar-show label{flex:1;min-width:220px}

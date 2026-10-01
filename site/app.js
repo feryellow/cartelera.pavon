@@ -96,6 +96,17 @@ function radioMonthLabel(m){if(!m)return"—";const [y,mo]=m.split("-").map(Numb
 function radioDefaultMonth(months,current){if(!months?.length)return"";if(months.includes(current))return current;return months.find(m=>m>=current)||months[months.length-1]}
 function radioValidity(endDate){if(!endDate)return"";const txt=new Date(endDate+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});return "Válido hasta el "+txt}
 function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+// Divide una asignación de radio en bloques de lunes a domingo, cortando también en el cambio de mes,
+// y reparte las cuñas planificadas y emitidas en proporción a los días (redondeo por restos mayores).
+function radioSplit(data){
+ const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ const parts=[];let d=new Date(data.startDate+"T12:00:00");const end=new Date(data.endDate+"T12:00:00");
+ while(d<=end){const s=new Date(d);let e=new Date(d);while(true){const n=new Date(e);n.setDate(n.getDate()+1);if(n>end||n.getDay()===1||n.getMonth()!==e.getMonth())break;e=n}
+  parts.push({s:iso(s),e:iso(e),days:Math.round((e-s)/864e5)+1});d=new Date(e);d.setDate(d.getDate()+1)}
+ const share=total=>{const tot=parts.reduce((a,p)=>a+p.days,0),raw=parts.map(p=>total*p.days/tot),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);
+  raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){base[i]++;left--}});return base};
+ const pl=share(radioNum(data.plannedSpots)),ac=share(radioNum(data.actualSpots));
+ return parts.map((p,i)=>({...data,startDate:p.s,endDate:p.e,inventoryMonth:p.s.slice(0,7),plannedSpots:pl[i],actualSpots:ac[i]}))}
 function radioWeekKey(v){if(!v)return"";const d=new Date(v+"T12:00:00"),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
 function radioFmt(n){return new Intl.NumberFormat("es-ES").format(radioNum(n))}
 function radioRows(rows,contractId,month){return rows.filter(r=>r.contractId===contractId&&r.inventoryMonth===month)}
@@ -146,7 +157,7 @@ function radioSummary(contract,month,rows){
  const totalHtml='<div class="rsum-total"><div class="rsum-week-head"><b>Total del mes</b><span>de '+radioFmt(tot.capacity)+' '+esc(main)+' contratadas</span><strong>'+radioFmt(tot.planned)+'</strong></div>'+
   all.map(x=>'<div class="rsum-row"><span class="rsum-name">'+esc(x.name)+'</span>'+radioBar(x.p,cap)+'<b>'+radioFmt(x.p)+'</b><em>'+Math.round(x.p/cap*100)+' %</em></div>').join("")+
   '<div class="rsum-row rsum-foot"><span class="rsum-name">'+(tot.capacity-tot.planned>0?'Sin asignar':'Contrato completo')+'</span>'+radioBar(tot.planned,cap)+'<b>'+radioFmt(Math.max(0,tot.capacity-tot.planned))+'</b><em>'+Math.round(tot.planned/cap*100)+' % usado</em></div>'+
-  (tot.actual?'<p class="muted" style="margin:8px 0 0">Certificadas por la emisora: <b>'+radioFmt(tot.actual)+'</b> de '+radioFmt(tot.planned)+' planificadas.</p>':'<p class="muted" style="margin:8px 0 0">Cifras planificadas; falta el certificado de emisión.</p>')+'</div>';
+  (tot.actual?'<p class="muted" style="margin:8px 0 0">Certificadas por la emisora: <b>'+radioFmt(tot.actual)+'</b> de '+radioFmt(tot.planned)+' planificadas.</p>':'')+'</div>';
  return '<section class="card rsum"><div class="section-title"><div><small class="section-kicker">Resumen de '+esc(radioMonthLabel(month).toLowerCase())+'</small><h2>'+esc(contract.venue)+' · '+esc(contract.brand)+'</h2></div><div class="rsum-big"><strong>'+radioFmt(tot.planned)+'</strong><span>/ '+radioFmt(tot.capacity)+' '+esc(main)+'</span></div></div>'+
   '<div class="rsum-grid"><div class="rsum-weeks">'+weekHtml+'</div>'+totalHtml+'</div></section>'
 }
@@ -241,9 +252,9 @@ function radioForm(r={},selectedContract=null,selectedMonth=""){
  input("spectacle","Espectáculo",r.spectacle)+input("campaignName","Nombre interno / campaña",r.campaignName)+
  input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+
  '<label>Planificado<input name="plannedSpots" type="number" min="0" step="1" value="'+esc(r.plannedSpots||"")+'" '+(contract?'required':'')+'></label>'+
- '<label>Real / certificado<input name="actualSpots" type="number" min="0" step="1" value="'+esc(r.actualSpots||"")+'"></label>'+
+ '<input type="hidden" name="actualSpots" value="'+esc(r.actualSpots||"")+'">'+
  input("spotName","Nombre de la cuña / pieza",r.spotName)+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+
- materialStatusSelect(r.materialStatus)+selectStatus(r.status)+input("certificateRef","Certificado / referencia",r.certificateRef)+
+ materialStatusSelect(r.materialStatus)+selectStatus(r.status)+'<input type="hidden" name="certificateRef" value="'+esc(r.certificateRef||"")+'">'+
  '<div id="radioLegacyFields" class="wide '+(legacy?'':'hidden')+'"><div class="form-grid">'+venueSelect(r.venue)+input("station","Emisora manual",r.station)+input("duration","Duración",r.duration)+input("timeSlot","Franja",r.timeSlot)+'</div></div>'+
  (contract?'<input type="hidden" name="venue" value="'+esc(contract.venue||"")+'"><input type="hidden" name="station" value="'+esc(line?.station||"")+'"><input type="hidden" name="duration" value="'+esc(line?.duration||"")+'"><input type="hidden" name="timeSlot" value="'+esc(line?.timeSlot||"")+'"><input type="hidden" name="unit" value="'+esc(line?.unit||"cuñas")+'">':'<input type="hidden" name="unit" value="'+esc(r.unit||"cuñas")+'">')+
  '<label class="wide">Audio<input id="radioAsset" type="file" accept="audio/*"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
@@ -286,19 +297,26 @@ function bindRadioForm(existing,rows,selectedContract,selectedMonth){
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#radioAsset")?.files?.[0];try{
    const c=radioContract(data.contractId),l=radioLine(c,data.lineId);data.plannedSpots=radioNum(data.plannedSpots);data.actualSpots=radioNum(data.actualSpots);
    if(c&&!l)throw new Error("Elige una emisora / programa del acuerdo.");
+   // Reparto automático: si las fechas cruzan de semana o de mes, la app divide la asignación en
+   // bloques semanales (lunes a domingo, sin pasar de mes) y reparte las cuñas según los días de cada uno.
+   let chunks=[{...data}];
    if(c&&l){
-     if(!data.inventoryMonth||!l.monthly?.[data.inventoryMonth])throw new Error("Ese programa no tiene inventario contratado en el mes seleccionado.");
-     if(data.startDate&&data.startDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de inicio debe estar dentro del mes de inventario.");
-     if(data.endDate&&data.endDate.slice(0,7)!==data.inventoryMonth)throw new Error("La fecha de fin debe estar dentro del mismo mes. Divide la campaña en dos asignaciones si cruza de mes.");
      if(data.startDate&&data.endDate&&data.startDate>data.endDate)throw new Error("La fecha de fin no puede ser anterior al inicio.");
-     if(data.startDate&&data.endDate&&radioWeekKey(data.startDate)!==radioWeekKey(data.endDate))throw new Error("Para mantener el control semanal exacto, una asignación no puede cruzar de semana. Divide el reparto en dos bloques.");
-     const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===data.inventoryMonth),st=radioLineStats(c,l,data.inventoryMonth,others);
-     if(data.plannedSpots>st.remaining)throw new Error("Supera el inventario disponible: quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+".");
-     data.venue=c.venue;data.station=l.station;data.duration=l.duration;data.timeSlot=l.timeSlot;data.unit=l.unit;data.frequency=data.plannedSpots+" "+l.unit;
+     if(data.startDate&&data.endDate)chunks=radioSplit(data);
+     else if(data.startDate)data.inventoryMonth=data.startDate.slice(0,7),chunks=[{...data}];
+     const byMonth={};chunks.forEach(x=>{byMonth[x.inventoryMonth]=(byMonth[x.inventoryMonth]||0)+x.plannedSpots});
+     for(const [m,tot] of Object.entries(byMonth)){
+      if(!l.monthly?.[m])throw new Error("El programa "+l.station+" · "+l.program+" no tiene inventario contratado en "+radioMonthLabel(m)+".");
+      const others=rows.filter(x=>x.id!==existing?.id&&x.contractId===c.id&&x.inventoryMonth===m),st=radioLineStats(c,l,m,others);
+      if(tot>st.remaining)throw new Error("Supera el inventario disponible en "+radioMonthLabel(m)+": quedan "+radioFmt(st.remaining)+" "+l.unit+" en "+l.station+" · "+l.program+" y el reparto pide "+radioFmt(tot)+".")}
+     chunks.forEach(x=>{x.venue=c.venue;x.station=l.station;x.duration=l.duration;x.timeSlot=l.timeSlot;x.unit=l.unit;x.frequency=x.plannedSpots+" "+l.unit});
+     if(chunks.length>1&&!confirm("Las fechas cruzan "+(Object.keys(byMonth).length>1?"de mes y ":"")+"de semana. Se guardará repartido en "+chunks.length+" bloques:\n\n"+chunks.map(x=>fdate(x.startDate)+" – "+fdate(x.endDate)+": "+x.plannedSpots+" "+l.unit).join("\n")+"\n\n¿Guardar así?"))return;
    }
-   const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}
-   if(existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
-   else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
+   const assetKey=await uploadAsset(file,"radio",existing?.assetKey);if(assetKey)chunks.forEach(x=>{x.assetKey=assetKey;x.assetName=file?.name||existing?.assetName||""});
+   for(let i=0;i<chunks.length;i++){
+    if(i===0&&existing?.id)await api("/api/control?module=radio&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(chunks[0])});
+    else await api("/api/control?module=radio",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(chunks[i])})}
+   if(chunks.length>1){say("Asignación repartida en "+chunks.length+" bloques semanales");radio();return}
    say("Asignación de radio guardada");radio()
  }catch(err){say(err.message)}}
 }
@@ -995,28 +1013,31 @@ async function hydrateMedia(moduleName){for(const el of $$('[data-module="'+modu
    else mk(false)}else el.innerHTML='<img src="'+u+'" alt="Creatividad">' }}
 
 // Archivo: toda la publicidad de cada mes y los registros quitados, con opción de recuperarlos.
-let arMonth="";
+let arMonth="",arShow="";
 async function archivo(){
  const q=new URLSearchParams(location.hash.split("?")[1]||"").get("mes");if(q&&/^\d{4}-\d{2}$/.test(q))arMonth=q;
  const now=new Date(),cur=monthKey(now);if(!arMonth)arMonth=cur;
  const months=[...Array(7)].map((_,i)=>monthKey(new Date(now.getFullYear(),now.getMonth()-i,1)));if(!months.includes(arMonth))months.push(arMonth);
  const admin=roles().includes("admin"),edit=admin||roles().includes("gestion");
  const mods=edit?["radio","taxis","intercambiadores","hometicket","revistas","hitos"]:[];
- const [sum,...lists]=await Promise.all([api("/api/monthly?mes="+arMonth),...mods.map(m=>api("/api/control?module="+m+"&includeDeleted=1").catch(()=>({rows:[]})))]);
+ const qs=new URLSearchParams(location.hash.split("?")[1]||"").get("espectaculo");if(qs!=null)arShow=qs;const SQ=arShow?"&show="+encodeURIComponent(arShow):"";
+ const [sum,...lists]=await Promise.all([api("/api/monthly?mes="+arMonth+SQ),...mods.map(m=>api("/api/control?module="+m+"&includeDeleted=1").catch(()=>({rows:[]})))]);
  const lim=new Date(Date.now()-120*864e5).toISOString();
  const removed=[];mods.forEach((m,i)=>(lists[i].rows||[]).filter(r=>r.deletedAt&&r.deletedAt>lim).forEach(r=>removed.push({m,r})));removed.sort((a,b)=>b.r.deletedAt.localeCompare(a.r.deletedAt));
  const short=m=>{const [y,mo]=m.split("-").map(Number);const t=new Date(y,mo-1,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","");return t.charAt(0).toUpperCase()+t.slice(1)+" "+String(y).slice(2)};
  const chips='<div class="chip-row ar-months">'+months.map(m=>'<button type="button" class="chip'+(m===arMonth?" on":"")+'" data-ar="'+m+'">'+short(m)+(m===cur?' · en curso':'')+'</button>').join("")+'</div>';
+ const showBar='<form class="ar-show" id="arShowForm"><label>Informe de un espectáculo<input name="show" data-ac="spectacle" autocomplete="off" placeholder="Todos los espectáculos" value="'+esc(arShow)+'"></label><button type="submit">Ver</button>'+(arShow?'<button type="button" class="ghost" id="arShowClear">Quitar filtro</button>':'')+'</form>'+(arShow?'<p class="muted" style="margin:0 0 10px">Toda la publicidad de <b>'+esc(arShow)+'</b> en '+esc(monthLabel(arMonth))+'. El envío por correo manda este informe.</p>':'');
  const kpis='<div class="kpi-row">'+sum.totals.map(t=>typeof t.value==="number"?kpi(t.value,t.label+(t.note?" · "+t.note:"")):'<span class="kpi"><b>'+esc(t.value)+'</b><em>'+esc(t.label+(t.note?" · "+t.note:""))+'</em></span>').join("")+'</div>';
  const cards='<div class="ar-grid">'+sum.sections.map(sec=>'<section class="card ar-card'+(sec.lines.length?'':' empty')+'"><div class="section-title"><div><small class="section-kicker">'+esc(sec.name)+'</small></div><span class="badge">'+sec.lines.length+'</span></div>'+
   (sec.lines.length?'<ul class="ar-list">'+sec.lines.map(l=>'<li><b>'+esc((l.kicker?l.kicker+" · ":"")+l.title)+'</b><span>'+esc([sec.key==="hitos"&&l.date?fdate(l.date)+(l.time?" "+l.time:""):"",l.detail].filter(Boolean).join(" · "))+'</span></li>').join("")+'</ul>':'<p class="muted" style="margin:0">Sin registros este mes.</p>')+'</section>').join("")+'</div>';
  const rem=removed.length?'<details class="card ar-removed"><summary>Registros quitados ('+removed.length+')</summary><p class="muted" style="margin:6px 0 10px">Lo que se ha quitado en los últimos cuatro meses. Puedes recuperarlo.</p><div class="list">'+removed.map(({m,r})=>'<div class="item"><div><h3>'+esc(modLabel(m))+' · '+esc(r.spectacle||r.title||r.campaignName||"Registro")+'</h3><div class="item-meta">'+(r.magazine?'<span>'+esc(magName(r.magazine))+' · '+esc(monthLabel(r.month||""))+'</span>':'')+(r.venue?'<span>'+esc(r.venue)+'</span>':'')+'<span>Quitado el '+fdate(r.deletedAt.slice(0,10))+'</span></div></div><div class="item-actions"><button type="button" data-restore="'+m+'|'+r.id+'">Recuperar</button></div></div>').join("")+'</div></details>':'';
  app.innerHTML=pageHead("Archivo","Toda la publicidad de cada mes: fachada, Home Ticket, radio, taxis, intercambiadores, revistas y comunicación",admin?'<button type="button" id="arSend">Enviar resumen por correo</button>':'')+(admin?'<div id="arSendBox" class="card" hidden style="margin:0 0 14px;padding:14px"></div>':'')+
-  chips+'<h2 class="ar-title">'+esc(sum.label)+(arMonth===cur?' <em>mes en curso</em>':'')+'</h2>'+kpis+cards+rem+
+  chips+showBar+'<h2 class="ar-title">'+esc(sum.label)+(arMonth===cur?' <em>mes en curso</em>':'')+'</h2>'+kpis+cards+rem+
   '<p class="cart-legacy" style="margin-top:14px">El día 1 de cada mes a las 9:00 llega por correo el resumen del mes anterior.</p>';
  $$("[data-ar]").forEach(b=>b.onclick=()=>{arMonth=b.dataset.ar;history.replaceState(null,"","#archivo");archivo()});
  $$("[data-restore]").forEach(b=>b.onclick=async()=>{const [m,id]=b.dataset.restore.split("|");try{await api("/api/control?module="+m+"&id="+id,{method:"PATCH"});say("Recuperado");archivo()}catch(e){say(e.message)}});
- const sb=$("#arSend");if(sb)sb.onclick=async()=>{let cs=[];try{cs=(await api("/api/contacts")).contacts||[]}catch{}const box=$("#arSendBox");if(box&&!box.hidden){box.hidden=true;return}if(!box)return;box.hidden=false;box.innerHTML='<p class="muted" style="margin:0 0 8px">Siempre va a fernando@yellowmedia.es. Enviar también a:</p>'+cs.map(c=>`<label class="ar-rcp"><input type="checkbox" value="${esc(c.email)}"><i><b>${esc(c.name)}</b><small>${esc(c.email)}</small></i></label>`).join("")+'<label class="ar-rcp" style="border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)"><input type="checkbox" id="arIntroOn"><i><b>Añadir una presentación</b><small>Texto al principio del correo, para quien lo recibe por primera vez</small></i></label><textarea id="arIntro" rows="7" style="display:none;width:100%;margin-top:6px">'+esc(AR_INTRO)+'</textarea>'+'<div style="margin-top:10px;display:flex;gap:8px"><button type="button" id="arSendGo">Enviar ahora</button><button type="button" class="ghost" id="arSendNo">Cancelar</button></div>';$("#arSendNo").onclick=()=>{box.hidden=true};$("#arIntroOn").onchange=e=>{$("#arIntro").style.display=e.target.checked?"":"none"};const go=$("#arSendGo");go.onclick=async()=>{const extra=[...box.querySelectorAll("input:checked")].map(i=>i.value);const quien=["fernando@yellowmedia.es",...extra].join(", ");if(!confirm("Se enviará el resumen de "+arMonth+" a: "+quien+(extra.length?"\n\nIrá como correo real, sin la marca de prueba. Los compañeros van en copia oculta: nadie ve a los demás.":"")+"\n\n¿Enviar?"))return;go.disabled=true;go.textContent="Preparando imágenes…";try{for(let i=0;i<15;i++){const w=await api("/api/monthly?warm=1&mes="+arMonth,{method:"POST"});if(!w.left)break;go.textContent="Preparando imágenes… "+w.done+"/"+w.total}go.textContent="Enviando…";const r=await api("/api/monthly?mes="+arMonth,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({extra,intro:$("#arIntroOn").checked?$("#arIntro").value:""})});say(r.sent?"Resumen enviado a "+(r.to||[]).join(", ")+((r.bcc||[]).length?" y en copia oculta a "+r.bcc.length+(r.bcc.length===1?" persona":" personas"):""):"No se ha enviado: "+(r.reason||"revisa el correo"));if(r.sent)box.hidden=true}catch(e){say(e.message)}finally{go.disabled=false;go.textContent="Enviar ahora"}}};
+ {const sf=$("#arShowForm");if(sf){sf.onsubmit=e=>{e.preventDefault();arShow=String(sf.elements.show.value||"").trim();history.replaceState(null,"","#archivo");archivo()};const sc=$("#arShowClear");if(sc)sc.onclick=()=>{arShow="";history.replaceState(null,"","#archivo");archivo()}}loadSpectacles()}
+ const sb=$("#arSend");if(sb)sb.onclick=async()=>{let cs=[];try{cs=(await api("/api/contacts")).contacts||[]}catch{}const box=$("#arSendBox");if(box&&!box.hidden){box.hidden=true;return}if(!box)return;box.hidden=false;box.innerHTML='<p class="muted" style="margin:0 0 8px">Siempre va a fernando@yellowmedia.es. Enviar también a:</p>'+cs.map(c=>`<label class="ar-rcp"><input type="checkbox" value="${esc(c.email)}"><i><b>${esc(c.name)}</b><small>${esc(c.email)}</small></i></label>`).join("")+'<label class="ar-rcp" style="border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)"><input type="checkbox" id="arIntroOn"><i><b>Añadir una presentación</b><small>Texto al principio del correo, para quien lo recibe por primera vez</small></i></label><textarea id="arIntro" rows="7" style="display:none;width:100%;margin-top:6px">'+esc(AR_INTRO)+'</textarea>'+'<div style="margin-top:10px;display:flex;gap:8px"><button type="button" id="arSendGo">Enviar ahora</button><button type="button" class="ghost" id="arSendNo">Cancelar</button></div>';$("#arSendNo").onclick=()=>{box.hidden=true};$("#arIntroOn").onchange=e=>{$("#arIntro").style.display=e.target.checked?"":"none"};const go=$("#arSendGo");go.onclick=async()=>{const extra=[...box.querySelectorAll("input:checked")].map(i=>i.value);const quien=["fernando@yellowmedia.es",...extra].join(", ");if(!confirm("Se enviará el resumen de "+arMonth+" a: "+quien+(extra.length?"\n\nIrá como correo real, sin la marca de prueba. Los compañeros van en copia oculta: nadie ve a los demás.":"")+"\n\n¿Enviar?"))return;go.disabled=true;go.textContent="Preparando imágenes…";try{for(let i=0;i<15;i++){const w=await api("/api/monthly?warm=1&mes="+arMonth+(arShow?"&show="+encodeURIComponent(arShow):""),{method:"POST"});if(!w.left)break;go.textContent="Preparando imágenes… "+w.done+"/"+w.total}go.textContent="Enviando…";const r=await api("/api/monthly?mes="+arMonth+(arShow?"&show="+encodeURIComponent(arShow):""),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({extra,intro:$("#arIntroOn").checked?$("#arIntro").value:""})});say(r.sent?"Resumen enviado a "+(r.to||[]).join(", ")+((r.bcc||[]).length?" y en copia oculta a "+r.bcc.length+(r.bcc.length===1?" persona":" personas"):""):"No se ha enviado: "+(r.reason||"revisa el correo"));if(r.sent)box.hidden=true}catch(e){say(e.message)}finally{go.disabled=false;go.textContent="Enviar ahora"}}};
 }
 
 // ===================== IMPORTAR =====================
@@ -1085,7 +1106,7 @@ async function importar(){
       for(const r of x.drop)await api("/api/control?module="+x.module+"&id="+r.id,{method:"DELETE"});ok++;continue}
      const data={...x.data};
      // Archivo adjunto preparado (p. ej. el audio de una cuña): se descarga de la propia web y se sube a la biblioteca
-     if(x.asset&&x.asset.url){const fr=await fetch(x.asset.url,{cache:"no-cache"});if(!fr.ok)throw new Error("no se ha podido leer el archivo "+(x.asset.name||""));const bl=await fr.blob();const file=new File([bl],x.asset.name||"archivo",{type:x.asset.type||bl.type||"application/octet-stream"});data.assetKey=await uploadAsset(file,x.module);data.assetName=file.name}
+     if(x.asset&&x.asset.url){const ck=x.module+"|"+x.asset.url;if(!importar.up)importar.up={};if(importar.up[ck]){data.assetKey=importar.up[ck];data.assetName=x.asset.name||""}else{const fr=await fetch(x.asset.url,{cache:"no-cache"});if(!fr.ok)throw new Error("no se ha podido leer el archivo "+(x.asset.name||""));const bl=await fr.blob();const file=new File([bl],x.asset.name||"archivo",{type:x.asset.type||bl.type||"application/octet-stream"});data.assetKey=importar.up[ck]=await uploadAsset(file,x.module);data.assetName=file.name}}
      if(x.poster&&x.poster.url){const pr=await fetch(x.poster.url,{cache:"no-cache"});if(pr.ok){const pb=await pr.blob();data.posterKey=await uploadAsset(new File([pb],x.poster.name||"portada.jpg",{type:pb.type||"image/jpeg"}),x.module);data.posterName=x.poster.name||""}}
      if(x.keepId){await api("/api/control?module="+x.module+"&id="+x.keepId,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(x.merged)});for(const id of x.dropIds)await api("/api/control?module="+x.module+"&id="+id,{method:"DELETE"});ok++;continue}
      await api("/api/control?module="+x.module,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});ok++}catch(e){errs.push(importLabel(x)+": "+e.message)}}
@@ -1406,7 +1427,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v69";
+const YC_VERSION="yellow-control-v72";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

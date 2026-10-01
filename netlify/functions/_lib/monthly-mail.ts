@@ -10,6 +10,9 @@ function quickRead(s: MonthSummary) {
   const parts: string[] = [];
   if (c && Number(c.value)) parts.push(`${Number(c.value).toLocaleString("es-ES")} ${c.label}`);
   if (f) parts.push(`${f.value} soportes de la fachada del Gran Teatro Pavón`);
+  const sc = t["soportes de cartelería"], hp = t["piezas de Home Ticket"];
+  if (sc && Number(sc.value)) parts.push(`${sc.value} ${Number(sc.value) === 1 ? "soporte" : "soportes"} de cartelería`);
+  if (hp && Number(hp.value)) parts.push(`${hp.value} ${Number(hp.value) === 1 ? "pieza" : "piezas"} de Home Ticket`);
   const ar = t["soportes cartelera Teatro Arlequín"];
   if (ar) parts.push(`${ar.value} soportes de la cartelera del Teatro Arlequín`);
   if (r) parts.push(`${r.value} Revistas Teatros`);
@@ -20,7 +23,7 @@ function quickRead(s: MonthSummary) {
   if (ic && Number(ic.value)) parts.push(`${ic.value} ${Number(ic.value) === 1 ? "campaña" : "campañas"} en intercambiadores`);
   const hc = t["inputs de comunicación"];
   if (hc && Number(hc.value)) parts.push(`${hc.value} ${Number(hc.value) === 1 ? "input" : "inputs"} de comunicación`);
-  return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + (t["cuñas asignadas"] ? " Las cuñas son las asignadas; falta el certificado de emisión." : "");
+  return (parts.length ? `En ${s.label.toLowerCase()}: ${parts.join(", ")}.` : `No hay publicidad registrada en ${s.label.toLowerCase()}.`) + "";
 }
 
 // Prepara miniaturas (máx. 36) como adjuntos incrustados y devuelve el HTML con sus cid.
@@ -57,6 +60,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   const cards: { big: string; label: string; note?: string; text?: boolean }[] = [];
   const cu = T["cuñas certificadas"] || T["cuñas asignadas"];
   if (cu && Number(cu.value)) cards.push({ big: Number(cu.value).toLocaleString("es-ES"), label: cu.label });
+  for (const k of ["soportes de cartelería", "piezas de Home Ticket"]) { const x = T[k]; if (x && Number(x.value)) cards.push({ big: String(x.value), label: Number(x.value) === 1 ? (k.startsWith("soportes") ? "soporte de cartelería" : "pieza de Home Ticket") : k }); }
   const fa = T["soportes fachada Gran Teatro Pavón"];
   if (fa) cards.push({ big: String(fa.value), label: fa.label });
   const arc = T["soportes cartelera Teatro Arlequín"];
@@ -129,7 +133,7 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
         <td valign="bottom" align="right" style="white-space:nowrap;"><span style="font-size:22px; font-weight:800; color:#111111;">${fm(st.used)}</span><span style="font-size:12px; color:#666666;"> / ${fm(st.cap)} ${e(st.unit)}</span></td>
       </tr></table>
       <div style="height:8px; line-height:8px; font-size:1px;">&nbsp;</div>${bar(st.used, st.cap, 10)}
-      <div style="font-size:11px; color:#666666; margin-top:6px;">${!st.used ? "Sin asignar este mes" : `${Math.round(st.used / st.cap * 100)} % asignado${st.cert ? ` · ${fm(st.cert)} certificadas` : " · pendiente de certificado"}`}</div>
+      <div style="font-size:11px; color:#666666; margin-top:6px;">${!st.used ? "Sin asignar este mes" : `${Math.round(st.used / st.cap * 100)} % asignado${st.cert ? ` · ${fm(st.cert)} certificadas` : ""}`}</div>
       ${st.parts.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px; table-layout:fixed;">${st.parts.map(([nme, v]) => `<tr>
         <td width="44%" style="width:44%; font-size:12px; color:#111111; padding:3px 8px 3px 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${e(nme)}</td>
         <td style="padding:3px 0;">${bar(v, max, 7, "#111111")}</td>
@@ -185,8 +189,8 @@ export function renderMonthly(s: MonthSummary, o: { appUrl: string; test?: boole
   </td></tr>
   <tr><td class="yw-pad" style="padding:0 32px;"><div style="height:3px; background:${Y};"></div></td></tr>
   <tr><td class="yw-pad" style="padding:20px 32px 0;">
-    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES</div>
-    <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">Resumen de ${e(s.label.toLowerCase())}</div>
+    <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">${s.show ? "INFORME DE ESPECTÁCULO · TODA SU PUBLICIDAD DEL MES" : "PUBLICIDAD Y COMUNICACIÓN · TODOS LOS SOPORTES"}</div>
+    <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${s.show ? `${e(s.show)} · ${e(s.label.split(" · ")[0].toLowerCase())}` : `Resumen de ${e(s.label.toLowerCase())}`}</div>
   </td></tr>
   ${o.intro?.trim() ? `<tr><td class="yw-pad" style="padding:14px 32px 0;">${o.intro.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 10px; font-size:14px; color:#222222; line-height:1.6;">${e(p.trim()).replace(/\n/g, "<br>")}</p>`).join("")}</td></tr>` : ""}
   ${kpiRows.length ? `<tr><td class="yw-pad" style="padding:16px 32px 0;"><div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555; margin-bottom:8px;">COMPROBANTES DEL MES</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">${kpiRows.join("")}</table></td></tr>` : ""}
