@@ -843,11 +843,11 @@ body.sheet-open{overflow:hidden}
 .vid-poster{position:relative;display:block;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000;width:100%;max-width:360px;cursor:pointer}
 .vid-poster img{display:block;width:100%;height:auto;max-width:none;max-height:none;border:0;border-radius:0}
 .vid-poster span{position:absolute;inset:0;margin:auto;width:58px;height:58px;border-radius:50%;background:var(--gold);color:#111;display:grid;place-items:center;font-size:22px;padding-left:4px;box-shadow:0 4px 20px #0008}
-#arSendBox .ar-rcp{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;margin:0!important;padding:9px 0!important;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);text-align:left!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important;cursor:pointer}
-#arSendBox .ar-rcp input{width:18px!important;height:18px!important;flex:0 0 18px;margin:0!important}
-#arSendBox .ar-rcp i{font-style:normal;display:flex!important;flex-direction:column;min-width:0}
-#arSendBox .ar-rcp b{font-weight:700}
-#arSendBox .ar-rcp small{opacity:.65;font-size:12px;overflow-wrap:anywhere}
+:is(#arSendBox,#stSendBox) .ar-rcp{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;margin:0!important;padding:9px 0!important;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);text-align:left!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important;cursor:pointer}
+:is(#arSendBox,#stSendBox) .ar-rcp input{width:18px!important;height:18px!important;flex:0 0 18px;margin:0!important}
+:is(#arSendBox,#stSendBox) .ar-rcp i{font-style:normal;display:flex!important;flex-direction:column;min-width:0}
+:is(#arSendBox,#stSendBox) .ar-rcp b{font-weight:700}
+:is(#arSendBox,#stSendBox) .ar-rcp small{opacity:.65;font-size:12px;overflow-wrap:anywhere}
 /* ===== Presupuesto (solo Fer y Celia) ===== */
 .main-nav a[hidden]{display:none!important}
 .bud-lock{max-width:520px}
@@ -902,3 +902,6 @@ button.bud-kpi{cursor:pointer}
 .chip-row [hidden],.badge[hidden]{display:none!important}
 .mag-sheet-box.bud-edit{display:block!important;grid-template-columns:none!important}.bud-edit h2{margin:0 0 14px}
 .ar-show{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 8px}.ar-show label{flex:1;min-width:220px}
+
+/* Status de la semana */
+.st-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.st-list li{display:flex;flex-direction:column;gap:2px;padding-left:16px;position:relative;font-size:14px}.st-list li span{opacity:.72;font-size:13px}.st-list li:before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:50%;background:#9a948a}.st-list li.ok:before{background:#2f9e5b}.st-list li.falta:before{background:var(--danger)}.st-top{margin:0 0 14px}.st-top>b{font-size:18px}.st-top.st-falta{border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
