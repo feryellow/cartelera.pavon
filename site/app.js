@@ -1192,6 +1192,8 @@ async function calendario(){
 function calEvBtn(e,wide){const v=venueStyle(e);
  return '<button type="button" class="event k-'+e.kind+(e.auto?" auto":" manual")+(wide?" wide":"")+'" data-ev="'+esc(e.id)+'" style="--v:'+v.line+';--vd:'+v.dark+'">'+
   '<em>'+venueChip(e)+esc(evTag(e))+(e.moduleKey==="hitos"?"":" · "+esc(e.module))+'</em><strong>'+esc((e.time?e.time+" · ":"")+e.title)+'</strong>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</button>'}
+let calDaySel="",calDayOpen=new Set();
+function calEvMini(e){const v=venueStyle(e);return '<button type="button" class="event mini k-'+e.kind+(e.auto?" auto":" manual")+'" data-ev="'+esc(e.id)+'" title="'+esc(evTag(e)+" · "+e.title)+'" style="--v:'+v.line+';--vd:'+v.dark+'"><i class="mdot"></i><strong>'+esc((e.time?e.time+" ":"")+e.title)+'</strong></button>'}
 function renderCalendar(){
  const today=localToday(),ev=calFiltered();
  const mods=CAL_MODS.filter(([k])=>k==="hitos"||k==="carteleria"||canRoute(k));
@@ -1209,9 +1211,17 @@ function renderCalendar(){
   label=cap(calCursor.toLocaleDateString("es-ES",{month:"long",year:"numeric"}));
   let cells=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(x=>'<div class="weekday">'+x+'</div>').join("");
   for(let i=0;i<offset;i++)cells+='<div class="day empty"></div>';
-  for(let d=1;d<=n;d++){const iso=isoOf(new Date(y,m,d)),de=ev.filter(e=>e.date===iso),wd=new Date(y,m,d).toLocaleDateString("es-ES",{weekday:"long"});
-   cells+='<div class="day'+(de.length?" has-events":"")+(iso===today?" today":"")+'"><div class="day-number"><span class="day-wd">'+esc(wd)+' </span>'+d+'</div>'+de.map(e=>calEvBtn(e)).join("")+'</div>'}
-  body='<div class="calendar-grid">'+cells+'</div>'+(ev.some(e=>e.date.startsWith(y+"-"+String(m+1).padStart(2,"0")))?'':'<div class="notice" style="margin-top:10px">No hay fechas este mes con estos filtros.</div>');
+  // Cada día enseña como mucho 3 fechas en una línea; el resto, en «+N más» (se despliega al pulsar).
+  // En el móvil la cuadrícula se mantiene (puntos de color) y al tocar un día se ve su lista debajo.
+  const ym=y+"-"+String(m+1).padStart(2,"0");if(!calDaySel||!calDaySel.startsWith(ym))calDaySel=today.startsWith(ym)?today:(ev.filter(e=>e.date.startsWith(ym)).map(e=>e.date).sort()[0]||ym+"-01");
+  const MAX=3;
+  for(let d=1;d<=n;d++){const iso=isoOf(new Date(y,m,d)),de=ev.filter(e=>e.date===iso);
+   cells+='<div class="day'+(de.length?" has-events":"")+(iso===today?" today":"")+(iso===calDaySel?" sel":"")+(calDayOpen.has(iso)?" open":"")+'" data-day="'+iso+'"><div class="day-number">'+d+'</div>'+
+    de.slice(0,MAX).map(e=>calEvMini(e)).join("")+(de.length>MAX?'<div class="day-rest">'+de.slice(MAX).map(e=>calEvMini(e)).join("")+'</div><button type="button" class="day-more" data-more="'+iso+'">'+(calDayOpen.has(iso)?"Ver menos":"+"+(de.length-MAX)+"<span> más</span>")+'</button>':'')+'</div>'}
+  for(let i=(offset+n)%7;i&&i<7;i++)cells+='<div class="day empty"></div>';
+  const sd=ev.filter(e=>e.date===calDaySel),sdd=new Date(calDaySel+"T12:00:00");
+  body='<div class="calendar-grid month">'+cells+'</div>'+(ev.some(e=>e.date.startsWith(ym))?'':'<div class="notice" style="margin-top:10px">No hay fechas este mes con estos filtros.</div>')+
+   '<div class="cal-daylist" id="calDayList"><div class="wk-head"><b>'+esc(cap(sdd.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})))+'</b><span>'+sd.length+(sd.length===1?" fecha":" fechas")+'</span></div>'+(sd.length?sd.map(e=>calEvBtn(e,true)).join(""):'<div class="wk-none">Sin fechas</div>')+'</div>';
  }
  app.innerHTML=pageHead("Calendario","Campañas, montajes, entregas e hitos de comunicación de todos los espacios",
   '<button type="button" id="calSub">Suscribirme</button><button type="button" id="calWeek">Compartir semana</button><button type="button" id="calMonth">Imprimir mes</button>'+(calCanHito()?'<button type="button" class="primary" id="calNewHito">+ Nuevo hito</button>':''))+
@@ -1220,6 +1230,8 @@ function renderCalendar(){
   '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
   '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Yellow / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip nl" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip nl" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div>'+
   body+'</div>';
+ $$("[data-more]").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=b.dataset.more;calDayOpen.has(d)?calDayOpen.delete(d):calDayOpen.add(d);renderCalendar()});
+ $$(".calendar-grid.month .day[data-day]").forEach(c=>c.addEventListener("click",e=>{if(e.target.closest("[data-ev],[data-more]")&&!matchMedia("(max-width:700px)").matches)return;e.preventDefault();e.stopPropagation();calDaySel=c.dataset.day;renderCalendar();if(matchMedia("(max-width:700px)").matches){const l=$("#calDayList");if(l)l.scrollIntoView({behavior:"smooth",block:"start"})}},true));
  const move=dir=>{if(calView==="semana")calWeekOffset+=dir;else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+dir,1);renderCalendar()};
  $("#calPrev").onclick=()=>move(-1);$("#calNext").onclick=()=>move(1);
  $("#calToday").onclick=()=>{calWeekOffset=0;calCursor=new Date();renderCalendar()};
@@ -1456,7 +1468,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v74";
+const YC_VERSION="yellow-control-v75";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

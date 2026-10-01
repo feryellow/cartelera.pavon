@@ -905,3 +905,31 @@ button.bud-kpi{cursor:pointer}
 
 /* Status de la semana */
 .st-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.st-list li{display:flex;flex-direction:column;gap:2px;padding-left:16px;position:relative;font-size:14px}.st-list li span{opacity:.72;font-size:13px}.st-list li:before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:50%;background:#9a948a}.st-list li.ok:before{background:#2f9e5b}.st-list li.falta:before{background:var(--danger)}.st-top{margin:0 0 14px}.st-top>b{font-size:18px}.st-top.st-falta{border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+
+/* Calendario mensual compacto: 3 fechas por día en una línea y «+N más»; en el móvil, cuadrícula con puntos */
+.calendar-grid.month .day{min-height:118px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}
+.calendar-grid.month .day-number{margin-bottom:2px}
+.calendar-grid.month .day.sel{outline:2px solid color-mix(in srgb,var(--yellow) 60%,transparent);outline-offset:-2px}
+.event.mini{display:flex;align-items:center;gap:5px;margin:0;padding:4px 6px;border-radius:6px;font-size:11px;min-width:0}
+.event.mini strong{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.event.mini .mdot{flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:var(--vd,var(--gold))}
+:root[data-theme="light"] .event.mini .mdot{background:var(--v,var(--gold))}
+.day-rest{display:none;flex-direction:column;gap:3px}
+.day.open .day-rest{display:flex}
+.day-more{all:unset;cursor:pointer;font-size:11px;font-weight:800;color:var(--gold);padding:2px 6px;border-radius:6px}
+.day-more:hover{background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.cal-daylist{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.cal-daylist .wk-head{display:flex;gap:10px;align-items:baseline;justify-content:space-between}
+@media(max-width:700px){
+ .calendar-grid.month{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+ .calendar-grid.month .weekday{display:block;font-size:9px;padding:4px 0;letter-spacing:0}
+ .calendar-grid.month .day{display:flex!important;min-height:54px;margin:0;padding:4px 3px;border-radius:8px;flex-direction:row;flex-wrap:wrap;align-content:flex-start;gap:3px}
+ .calendar-grid.month .day.empty{display:block!important;opacity:.25}
+ .calendar-grid.month .day-number{width:100%;font-size:12px;margin:0}
+ .calendar-grid.month .event.mini{all:unset;display:block;width:7px;height:7px;border-radius:50%;background:var(--vd,var(--gold))}
+ :root[data-theme="light"] .calendar-grid.month .event.mini{background:var(--v,var(--gold))}
+ .calendar-grid.month .event.mini *{display:none}
+ .calendar-grid.month .day-rest,.calendar-grid.month .day.open .day-rest{display:none}
+ .calendar-grid.month .day-more{font-size:10px;padding:0 1px;line-height:8px}
+ .calendar-grid.month .day-more span{display:none}
+}
