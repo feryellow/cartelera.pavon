@@ -978,3 +978,9 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .pv-close{position:absolute;top:10px;right:10px}
 :root[data-theme="light"] .pv-card{background:#fff}
 @media(max-width:700px){.pv-hero h1{font-size:30px}.pv-hello{margin-left:0;text-align:left;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.2);width:100%}.pv-hello strong{font-size:24px}.pv-hello strong br{display:none}.pv-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pv-grid-row{grid-template-columns:1fr}.pv-body b{font-size:13px}}
+
+/* Equipo en Usuarios */
+.yc-team{display:flex;flex-wrap:wrap;justify-content:center;gap:0;padding:26px 22px;margin:0 0 14px;border-radius:16px;background:#f5f1ea;border:1px solid var(--line)}
+.yc-team img{width:calc(100%/9);height:auto;display:block;padding:0 .4%}
+@media(max-width:900px){.yc-team{row-gap:10px}.yc-team img{width:20%;padding:0 1.5%}}
+@media(max-width:480px){.yc-team{padding:18px 14px}.yc-team img{width:33.333%;padding:0 3%}}
