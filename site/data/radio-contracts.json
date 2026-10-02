@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-26",
+  "updatedAt": "2026-10-02",
   "contracts": [
     {
       "id": "pavon-kiss-2026-27",
@@ -107,7 +107,7 @@
       "startDate": "2026-02-01",
       "endDate": "2026-12-31",
       "source": "Contrato + óptico GRAN TEATRO PRÍNCIPE PÍO 2026",
-      "notes": "Siete líneas contratadas. Total anual: 1.358 inserciones entre febrero y diciembre de 2026.",
+      "notes": "Febrero a septiembre: siete líneas del contrato original. Desde octubre, esquema nuevo al mes: 48 cuñas en Onda Cero, 50 en Europa FM, 50 en Melodía FM y un preroll (patrocinio antes de tráfico o tiempo).",
       "lines": [
         {
           "id": "ocr-mas-de-uno-entrada",
@@ -124,10 +124,7 @@
             "2026-06": 22,
             "2026-07": 23,
             "2026-08": 21,
-            "2026-09": 22,
-            "2026-10": 22,
-            "2026-11": 21,
-            "2026-12": 23
+            "2026-09": 22
           }
         },
         {
@@ -145,10 +142,7 @@
             "2026-06": 22,
             "2026-07": 23,
             "2026-08": 21,
-            "2026-09": 22,
-            "2026-10": 22,
-            "2026-11": 21,
-            "2026-12": 23
+            "2026-09": 22
           }
         },
         {
@@ -166,10 +160,7 @@
             "2026-06": 15,
             "2026-07": 15,
             "2026-08": 15,
-            "2026-09": 15,
-            "2026-10": 15,
-            "2026-11": 15,
-            "2026-12": 15
+            "2026-09": 15
           }
         },
         {
@@ -187,10 +178,7 @@
             "2026-06": 15,
             "2026-07": 15,
             "2026-08": 15,
-            "2026-09": 15,
-            "2026-10": 15,
-            "2026-11": 15,
-            "2026-12": 15
+            "2026-09": 15
           }
         },
         {
@@ -208,10 +196,7 @@
             "2026-06": 10,
             "2026-07": 10,
             "2026-08": 10,
-            "2026-09": 10,
-            "2026-10": 10,
-            "2026-11": 10,
-            "2026-12": 10
+            "2026-09": 10
           }
         },
         {
@@ -229,10 +214,7 @@
             "2026-06": 20,
             "2026-07": 20,
             "2026-08": 20,
-            "2026-09": 20,
-            "2026-10": 20,
-            "2026-11": 20,
-            "2026-12": 20
+            "2026-09": 20
           }
         },
         {
@@ -250,10 +232,59 @@
             "2026-06": 20,
             "2026-07": 20,
             "2026-08": 20,
-            "2026-09": 20,
-            "2026-10": 20,
-            "2026-11": 20,
-            "2026-12": 20
+            "2026-09": 20
+          }
+        },
+        {
+          "id": "onda-cero-2026-10",
+          "station": "Onda Cero Madrid",
+          "program": "Cuñas · esquema desde octubre",
+          "timeSlot": "",
+          "duration": "",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-10": 48,
+            "2026-11": 48,
+            "2026-12": 48
+          }
+        },
+        {
+          "id": "europa-fm-2026-10",
+          "station": "Europa FM Madrid",
+          "program": "Cuñas · esquema desde octubre",
+          "timeSlot": "",
+          "duration": "",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-10": 50,
+            "2026-11": 50,
+            "2026-12": 50
+          }
+        },
+        {
+          "id": "melodia-fm-2026-10",
+          "station": "Melodía FM Majadahonda",
+          "program": "Cuñas · esquema desde octubre",
+          "timeSlot": "",
+          "duration": "",
+          "unit": "cuñas",
+          "monthly": {
+            "2026-10": 50,
+            "2026-11": 50,
+            "2026-12": 50
+          }
+        },
+        {
+          "id": "preroll-2026-10",
+          "station": "Atresmedia digital",
+          "program": "Preroll · patrocinio antes de tráfico o tiempo",
+          "timeSlot": "",
+          "duration": "",
+          "unit": "patrocinio",
+          "monthly": {
+            "2026-10": 1,
+            "2026-11": 1,
+            "2026-12": 1
           }
         }
       ]
