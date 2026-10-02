@@ -933,3 +933,8 @@ button.bud-kpi{cursor:pointer}
  .calendar-grid.month .day-more{font-size:10px;padding:0 1px;line-height:8px}
  .calendar-grid.month .day-more span{display:none}
 }
+
+/* Portal de proveedores: sin menú ni secciones */
+body[data-role-mode="proveedor"] .main-nav a{display:none!important}
+body[data-role-mode="proveedor"] .back-home{display:none}
+.prov-item{display:flex!important;flex-wrap:wrap;gap:10px;align-items:flex-start}.prov-ask{flex-basis:100%}

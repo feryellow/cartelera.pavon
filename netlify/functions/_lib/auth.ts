@@ -14,6 +14,8 @@ const ROLE_ACCESS: Record<string, { read: string[]; write: string[] }> = {
   gestion: { read: ["dashboard","carteleria","calendario","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","archivo","avisos"], write: ["carteleria","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","avisos"] },
   carteleria: { read: ["dashboard","carteleria"], write: ["carteleria"] },
   consulta: { read: ["dashboard","carteleria","calendario","hitos","archivo"], write: [] },
+  // Proveedores: ninguna sección de la app; solo su portal (/api/proveedor filtra sus datos)
+  proveedor: { read: [], write: [] },
 };
 
 function keyActor(req: Request): Actor | null {
