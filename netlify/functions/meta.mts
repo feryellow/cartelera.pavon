@@ -9,7 +9,7 @@ import { controlStore } from "./_lib/store.ts";
 // GET  ?month=YYYY-MM → filas del mes, meses con datos, presupuestos por espectáculo y cuenta
 // POST {rows}         → importa filas; sustituye las de los mismos días y deja el resto
 // PUT  {month,show,budget} → presupuesto Meta de un espectáculo en un mes
-type Row = { date: string; campaign: string; adset: string; ad: string; spend: number; impressions: number; reach: number; clicks: number; lpv: number; checkouts: number; purchases: number; value: number; campaignId?: string; adId?: string };
+type Row = { date: string; dateEnd?: string; month?: string; status?: string; results?: number; resultType?: string; budget?: number; budgetType?: string; end?: string; campaign: string; adset: string; ad: string; spend: number; impressions: number; reach: number; clicks: number; lpv: number; checkouts: number; purchases: number; value: number; campaignId?: string; adId?: string };
 const N = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? Math.round(x * 100) / 100 : 0 };
 const S = (v: unknown, n = 300) => String(v ?? "").trim().slice(0, n);
 const okMonth = (m: string | null) => !!m && /^\d{4}-\d{2}$/.test(m);
@@ -26,9 +26,10 @@ export default async (req: Request) => {
     const auth = await requireAccess(req, "meta", false); if (auth.response) return auth.response;
     const all = await months(), cur = new Date().toISOString().slice(0, 7);
     const month = okMonth(url.searchParams.get("month")) ? url.searchParams.get("month")! : all.includes(cur) || !all.length ? cur : all[all.length - 1];
-    const doc = await st.get(`meta_rows_${month}`, { type: "json" }) as { rows: Row[]; importedAt?: string; importedBy?: string } | null;
+    const doc = await st.get(`meta_rows_${month}`, { type: "json" }) as { rows: Row[]; importedAt?: string; importedBy?: string; totals?: unknown } | null;
     const budgets = (await st.get("meta_budgets", { type: "json" }) as Record<string, Record<string, number>> | null) || {};
-    return Response.json({ account, month, months: all, rows: doc?.rows || [], importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: "export" }, { headers: { "cache-control": "no-store" } });
+    const map = (await st.get("meta_map", { type: "json" }) as Record<string, string> | null) || {};
+    return Response.json({ map, account, month, months: all, rows: doc?.rows || [], totals: doc?.totals || null, importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: "export" }, { headers: { "cache-control": "no-store" } });
   }
   if (req.method === "POST") {
     const auth = await requireAccess(req, "meta", true); if (auth.response) return auth.response;
@@ -36,16 +37,24 @@ export default async (req: Request) => {
     const rows: Row[] = (Array.isArray(body?.rows) ? body.rows : []).slice(0, 50000).map((r: any) => ({
       date: S(r.date, 10), campaign: S(r.campaign), adset: S(r.adset), ad: S(r.ad), spend: N(r.spend), impressions: N(r.impressions), reach: N(r.reach),
       clicks: N(r.clicks), lpv: N(r.lpv), checkouts: N(r.checkouts), purchases: N(r.purchases), value: N(r.value), campaignId: S(r.campaignId, 40) || undefined, adId: S(r.adId, 40) || undefined,
+      dateEnd: /^\d{4}-\d{2}-\d{2}$/.test(S(r.dateEnd, 10)) ? S(r.dateEnd, 10) : undefined, month: okMonth(S(r.month, 7)) ? S(r.month, 7) : undefined,
+      status: S(r.status, 40) || undefined, results: N(r.results), resultType: S(r.resultType, 80) || undefined, budget: N(r.budget), budgetType: S(r.budgetType, 60) || undefined,
+      end: /^\d{4}-\d{2}-\d{2}$/.test(S(r.end, 10)) ? S(r.end, 10) : undefined,
     })).filter((r: Row) => /^\d{4}-\d{2}-\d{2}$/.test(r.date) && (r.campaign || r.ad));
     if (!rows.length) return Response.json({ error: "No hay filas válidas. La exportación necesita la columna de día y el nombre de la campaña o del anuncio." }, { status: 400 });
     const byMonth = new Map<string, Row[]>();
-    for (const r of rows) { const m = r.date.slice(0, 7); if (!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m)!.push(r); }
+    for (const r of rows) { const m = r.month || r.date.slice(0, 7); if (!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m)!.push(r); }
     const now = new Date().toISOString(), out: { month: string; rows: number; days: number }[] = [];
     for (const [m, list] of byMonth) {
-      const days = new Set(list.map((r) => r.date));
+      const days = new Set(list.map((r) => r.date)), period = list.some((r) => r.dateEnd);
       const prev = (await st.get(`meta_rows_${m}`, { type: "json" }) as { rows: Row[] } | null)?.rows || [];
-      const merged = [...prev.filter((r) => !days.has(r.date)), ...list].sort((a, b) => a.date.localeCompare(b.date));
-      await st.setJSON(`meta_rows_${m}`, { rows: merged, importedAt: now, importedBy: auth.actor!.email });
+      // Totales de un periodo sustituyen todo el mes; datos diarios sustituyen esos días (y los totales previos, para no contar dos veces)
+      const keep = period ? [] : prev.filter((r) => !r.dateEnd && !days.has(r.date));
+      const merged = [...keep, ...list].sort((a, b) => a.date.localeCompare(b.date));
+      // Totales de Meta (alcance deduplicado) solo valen para una exportación de periodo de ese mes
+      const t = body?.totals, tm = t && (S(t.month, 7) || S(t.date, 7));
+      const totals = period && t && tm === m ? { reach: N(t.reach), impressions: N(t.impressions), spend: N(t.spend), date: S(t.date, 10), dateEnd: S(t.dateEnd, 10) } : null;
+      await st.setJSON(`meta_rows_${m}`, { rows: merged, totals, importedAt: now, importedBy: auth.actor!.email });
       out.push({ month: m, rows: list.length, days: days.size });
     }
     await appendAudit({ actor: auth.actor!, module: "meta", elementId: "meta-import", action: "import", note: `Exportación de Meta: ${rows.length} filas (${out.map((o) => `${o.month}: ${o.days} días`).join(", ")})` });
@@ -54,6 +63,16 @@ export default async (req: Request) => {
   if (req.method === "PUT") {
     const auth = await requireAccess(req, "meta", true); if (auth.response) return auth.response;
     let body: any = {}; try { body = await req.json(); } catch {}
+    // Asignar una campaña a un espectáculo (cuando el nombre de la campaña no lo deja claro)
+    if (body?.map) {
+      const campaign = S(body.map.campaign), show = S(body.map.show, 120).toUpperCase();
+      if (!campaign) return Response.json({ error: "Falta la campaña" }, { status: 400 });
+      const map = (await st.get("meta_map", { type: "json" }) as Record<string, string> | null) || {};
+      if (show) map[campaign] = show; else delete map[campaign];
+      await st.setJSON("meta_map", map);
+      await appendAudit({ actor: auth.actor!, module: "meta", elementId: "meta-map", action: "update", note: `Campaña «${campaign}» → ${show || "(automático)"}` });
+      return Response.json({ ok: true, map });
+    }
     const month = S(body?.month, 7), show = S(body?.show, 120);
     if (!okMonth(month) || !show) return Response.json({ error: "Falta el mes o el espectáculo" }, { status: 400 });
     const all = (await st.get("meta_budgets", { type: "json" }) as Record<string, Record<string, number>> | null) || {};
