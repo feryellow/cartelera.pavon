@@ -942,8 +942,8 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 /* Portal de proveedores v2: cabecera con logo, mensaje arriba, meses en pestañas y miniaturas */
 .pv-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:22px;margin:6px 0 14px;border-radius:16px;background:linear-gradient(135deg,#1f1f1f,#141414);border:1px solid var(--line);color:#fff}
 .pv-hero small{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pv-accent,var(--yellow))}
-.pv-hero.themed{border-color:transparent}.pv-hero.themed .pv-logo{background:transparent!important}
-.pv-logo.themed img{background:transparent;padding:10%}
+.pv-hero.themed{border-color:transparent}.pv-hero.themed .pv-logo:not([data-solid]){background:transparent!important}
+.pv-logo.themed img{background:transparent;padding:.4em .55em}
 .pv-hero h1{margin:2px 0 4px;font:400 40px/1 var(--display);text-transform:uppercase}
 .pv-hero p{margin:0;color:rgba(255,255,255,.75)}
 .pv-logo{position:relative;flex:none;display:grid;place-items:center;border-radius:14px;background:#fff;overflow:hidden;color:#131313}
