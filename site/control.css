@@ -1011,3 +1011,5 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .mt-camp-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.mt-camp-h b{font-size:13px;line-height:1.3}
 .mt-camp-n{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;color:var(--muted)}.mt-camp-n span:first-child{color:inherit;font-weight:800}
 .mt-assign{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--muted)}.mt-assign input{max-width:240px;padding:5px 8px;font-size:12px}
+/* Inicio en móvil: saludo, fecha y directamente las secciones */
+@media(max-width:700px){.home-hero .home-kpis,a.home-alert{display:none}.home-hero{margin-bottom:6px}}
