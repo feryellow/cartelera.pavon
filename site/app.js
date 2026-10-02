@@ -52,6 +52,12 @@ async function route(){const q=new URLSearchParams(location.search);if(q.get("vi
 else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
+// Inicio: los bloques bajo las secciones se pliegan y despliegan (en el móvil, plegados de entrada); se recuerda la elección
+function foldDashboard(){const mob=matchMedia("(max-width:700px)").matches;let st={};try{st=JSON.parse(localStorage.getItem("yc-fold")||"{}")}catch{}
+ $$("#app .home-tiles ~ section.card, #app .home-tiles ~ .grid section.card").forEach(sec=>{const t=sec.querySelector(".section-title");if(!t)return;const key=(t.querySelector("h2")||t).textContent.trim();
+  sec.classList.add("dash-fold");const fold=key in st?st[key]:mob;sec.classList.toggle("folded",fold);t.setAttribute("role","button");t.tabIndex=0;t.setAttribute("aria-expanded",String(!fold));
+  const tog=()=>{const f=!sec.classList.contains("folded");sec.classList.toggle("folded",f);t.setAttribute("aria-expanded",String(!f));st[key]=f;try{localStorage.setItem("yc-fold",JSON.stringify(st))}catch{}};
+  t.onclick=e=>{if(e.target.closest("a,button"))return;tog()};t.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tog()}}})}
 async function dashboard(){
  const d=await api("/api/control?module=dashboard");
  let provReq=[];if(roles().some(r=>r==="admin"||r==="gestion")){try{provReq=(await api("/api/proveedor?solicitudes=1")).requests||[]}catch{}}
@@ -71,6 +77,7 @@ async function dashboard(){
  '</div></section><section class="card"><div class="section-title"><h2>Últimas modificaciones</h2></div><div class="list">'+
  ((d.latest||[]).length?d.latest.map(a=>'<div class="item"><div><h3>'+esc(modLabel(a.module))+" · "+esc(actLabel(a.action))+'</h3><div class="item-meta"><span>'+esc(a.actor?.email||"")+'</span><span>'+new Date(a.at).toLocaleString("es-ES")+'</span></div></div></div>').join(""):'<div class="notice">Todavía no hay histórico.</div>')+
  '</div></section></div>';
+ foldDashboard()
 }
 
 function homeHeader(alerts,d={}){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
@@ -1522,7 +1529,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v93";
+const YC_VERSION="yellow-control-v94";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
