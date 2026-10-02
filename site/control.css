@@ -984,3 +984,26 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .yc-team img{width:calc(100%/9);height:auto;display:block;padding:0 .4%}
 @media(max-width:900px){.yc-team{row-gap:10px}.yc-team img{width:20%;padding:0 1.5%}}
 @media(max-width:480px){.yc-team{padding:18px 14px}.yc-team img{width:33.333%;padding:0 3%}}
+
+/* Meta · inversión y resultados */
+.mt-months,.mt-tabs{flex-wrap:wrap;margin:0 0 10px}.mt-tabs{margin-bottom:12px}
+.mt-src{margin:0 0 12px;font-size:12px}.mt-note{font-size:11px;margin:8px 0 0}
+.mt-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:6px 0 12px}
+.mt-kpi{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.mt-kpi em,.mt-sec em,.mt-show-n em,.mt-best em{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mt-kpi b{display:block;margin-top:6px;font:400 34px/1 var(--display);color:var(--yellow)}
+.mt-sec{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}.mt-sec span{padding:10px;border-radius:10px;background:color-mix(in srgb,currentColor 4%,transparent)}.mt-sec b{display:block;margin-top:4px;font-size:15px}
+.mt-shows{display:flex;flex-direction:column;gap:10px}
+.mt-show{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel2)}
+.mt-show-h{all:unset;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}.mt-show-h b{font:400 24px/1 var(--display);text-transform:uppercase}.mt-show-h small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.mt-show-n{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}.mt-show-n b{display:block;margin-top:3px;font-size:14px}
+.mt-bar{height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 10%,transparent);margin-top:10px;overflow:hidden}.mt-bar i{display:block;height:100%;background:var(--yellow)}
+.mt-show-d{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.mt-phase{margin:0 0 10px}.mt-phase h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}.mt-phase h4 span{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);font-size:12px}
+.mt-adrow{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:8px;font-size:12px;padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 7%,transparent)}.mt-adrow span{text-align:right;color:var(--muted)}
+.mt-budget{display:flex;align-items:center;gap:6px;font-size:13px}.mt-budget input{width:110px}
+.mt-best{padding:14px;border-radius:12px;margin:0 0 12px;background:color-mix(in srgb,var(--yellow) 14%,transparent);border-left:4px solid var(--yellow)}.mt-best b{display:block;font:400 26px/1.05 var(--display);text-transform:uppercase;margin:4px 0}.mt-best span{font-size:13px}
+.mt-table{min-width:720px}.mt-table tbody tr{cursor:default}.mt-table tr.mt-top td{background:color-mix(in srgb,var(--yellow) 10%,transparent)}
+.mt-steps{margin:0 0 10px;padding-left:20px;line-height:1.6}.mt-empty h2{margin-top:0}
+@media(max-width:900px){.mt-sec{grid-template-columns:repeat(4,minmax(0,1fr))}.mt-show-n{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.mt-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mt-kpi b{font-size:26px}.mt-sec{grid-template-columns:repeat(2,minmax(0,1fr))}.mt-adrow{grid-template-columns:1fr 1fr;}.mt-adrow b{grid-column:1/-1}.mt-adrow span{text-align:left}}
