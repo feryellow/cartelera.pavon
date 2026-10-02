@@ -7,7 +7,7 @@ export default async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   let email = ""; try { email = String((await req.json())?.email || "").trim().toLowerCase(); } catch {}
   if (!/^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i.test(email)) return Response.json({ error: "Escribe tu correo" }, { status: 400 });
-  try { await requestPasswordRecovery(email); } catch {}
+  try { await requestPasswordRecovery(email); } catch (e) { console.error("recover", email, e); }
   return Response.json({ ok: true });
 };
 export const config: Config = { path: "/api/recover" };

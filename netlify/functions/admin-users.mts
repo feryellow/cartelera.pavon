@@ -20,6 +20,13 @@ export default async(req:Request)=>{
   }
 
   let body:any={};try{body=await req.json();}catch{}
+  if(req.method==="POST"&&body.action==="recover"){
+    const email=String(body.email||"").trim().toLowerCase();
+    if(!email.includes("@"))return Response.json({error:"Falta el correo"},{status:400});
+    try{await requestPasswordRecovery(email);}catch(e:any){console.error("recover",email,e);return Response.json({error:e?.message||"Netlify no ha podido enviar el correo"},{status:502});}
+    await appendAudit({actor:auth.actor!,module:"admin",elementId:email,action:"password_recovery"});
+    return Response.json({ok:true});
+  }
   if(req.method==="POST"){
     const email=String(body.email||"").trim().toLowerCase(), role=String(body.role||"consulta");
     if(!email.includes("@")||!allowedRoles.includes(role))return Response.json({error:"Datos no válidos"},{status:400});
