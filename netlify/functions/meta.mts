@@ -2,6 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { controlStore } from "./_lib/store.ts";
+import seed from "./_lib/meta-seed.json";
 
 // Meta (Facebook / Instagram Ads) · fase 1: solo lectura.
 // Los datos llegan importando la exportación del Administrador de anuncios (desglose por día y anuncio).
@@ -19,11 +20,28 @@ async function months(): Promise<string[]> {
   return res.blobs.map((b) => b.key.slice(10)).filter(okMonth).sort();
 }
 
+// Primera carga: la exportación por anuncios del 3 sept. al 2 oct. 2026 que pasó Fer.
+// Se aplica una sola vez y solo en meses sin datos (nunca pisa una importación hecha desde la app).
+async function ensureSeed() {
+  const st = controlStore(), flag = `meta_seed_${(seed as any).id}`;
+  if (await st.get(flag)) return;
+  const now = new Date().toISOString();
+  for (const [m, rows] of Object.entries((seed as any).months as Record<string, Row[]>)) {
+    if (await st.get(`meta_rows_${m}`)) continue;
+    await st.setJSON(`meta_rows_${m}`, { rows, totals: null, importedAt: now, importedBy: "Exportación de Meta (carga inicial)" });
+  }
+  const map = (await st.get("meta_map", { type: "json" }) as Record<string, string> | null) || {};
+  for (const [k, v] of Object.entries((seed as any).map as Record<string, string>)) if (!map[k]) map[k] = v;
+  await st.setJSON("meta_map", map);
+  await st.setJSON(flag, { at: now, source: (seed as any).source });
+}
+
 export default async (req: Request) => {
   const url = new URL(req.url), st = controlStore();
   const account = (Netlify.env.get("META_AD_ACCOUNT") || "6036157816619").replace(/^act_/, "");
   if (req.method === "GET") {
     const auth = await requireAccess(req, "meta", false); if (auth.response) return auth.response;
+    await ensureSeed().catch((e) => console.error("meta seed", e));
     const all = await months(), cur = new Date().toISOString().slice(0, 7);
     const month = okMonth(url.searchParams.get("month")) ? url.searchParams.get("month")! : all.includes(cur) || !all.length ? cur : all[all.length - 1];
     const doc = await st.get(`meta_rows_${month}`, { type: "json" }) as { rows: Row[]; importedAt?: string; importedBy?: string; totals?: unknown } | null;
