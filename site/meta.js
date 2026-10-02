@@ -17,17 +17,17 @@ const PHASES=["Prospección","Templado","Retargeting","Otros"];
 
 // --- Nombres de campaña → espectáculo, teatro y fase. Norma: ESPECTÁCULO | TEATRO | FASE | FORMATO
 // Palabras de objetivo o de servicio que no son el espectáculo
-const OBJ=/^(trafico|ventas|venta|reconocimiento|alcance|interaccion|interacciones|conversiones|conversion|clientes potenciales|leads|mensajes|visualizaciones|reproducciones|promocion|prueba|borrador no usar|borrador|copia|traffic|sales|awareness|engagement|reach)$/;
+const OBJ=/^(video|videos|carrusel|carru|imagen|imagenes|cartel|story|storie|stories|reel|reels|post|rtgt|retargeting|prospe|prospeccion|templado|\d+:\d+|trafico|ventas|venta|reconocimiento|alcance|interaccion|interacciones|conversiones|conversion|clientes potenciales|leads|mensajes|visualizaciones|reproducciones|promocion|prueba|borrador no usar|borrador|copia|traffic|sales|awareness|engagement|reach)$/;
 const BRANDS=[[/^abono ?teatro|^abt\b/,"ABONOTEATRO"],[/^soho city/,"SOHO CITY"],[/^(gran teatro )?pavon/,"GRAN TEATRO PAVÓN"],[/^(gran teatro )?(caixabank )?principe pio/,"PRÍNCIPE PÍO"],[/^(gran )?teatro serrano/,"TEATRO SERRANO"],[/^(gran )?castillo de pedraza/,"CASTILLO DE PEDRAZA"]];
 function guessShow(name){let t=String(name||"").replace(/\[[^\]]*\]/g," ").replace(/\((copia|copy)\)/ig," ").replace(/\s+-\s+copia\b/ig," ").replace(/^\s*promoci[oó]n de\s+/i,"").replace(/\n.*/s,"");
- const parts=t.split(/\s*[|·:]\s*|\s+-\s+|\s*_\s*/).map(x=>x.trim()).filter(x=>x&&!OBJ.test(norm(x))&&!/^[\d.,]+ ?€$|^(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)\b.*\d{4}$/i.test(x)&&!/^(prueba|borrador)\b/i.test(x));
+ const parts=t.split(/\s*[|·:]\s*|\s+-\s+|\s*_\s*/).map(x=>x.trim()).filter(x=>x&&!OBJ.test(norm(x))&&!/^[\d.,]+ ?€$|^(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)\b.*\d{4}$/i.test(x)&&!/^(prueba|borrador)\b/i.test(x)).map(x=>x.replace(/\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|sept|oct|nov|dic)[a-z]*\.?\s+\d{4}$/i,"").trim());
  let show=(parts[0]||t).trim();const n=norm(show);const b=BRANDS.find(([rx])=>rx.test(n));if(b)show=b[1];
- return (show||"Sin espectáculo").toUpperCase()}
+ return (parts.length?show:"Sin asignar").toUpperCase()}
 function parseName(r){const all=norm([r.campaign,r.adset,r.ad].join(" "));
- const show=(M.data&&M.data.map&&M.data.map[r.campaign])||guessShow(r.campaign);
+ const key=r.campaign||r.ad,show=(M.data&&M.data.map&&M.data.map[key])||guessShow(key);
  const venue=(VENUE_RX.find(([rx])=>rx.test(all))||[])[1]||"";
  const ph=norm(r.adset+" "+r.campaign);
- const phase=/prospec|frio|\btof\b|alcance|captac/.test(ph)?"Prospección":/templ|tibio|\bmof\b|interes/.test(ph)?"Templado":/retarg|remarket|caliente|\bbof\b|rmk/.test(ph)?"Retargeting":"Otros";
+ const phase=/prospe|frio|\btof\b|alcance|captac/.test(ph)?"Prospección":/templ|tibio|\bmof\b|interes/.test(ph)?"Templado":/retarg|remarket|caliente|\bbof\b|rmk|rtgt/.test(ph)?"Retargeting":"Otros";
  return {show,venue,phase}}
 
 const RESULT={"actions:omni_landing_page_view":"visitas a la página de destino","actions:landing_page_view":"visitas a la página de destino","actions:like":"me gusta de la página","total_profile_visits":"visitas al perfil","reach":"personas alcanzadas","actions:link_click":"clics en el enlace","link_click":"clics en el enlace","actions:offsite_conversion.fb_pixel_purchase":"compras","actions:omni_purchase":"compras","video_thruplay_watched_actions":"reproducciones de vídeo","actions:video_view":"reproducciones de vídeo","actions:onsite_conversion.messaging_conversation_started_7d":"conversaciones iniciadas","actions:lead":"clientes potenciales"};
@@ -79,15 +79,16 @@ async function readExport(file){await loadXLSX();const buf=await file.arrayBuffe
  const idx=mapHeader(rows[hr]||[]),missing=["date","spend"].filter(k=>idx[k]==null);
  if(missing.length)throw new Error("Faltan columnas: "+missing.map(k=>({date:"Día o Inicio del informe",spend:"Importe gastado"})[k]).join(", ")+".");
  // Sin columna «Día»: es un total del periodo (inicio → fin del informe), no datos diarios
- const H=(rows[hr]||[]).map(norm),period=!H.some(x=>x==="dia"||x==="day");
+ const H=(rows[hr]||[]).map(norm),hasDay=H.some(x=>x==="dia"||x==="day");
  const out=[];let totals=null;for(const r of rows.slice(hr+1)){if(!r||!r.some(c=>c!=null&&c!==""))continue;const g=k=>idx[k]==null?null:r[idx[k]];
   const date=toDate(g("date"));if(!date)continue;const row={date,campaign:String(g("campaign")??"").replace(/\s+/g," ").trim(),adset:String(g("adset")??"").trim(),ad:String(g("ad")??"").trim(),campaignId:String(g("campaignId")??"").trim(),adId:String(g("adId")??"").trim()};
   for(const k of ["spend","impressions","reach","clicks","lpv","checkouts","purchases","value","results","budget"])row[k]=numv(g(k));
-  const de=toDate(g("dateEnd"));if(period&&de&&de!==date){row.dateEnd=de;const mid=new Date((new Date(date+"T12:00:00").getTime()+new Date(de+"T12:00:00").getTime())/2);row.month=mid.toISOString().slice(0,7)}
+  const de=toDate(g("dateEnd"));if(!hasDay&&de&&de!==date){row.dateEnd=de;const mid=new Date((new Date(date+"T12:00:00").getTime()+new Date(de+"T12:00:00").getTime())/2);row.month=mid.toISOString().slice(0,7)}
   row.status=String(g("status")??"").trim();row.resultType=String(g("resultType")??"").trim();row.budgetType=String(g("budgetType")??"").trim();const en=toDate(g("end"));row.end=en&&en>"2000"?en:"";
   if(!row.purchases&&/purchase/.test(row.resultType))row.purchases=row.results;
   if(!row.campaign&&!row.ad){if(row.spend>0&&!totals)totals={reach:row.reach,impressions:row.impressions,spend:row.spend,date:row.date,dateEnd:row.dateEnd||"",month:row.month||""};continue}out.push(row)}
  const found=Object.keys(idx).filter(k=>!["campaignId","adId"].includes(k));
+ const period=out.some(x=>x.dateEnd);if(!period&&totals){delete totals.dateEnd}
  const OPT=["campaignId","adId","adset","ad","dateEnd","status","results","resultType","budget","budgetType","end"];
  const LBL={campaign:"Nombre de la campaña",impressions:"Impresiones",reach:"Alcance",clicks:"Clics en el enlace",lpv:"Visitas a la página de destino",checkouts:"Pagos iniciados",purchases:"Compras",value:"Valor de conversión de compras"};
  return {rows:out,totals,found,period,labels:LBL,missing:Object.keys(COLS).filter(k=>idx[k]==null&&!OPT.includes(k))}}
@@ -137,10 +138,10 @@ function campaignRows(l,shows){const cs=[...group(l,r=>r.campaign)].map(([c,cl])
 function showCards(rows){const budgets=budgetsNow(),last=lastOf(rows),byCampaign=!rows.some(r=>r.ad||r.adset);
  const list=[...group(rows,r=>r._show)].map(([s,l])=>({s,l,t:agg(l)})).sort((a,b)=>b.t.spend-a.t.spend);
  return '<div class="mt-shows">'+list.map(({s,l,t})=>{const b=Number(budgets[s])||0,venue=[...new Set(l.map(r=>r._venue).filter(v=>v&&!norm(s).includes(norm(v))))].join(" · "),brand=/^(ABONOTEATRO|SOHO CITY|GRAN TEATRO PAVÓN|PRÍNCIPE PÍO|TEATRO SERRANO|CASTILLO DE PEDRAZA)$/.test(s),active=l.some(r=>r.status)?l.some(r=>r.status==="active"):l.some(r=>r.date===last&&r.spend>0),open=M.open===s,sales=t.purchases>0||t.value>0;
-  const phases=PHASES.map(ph=>{const pl=l.filter(r=>r._phase===ph);if(!pl.length)return"";const pt=agg(pl);const ads=[...group(pl,r=>r.ad||r.adset)].map(([a,al])=>({a,t:agg(al)})).sort((x,y)=>y.t.spend-x.t.spend);
-   return '<div class="mt-phase"><h4>'+ph+'<span>'+eur(pt.spend)+' · '+int(pt.purchases)+' compras · CPA '+(pt.purchases?eur(pt.cpa,2):"—")+' · ROAS '+(pt.spend?dec(pt.roas):"—")+'</span></h4>'+ads.map(x=>'<div class="mt-adrow"><b>'+esc(x.a)+'</b><span>'+eur(x.t.spend)+'</span><span>'+int(x.t.purchases)+' compras</span><span>CPA '+(x.t.purchases?eur(x.t.cpa,2):"—")+'</span><span>ROAS '+(x.t.spend?dec(x.t.roas):"—")+'</span></div>').join("")+'</div>'}).join("");
+  const phases=PHASES.map(ph=>{const pl=l.filter(r=>r._phase===ph);if(!pl.length)return"";const pt=agg(pl);const ads=[...group(pl,r=>r.ad||r.adset)].map(([a,al])=>({a,t:agg(al),c:al[0].campaign})).sort((x,y)=>y.t.spend-x.t.spend);
+   return '<div class="mt-phase"><h4>'+ph+'<span>'+eur(pt.spend)+' · '+int(pt.purchases)+' compras · CPA '+(pt.purchases?eur(pt.cpa,2):"—")+' · ROAS '+(pt.spend?dec(pt.roas):"—")+'</span></h4>'+ads.map(x=>'<div class="mt-adrow"><b>'+esc(x.a)+(M.demo||x.c?'':'<label class="mt-assign">Espectáculo <input list="mtShows" value="'+esc(s)+'" data-assign="'+esc(x.a)+'"></label>')+'</b><span>'+eur(x.t.spend)+'</span><span>'+int(x.t.purchases)+' compras</span><span>CPA '+(x.t.purchases?eur(x.t.cpa,2):"—")+'</span><span>ROAS '+(x.t.spend?dec(x.t.roas):"—")+'</span></div>').join("")+'</div>'}).join("");
   const cid=(l.find(r=>r.campaignId)||{}).campaignId;
-  return '<article class="mt-show'+(open?" open":"")+'"><button type="button" class="mt-show-h" data-show="'+esc(s)+'"><div><b>'+esc(s)+'</b><small>'+esc(venue||(brand?"Marca o espacio":"Teatro sin indicar en el nombre"))+'</small></div><span class="badge '+(active?"ok":"")+'">'+(active?"Activa":l.some(r=>r.status)?"Sin campaña activa":"Sin gasto el último día")+'</span></button>'+
+  return '<article class="mt-show'+(open?" open":"")+'"><button type="button" class="mt-show-h" data-show="'+esc(s)+'"><div><b>'+esc(s)+'</b><small>'+esc(s==="SIN ASIGNAR"?"El nombre no indica el espectáculo: ábrelo y asigna cada pieza":venue||(brand?"Marca o espacio":"Teatro sin indicar en el nombre"))+'</small></div><span class="badge '+(active?"ok":"")+'">'+(active?"Activa":l.some(r=>r.status)?"Sin campaña activa":"Sin gasto el último día")+'</span></button>'+
    '<div class="mt-show-n"><span><em>Presupuesto</em><b>'+(b?eur(b):"—")+'</b></span><span><em>Gastado</em><b>'+eur(t.spend)+(b?' · '+pct(t.spend/b*100,0):'')+'</b></span>'+(sales?'<span><em>Compras</em><b>'+int(t.purchases)+'</b></span><span><em>Ingresos</em><b>'+eur(t.value)+'</b></span><span><em>CPA</em><b>'+(t.purchases?eur(t.cpa,2):"—")+'</b></span><span><em>ROAS</em><b>'+(t.spend?dec(t.roas):"—")+'</b></span>':'<span><em>Visitas a destino</em><b>'+int(t.lpv)+'</b></span><span><em>Clics en el enlace</em><b>'+int(t.clicks)+'</b></span><span><em>Coste por visita</em><b>'+(t.lpv?eur(t.cplpv,2):"—")+'</b></span><span><em>CTR</em><b>'+(t.impressions?pct(t.ctr,2):"—")+'</b></span>')+'</div>'+
    (b?'<div class="mt-bar"><i style="width:'+Math.min(100,t.spend/b*100)+'%"></i></div>':'')+
    (open?'<div class="mt-show-d">'+(byCampaign?campaignRows(l):phases)+'<div class="actions-row" style="margin-top:10px"><label class="mt-budget">Presupuesto Meta del mes <input type="number" min="0" step="50" value="'+(b||"")+'" data-budget="'+esc(s)+'"'+(M.demo?" disabled":"")+'> €</label><a class="btn" target="_blank" rel="noopener" href="'+esc(adsUrl(cid?"&selected_campaign_ids="+encodeURIComponent(cid):""))+'">Abrir en Meta ↗</a></div></div>':'')+'</article>'}).join("")+'</div><datalist id="mtShows">'+list.map(x=>'<option value="'+esc(x.s)+'">').join("")+'</datalist>'}
