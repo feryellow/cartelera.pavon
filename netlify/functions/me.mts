@@ -7,7 +7,8 @@ export default async (req:Request)=>{
   if(!actor)return Response.json({authenticated:false},{status:401});
   const budget=(await budgetAccess(req).catch(()=>({status:"login"}))).status==="ok";
   // El nombre que se pone en Netlify (Identity) puede no estar aún en la sesión: se lee de la cuenta
-  if(actor.mode==="identity"&&!actor.name){try{actor.name=(await admin.getUser(actor.id))?.name||"";}catch{}}
+  // Manda el nombre actual de la cuenta en Netlify; el de la sesión puede ser antiguo
+  if(actor.mode==="identity"){try{const n=(await admin.getUser(actor.id))?.name;if(n)actor.name=n;}catch{}}
   return Response.json({authenticated:true,actor,budget});
 };
 export const config:Config={path:"/api/me"};
