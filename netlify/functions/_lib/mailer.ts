@@ -42,7 +42,7 @@ export function mailConfigured() {
 // va solo a DEV_RECIPIENT; se devuelven en intendedTo/intendedCc para poder avisar de a quién iría.
 // extra: destinatarios añadidos a mano para un envío concreto (ya validados contra la agenda por quien
 // llama). Son la única excepción al modo desarrollo y van en copia oculta (CCO): nadie ve a los demás.
-export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[]; to?: string[]; cc?: string[]; extra?: string[] }) {
+export async function sendPavonMail(input: { subject: string; html: string; attachments?: Attachment[]; to?: string[]; cc?: string[]; extra?: string[]; replyTo?: string }) {
   const apiKey = env("RESEND_API_KEY"), from = env("PAVON_EMAIL_FROM");
   const base = mailRecipients();
   const intendedTo = input.to?.length ? input.to : base.to, intendedCc = input.to?.length ? (input.cc || []) : base.cc;
@@ -53,7 +53,7 @@ export async function sendPavonMail(input: { subject: string; html: string; atta
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ from, to, ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), subject: input.subject, html: input.html, attachments: input.attachments || [] }),
+    body: JSON.stringify({ from, to, ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), subject: input.subject, html: input.html, attachments: input.attachments || [], ...(input.replyTo ? { reply_to: input.replyTo } : {}) }),
   });
   if (!r.ok) return { sent: false, configured: true, reason: await r.text(), status: r.status, intendedTo, intendedCc };
   const data = await r.json();
