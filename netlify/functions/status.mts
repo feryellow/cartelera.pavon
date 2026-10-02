@@ -25,6 +25,7 @@ export default async (req: Request) => {
     const html = statusMail(s, note, origin, !real);
     const subject = `${real ? "" : "[Prueba] "}Status de publicidad · ${s.label}${s.pending ? ` · ${s.pending} pendientes` : ""}`;
     const r: any = await sendPavonMail({ subject, html, extra });
+    if (!r.sent) console.error("status mail", r.reason, r.status);
     await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `status-${s.first}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Status semanal enviado a ${extra.join(", ")}` : "Status semanal (prueba)" });
     return Response.json({ sent: !!r.sent, to: r.to || [], bcc: r.bcc || [], reason: r.sent ? "" : r.reason || "" });
   }
