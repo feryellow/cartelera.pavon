@@ -5,6 +5,7 @@ export type Actor = {
   id: string;
   email: string;
   roles: string[];
+  name?: string;
   mode: "identity" | "legacy";
 };
 
@@ -39,6 +40,7 @@ export async function resolveActor(req: Request): Promise<Actor | null> {
       return {
         id: user.id,
         email: user.email || "",
+        name: user.name || "",
         roles: Array.isArray(user.roles) ? user.roles : [],
         mode: "identity",
       };
