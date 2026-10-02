@@ -238,9 +238,9 @@
         {
           "id": "onda-cero-2026-10",
           "station": "Onda Cero Madrid",
-          "program": "Cuñas · esquema desde octubre",
-          "timeSlot": "",
-          "duration": "",
+          "program": "Cuñas 20\" en rotación",
+          "timeSlot": "Rotación",
+          "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
             "2026-10": 48,
@@ -251,9 +251,9 @@
         {
           "id": "europa-fm-2026-10",
           "station": "Europa FM Madrid",
-          "program": "Cuñas · esquema desde octubre",
-          "timeSlot": "",
-          "duration": "",
+          "program": "Cuñas 20\" en rotación",
+          "timeSlot": "Rotación",
+          "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
             "2026-10": 50,
@@ -264,9 +264,9 @@
         {
           "id": "melodia-fm-2026-10",
           "station": "Melodía FM Majadahonda",
-          "program": "Cuñas · esquema desde octubre",
-          "timeSlot": "",
-          "duration": "",
+          "program": "Cuñas 20\" en rotación",
+          "timeSlot": "Rotación",
+          "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
             "2026-10": 50,
