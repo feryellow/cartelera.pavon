@@ -33,7 +33,7 @@ const addDays = (s: string, k: number) => { const d = D(s); d.setUTCDate(d.getUT
 const monthAdd = (m: string, k: number) => { const [y, mo] = m.split("-").map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return d.toISOString().slice(0, 7); };
 const short = (v: string) => String(v || "").replace("Gran Teatro CaixaBank ", "").replace("Gran Teatro ", "");
 
-export type ProviderItem = { id: string; module: string; month: string; title: string; detail: string; startDate?: string; endDate?: string; deadline?: string; ready: boolean; media?: { kind: "audio" | "video" | "image"; url: string; name?: string } };
+export type ProviderItem = { id: string; module: string; month: string; title: string; detail: string; startDate?: string; endDate?: string; deadline?: string; ready: boolean; media?: { kind: "audio" | "video" | "image"; url: string; name?: string; thumb?: string } };
 
 // Piezas del proveedor desde el mes anterior hasta tres meses después. Nunca incluye importes ni notas internas.
 export async function providerItems(p: Provider, origin: string, today: string): Promise<{ months: string[]; items: ProviderItem[] }> {
@@ -69,7 +69,8 @@ export async function providerItems(p: Provider, origin: string, today: string):
       items.push({ id: r.id, module: "intercambiadores", month: String(s).slice(0, 7) < months[0] ? months[0] : String(s).slice(0, 7), title: r.spectacle || r.campaignName || "Campaña",
         detail: [short(r.venue), r.support].filter(Boolean).join(" · "), startDate: r.startDate, endDate: r.endDate,
         deadline: r.startDate ? addDays(r.startDate, -(p.lead || 3)) : undefined, ready: !!r.assetKey,
-        media: r.assetKey ? { kind: vid ? "video" : "image", url: mediaUrl(origin, r.assetKey, "intercambiadores"), name: r.assetName } : undefined });
+        media: r.assetKey ? { kind: vid ? "video" : "image", url: mediaUrl(origin, r.assetKey, "intercambiadores"), name: r.assetName,
+          thumb: r.posterKey ? mediaUrl(origin, r.posterKey, "intercambiadores") : vid && r.assetName ? `${origin}/assets/campanas/${String(r.assetName).replace(/\.[^.]+$/, "")}.jpg` : undefined } : undefined });
     }
   }
   items.sort((a, b) => (a.month + (a.startDate || "")).localeCompare(b.month + (b.startDate || "")));
