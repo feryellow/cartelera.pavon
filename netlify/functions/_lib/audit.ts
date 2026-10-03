@@ -1,4 +1,4 @@
-import { controlStore } from "./store.ts";
+import { controlStore, getManyJSON } from "./store.ts";
 import type { Actor } from "./auth.ts";
 
 export async function appendAudit(input: {
@@ -29,10 +29,5 @@ export async function listAudit(limit = 100) {
   const store = controlStore();
   const result = await store.list({ prefix: "audit_" });
   const keys = result.blobs.map((b) => b.key).sort().reverse().slice(0, Math.max(1, Math.min(limit, 500)));
-  const rows = [];
-  for (const key of keys) {
-    const row = await store.get(key, { type: "json" });
-    if (row) rows.push(row);
-  }
-  return rows;
+  return getManyJSON(store, keys);
 }
