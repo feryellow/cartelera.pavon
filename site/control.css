@@ -1059,3 +1059,4 @@ body[data-role-mode="proveedor"] .back-home{display:none}
  #app .chip{min-height:40px}
 }
 .wk-group>summary b{overflow-wrap:anywhere;hyphens:auto}
+.mt-piece{display:flex;align-items:center;gap:10px}.mt-piece img{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:0 0 44px;background:var(--line)}
