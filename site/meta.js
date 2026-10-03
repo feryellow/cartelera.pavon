@@ -3,7 +3,7 @@
 // Administrador de anuncios; Yellow Control no edita nada en Meta («Abrir en Meta» para intervenir).
 (function(){
 let api,esc,pageHead,say,app,$,$$;
-const M={month:"",view:"resumen",data:null,demo:false,open:null,pending:null};
+const M={month:"",view:"resumen",data:null,demo:false,open:null,pending:null,platform:"",gview:"resumen",g:null};
 const eur=(n,d=0)=>(Number(n)||0).toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d})+" €";
 const int=n=>Math.round(Number(n)||0).toLocaleString("es-ES");
 const dec=(n,d=2)=>(Number(n)||0).toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -120,7 +120,9 @@ function alerts(rows,budgets){const out=[],shows=group(rows,r=>r._show),last=las
  return out}
 
 // --- Pantalla
-async function load(){M.demo=false;const d=await api("/api/meta"+(M.month?"?month="+M.month:""),{cache:"no-store"});M.data=d;M.month=d.month}
+async function load(){M.demo=false;const d=await api("/api/meta"+(M.month?"?month="+M.month:""),{cache:"no-store"});M.data=d;M.month=d.month;
+ try{M.g=await api("/api/google-ads?month="+M.month,{cache:"no-store"})}catch{M.g=null}
+ if(!M.platform)M.platform=M.g&&M.g.connected?"total":"meta"}
 function prepared(){const rows=(M.demo?demoRows(M.month):M.data.rows).map(r=>{const p=parseName(r);return {...r,_show:p.show,_venue:p.venue,_phase:p.phase}});return rows}
 const adsUrl=(extra="")=>"https://adsmanager.facebook.com/adsmanager/manage/campaigns?act="+encodeURIComponent(M.data.account)+extra;
 
@@ -159,10 +161,9 @@ function importCard(){return '<section class="card"><div class="section-title"><
  '<p class="muted">Norma de nombres de campaña: <code>ESPECTÁCULO | TEATRO | FASE | FORMATO</code>, por ejemplo <code>PEGADOS | PAVON | PROSPECCION | VIDEO</code>. Fases que reconoce: prospección, templado y retargeting.</p>'+
  '<div class="actions-row"><button type="button" class="primary" id="mtPick">Elegir archivo</button><input type="file" id="mtFile" accept=".csv,.xlsx,.xls" hidden></div><div id="mtPrev"></div></section>'}
 
-function render(){const d=M.data,all=prepared(),rows=all.filter(r=>r.spend>0||r.impressions>0),idle=new Set(all.filter(r=>!(r.spend>0||r.impressions>0)).map(r=>r.campaign||r.ad)).size,t=agg(rows),has=rows.length>0;
+function render(){if(M.platform!=="meta"&&!M.demo)return renderOther();const d=M.data,all=prepared(),rows=all.filter(r=>r.spend>0||r.impressions>0),idle=new Set(all.filter(r=>!(r.spend>0||r.impressions>0)).map(r=>r.campaign||r.ad)).size,t=agg(rows),has=rows.length>0;
  const tot=!M.demo&&d.totals&&d.totals.reach>0?d.totals:null;if(tot){t.reach=tot.reach;t.freq=t.impressions/tot.reach}
- const months=[...new Set([...(d.months||[]),M.month,new Date().toISOString().slice(0,7)])].sort();
- const chips='<div class="chip-row mt-months">'+months.map(m=>'<button type="button" class="chip'+(m===M.month?" on":"")+'" data-mm="'+m+'">'+esc(monthLabel(m))+'</button>').join("")+'</div>';
+ const chips=platformChips()+monthChips();
  const tabs='<div class="chip-row mt-tabs">'+[["resumen","Resumen"],["espectaculos","Espectáculos"],["creatividades","Creatividades"],["importar","Importar"]].map(([k,v])=>'<button type="button" class="chip'+(M.view===k?" on":"")+'" data-mv="'+k+'">'+v+'</button>').join("")+'</div>';
  const lastDay=lastOf(rows),firstDay=rows.reduce((a,r)=>!a||r.date<a?r.date:a,"");
  const meta=has?'<p class="muted mt-src">'+(M.demo?'<b>Datos de ejemplo</b>: no se guardan y no son reales. ':(d.source==="api"?'Datos leídos de Meta automáticamente':'Datos de la exportación')+(d.importedAt?(d.source==="api"?' el ':' subida el ')+new Date(d.importedAt).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):'')+'. ')+'Del '+fday(firstDay)+' al '+fday(lastDay)+(isPeriod(rows)?' (totales del periodo, sin desglose por día)':'')+'. '+(idle?idle+(all.some(r=>r.campaign)?' campañas':' anuncios')+' sin gasto en el periodo no se muestran. ':'')+'Cifras atribuidas por Meta, no ventas de taquilla.</p>':"";
@@ -176,9 +177,9 @@ function render(){const d=M.data,all=prepared(),rows=all.filter(r=>r.spend>0||r.
  else if(M.view==="espectaculos")body='<section class="card"><div class="section-title"><div><small class="section-kicker">Por espectáculo</small><h2>Espectáculos · '+esc(monthLabel(M.month))+'</h2></div></div>'+showCards(rows)+'</section>';
  else if(M.view==="creatividades")body='<section class="card"><div class="section-title"><div><small class="section-kicker">Piezas</small><h2>Creatividades · '+esc(monthLabel(M.month))+'</h2></div></div>'+creatives(rows)+'</section>';
  const ap=d.api||{},apiErr=!M.demo&&ap.ready&&ap.ok===false?'<div class="card notice" style="text-align:left">La lectura automática de Meta ha fallado'+(ap.at?' ('+new Date(ap.at).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+')':'')+': '+esc(ap.error||"error desconocido")+'</div>':'';
- app.innerHTML=pageHead("Meta","Inversión y resultados de Facebook e Instagram",(ap.ready?'<button type="button" class="primary" id="mtSync">Actualizar ahora</button>':'')+'<a class="btn" target="_blank" rel="noopener" href="'+esc(adsUrl())+'">Abrir en Meta ↗</a>')+apiErr+chips+tabs+meta+body;
+ app.innerHTML=pageHead("Campañas digitales","Meta · Facebook e Instagram",(ap.ready?'<button type="button" class="primary" id="mtSync">Actualizar ahora</button>':'')+'<a class="btn" target="_blank" rel="noopener" href="'+esc(adsUrl())+'">Abrir en Meta ↗</a>')+apiErr+chips+tabs+meta+body;
  const sy=$("#mtSync");if(sy)sy.onclick=async()=>{sy.disabled=true;sy.textContent="Leyendo Meta…";try{await api("/api/meta",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sync:true})});say("Datos de Meta actualizados");await load();render()}catch(e){say("No se ha podido leer Meta: "+e.message);sy.disabled=false;sy.textContent="Actualizar ahora"}};
- $$("[data-mm]").forEach(b=>b.onclick=async()=>{M.month=b.dataset.mm;M.open=null;await load();render()});
+ bindCommon();
  $$("[data-mv]").forEach(b=>b.onclick=()=>{M.view=b.dataset.mv;render()});
  $$("[data-show]").forEach(b=>b.onclick=()=>{M.open=M.open===b.dataset.show?null:b.dataset.show;render()});
  $$("[data-budget]").forEach(inp=>inp.onchange=async()=>{try{const r=await api("/api/meta",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({month:M.month,show:inp.dataset.budget,budget:Number(inp.value)||0})});M.data.budgets=r.budgets;say("Presupuesto guardado");render()}catch(e){say("No se ha podido guardar: "+e.message)}});
@@ -189,6 +190,107 @@ function render(){const d=M.data,all=prepared(),rows=all.filter(r=>r.spend>0||r.
    box.innerHTML='<div class="notice" style="text-align:left;margin-top:12px"><b>'+int(r.rows.length)+' filas</b>'+(r.period?' · totales del '+fday(r.rows[0].date)+' al '+fday(lastOf(r.rows))+' (sin desglose por día) · '+new Set(r.rows.filter(x=>x.spend>0).map(x=>x.campaign)).size+' campañas con gasto · se guarda en '+[...new Set(r.rows.map(x=>x.month||x.date.slice(0,7)))].map(monthLabel).join(", ")+' · ':' · '+days+' días ('+ms.map(monthLabel).join(", ")+') · ')+eur(t.spend,2)+' de gasto · '+int(t.purchases)+' compras.'+(r.missing.length?'<br>No encuentro estas columnas: '+esc(r.missing.map(k=>r.labels[k]||k).join(", "))+'. Se importará sin ellas.':'')+'<br>'+(r.period?'Al importar se sustituyen los datos de ese mes.':'Al importar se sustituyen los datos de esos mismos días; el resto se conserva.')+'</div><div class="actions-row" style="margin-top:10px"><button type="button" class="primary" id="mtGo">Importar</button></div>';
    $("#mtGo").onclick=async()=>{try{const res=await api("/api/meta",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rows:M.pending,totals:M.pendingTotals})});M.pending=null;say("Exportación importada");M.month=res.imported[0].month;M.view="resumen";await load();render()}catch(e){box.innerHTML+='<div class="notice">No se ha podido importar: '+esc(e.message)+'</div>'}}}
   catch(e){box.innerHTML='<div class="notice" style="text-align:left;margin-top:12px">'+esc(e.message)+'</div>'}}}
+}
+
+// ===================== GOOGLE ADS Y TOTAL =====================
+const CHANNEL={SEARCH:"Búsqueda",PERFORMANCE_MAX:"Máximo rendimiento",DISPLAY:"Display",VIDEO:"Vídeo",SHOPPING:"Shopping",DEMAND_GEN:"Demand Gen",DISCOVERY:"Discovery",MULTI_CHANNEL:"App",LOCAL:"Local",SMART:"Inteligente"};
+const gStatus=s=>s==="active"?'<span class="badge ok">Activa</span>':s==="paused"?'<span class="badge">Pausada</span>':s==="removed"?'<span class="badge">Eliminada</span>':'<span class="badge">—</span>';
+function gagg(rows){const t={spend:0,impressions:0,clicks:0,conversions:0,value:0};for(const r of rows)for(const k in t)t[k]+=Number(r[k])||0;t.ctr=t.impressions?t.clicks/t.impressions*100:0;t.cpc=t.clicks?t.spend/t.clicks:0;t.cpconv=t.conversions?t.spend/t.conversions:0;t.roas=t.spend?t.value/t.spend:0;return t}
+function gRows(){return ((M.g&&M.g.rows)||[]).map(r=>({...r,_show:parseName({campaign:r.campaign,adset:"",ad:""}).show}))}
+function platformChips(){return '<div class="chip-row mt-platforms">'+[["total","Total"],["meta","Meta"],["google","Google Ads"]].map(([k,v])=>'<button type="button" class="chip'+(M.platform===k?" on":"")+'" data-mp="'+k+'">'+v+'</button>').join("")+'</div>'}
+function monthChips(){const months=[...new Set([...((M.data&&M.data.months)||[]),...((M.g&&M.g.months)||[]),M.month,new Date().toISOString().slice(0,7)])].filter(Boolean).sort();
+ return '<div class="chip-row mt-months">'+months.map(m=>'<button type="button" class="chip'+(m===M.month?" on":"")+'" data-mm="'+m+'">'+esc(monthLabel(m))+'</button>').join("")+'</div>'}
+function bindCommon(){$$("[data-mm]").forEach(b=>b.onclick=async()=>{M.month=b.dataset.mm;M.open=null;await load();render()});
+ $$("[data-mp]").forEach(b=>b.onclick=()=>{M.platform=b.dataset.mp;M.open=null;render()});
+ $$("[data-gv]").forEach(b=>b.onclick=()=>{M.gview=b.dataset.gv;render()});
+ if(M.platform!=="meta")$$("[data-assign]").forEach(inp=>inp.onchange=async()=>{const show=inp.value.trim().toUpperCase();try{const r=await api("/api/meta",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({map:{campaign:inp.dataset.assign,show}})});M.data.map=r.map;say("Campaña asignada a "+(show||"su nombre"));render()}catch(e){say("No se ha podido guardar: "+e.message)}})}
+
+function gadsScript(endpoint,key){return `// Yellow Control · envío diario de Google Ads (solo lectura). Pegar en Herramientas › Scripts.
+var YC_URL = '${endpoint}';
+var YC_KEY = '${key}';
+
+function main() {
+  var tz = AdsApp.currentAccount().getTimeZone();
+  var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  var cur = today.slice(0, 7);
+  var p = new Date(Date.UTC(+cur.slice(0, 4), +cur.slice(5, 7) - 2, 1));
+  var prev = p.getUTCFullYear() + '-' + ('0' + (p.getUTCMonth() + 1)).slice(-2);
+  var payload = { account: AdsApp.currentAccount().getName(), months: [prev, cur].map(function (m) { return mes(m, today); }) };
+  var res = UrlFetchApp.fetch(YC_URL, { method: 'post', contentType: 'application/json', headers: { 'x-yc-key': YC_KEY }, payload: JSON.stringify(payload), muteHttpExceptions: true });
+  Logger.log(res.getResponseCode() + ' ' + res.getContentText().slice(0, 300));
+  if (res.getResponseCode() >= 300) throw new Error('Yellow Control ha rechazado el envío: ' + res.getContentText().slice(0, 200));
+}
+
+function mes(m, today) {
+  var last = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
+  var hasta = m + '-' + ('0' + last).slice(-2);
+  if (hasta > today) hasta = today;
+  var entre = " segments.date BETWEEN '" + m + "-01' AND '" + hasta + "'";
+  var rows = [], it = AdsApp.search('SELECT segments.date, campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign_budget.amount_micros, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions, metrics.conversions_value FROM campaign WHERE' + entre);
+  while (it.hasNext()) {
+    var x = it.next(), b = x.campaignBudget || {};
+    rows.push({ date: x.segments.date, campaign: x.campaign.name, campaignId: String(x.campaign.id), channel: x.campaign.advertisingChannelType, status: x.campaign.status,
+      budget: (+b.amountMicros || 0) / 1e6, spend: (+x.metrics.costMicros || 0) / 1e6, impressions: +x.metrics.impressions || 0, clicks: +x.metrics.clicks || 0,
+      conversions: +x.metrics.conversions || 0, value: +x.metrics.conversionsValue || 0 });
+  }
+  var kws = [], k = AdsApp.search('SELECT campaign.name, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions FROM keyword_view WHERE metrics.impressions > 0 AND' + entre);
+  while (k.hasNext()) {
+    var y = k.next(), kw = (y.adGroupCriterion || {}).keyword || {};
+    kws.push({ campaign: y.campaign.name, keyword: kw.text, match: kw.matchType, spend: (+y.metrics.costMicros || 0) / 1e6, impressions: +y.metrics.impressions || 0, clicks: +y.metrics.clicks || 0, conversions: +y.metrics.conversions || 0 });
+  }
+  return { month: m, rows: rows, keywords: kws };
+}
+`}
+
+function gKpis(t,rows){const camp=new Set(rows.filter(r=>r.spend>0).map(r=>r.campaign)).size;
+ return '<div class="mt-kpis">'+[["Inversión",eur(t.spend,2)],["Clics",int(t.clicks)],["Conversiones",dec(t.conversions,t.conversions%1?1:0)],["Coste por conversión",t.conversions?eur(t.cpconv,2):"—"]].map(([k,v])=>'<div class="mt-kpi"><em>'+k+'</em><b>'+v+'</b></div>').join("")+'</div>'+
+ '<div class="mt-sec">'+[["Campañas con gasto",int(camp)],["Impresiones",int(t.impressions)],["CTR",t.impressions?pct(t.ctr,2):"—"],["CPC medio",t.clicks?eur(t.cpc,2):"—"],["Valor de conversiones",eur(t.value)],["ROAS",t.spend&&t.value?dec(t.roas):"—"]].map(([k,v])=>'<span><em>'+k+'</em><b>'+v+'</b></span>').join("")+'</div>'}
+function gCampaigns(rows){const cs=[...group(rows,r=>r.campaign)].map(([c,l])=>({c,l,t:gagg(l),x:l[l.length-1]})).sort((a,b)=>b.t.spend-a.t.spend);
+ return '<div class="bud-table-wrap"><table class="bud-table mt-table"><thead><tr><th>Campaña</th><th>Espectáculo</th><th>Tipo</th><th>Estado</th><th class="n">Ppto./día</th><th class="n">Gasto</th><th class="n">Clics</th><th class="n">CTR</th><th class="n">CPC</th><th class="n">Conv.</th><th class="n">€/conv.</th></tr></thead><tbody>'+
+ cs.map(({c,t,x})=>'<tr><td><b>'+esc(c)+'</b></td><td><input class="mt-assign-in" list="mtShows" value="'+esc(x._show)+'" data-assign="'+esc(c)+'"></td><td>'+esc(CHANNEL[x.channel]||x.channel||"—")+'</td><td>'+gStatus(x.status)+'</td><td class="n">'+(x.budget?eur(x.budget):"—")+'</td><td class="n">'+eur(t.spend,2)+'</td><td class="n">'+int(t.clicks)+'</td><td class="n">'+(t.impressions?pct(t.ctr,2):"—")+'</td><td class="n">'+(t.clicks?eur(t.cpc,2):"—")+'</td><td class="n">'+dec(t.conversions,t.conversions%1?1:0)+'</td><td class="n">'+(t.conversions?eur(t.cpconv,2):"—")+'</td></tr>').join("")+
+ '</tbody></table></div><datalist id="mtShows">'+[...new Set(cs.map(x=>x.x._show))].map(s=>'<option value="'+esc(s)+'">').join("")+'</datalist>'}
+function gShows(rows){const list=[...group(rows,r=>r._show)].map(([s,l])=>({s,t:gagg(l)})).sort((a,b)=>b.t.spend-a.t.spend);
+ return '<div class="bud-table-wrap"><table class="bud-table mt-table"><thead><tr><th>Espectáculo</th><th class="n">Gasto</th><th class="n">Impr.</th><th class="n">Clics</th><th class="n">CTR</th><th class="n">CPC</th><th class="n">Conv.</th><th class="n">€/conv.</th></tr></thead><tbody>'+
+ list.map(({s,t})=>'<tr><td><b>'+esc(s)+'</b></td><td class="n">'+eur(t.spend,2)+'</td><td class="n">'+int(t.impressions)+'</td><td class="n">'+int(t.clicks)+'</td><td class="n">'+(t.impressions?pct(t.ctr,2):"—")+'</td><td class="n">'+(t.clicks?eur(t.cpc,2):"—")+'</td><td class="n">'+dec(t.conversions,t.conversions%1?1:0)+'</td><td class="n">'+(t.conversions?eur(t.cpconv,2):"—")+'</td></tr>').join("")+'</tbody></table></div>'}
+function gKeywords(){const kw=((M.g&&M.g.keywords)||[]).slice().sort((a,b)=>b.spend-a.spend||b.clicks-a.clicks).slice(0,100);
+ if(!kw.length)return '<p class="muted">No hay palabras clave con impresiones este mes. Las campañas de Máximo rendimiento, Display o Vídeo no usan palabras clave.</p>';
+ const M_={EXACT:"Exacta",PHRASE:"Frase",BROAD:"Amplia"};
+ return '<div class="bud-table-wrap"><table class="bud-table mt-table"><thead><tr><th>Palabra clave</th><th>Concordancia</th><th>Campaña</th><th class="n">Gasto</th><th class="n">Clics</th><th class="n">CTR</th><th class="n">CPC</th><th class="n">Conv.</th></tr></thead><tbody>'+
+ kw.map(k=>'<tr><td><b>'+esc(k.keyword)+'</b></td><td>'+esc(M_[k.match]||k.match||"—")+'</td><td>'+esc(k.campaign)+'</td><td class="n">'+eur(k.spend,2)+'</td><td class="n">'+int(k.clicks)+'</td><td class="n">'+(k.impressions?pct(k.clicks/k.impressions*100,2):"—")+'</td><td class="n">'+(k.clicks?eur(k.spend/k.clicks,2):"—")+'</td><td class="n">'+dec(k.conversions,k.conversions%1?1:0)+'</td></tr>').join("")+'</tbody></table></div><p class="muted mt-note">Las 100 con más gasto del mes.</p>'}
+function gConnect(){const g=M.g||{};
+ return '<section class="card"><div class="section-title"><div><small class="section-kicker">Conexión</small><h2>Script de Google Ads</h2></div>'+(g.connected?'<span class="badge ok">Conectado</span>':'<span class="badge">Sin conectar</span>')+'</div>'+
+ (g.lastAt?'<p class="muted">Último envío: '+esc(new Date(g.lastAt).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))+(g.account?' · cuenta '+esc(g.account):'')+'.</p>':'')+
+ '<ol class="mt-steps"><li>En Google Ads: <b>Herramientas › Acciones masivas › Scripts</b> y pulsa <b>+ Nuevo script</b>.</li><li>Borra lo que aparece, pega el script de abajo y ponle de nombre «Yellow Control».</li><li>Pulsa <b>Autorizar</b> y acepta con tu cuenta de Google.</li><li>Pulsa <b>Ejecutar</b> una vez: en unos segundos los datos salen aquí.</li><li>En la lista de scripts, en <b>Frecuencia</b>, elige <b>Diariamente</b> a las 7:00.</li></ol>'+
+ '<p class="muted">El script solo lee datos de la cuenta y los envía a Yellow Control con una clave propia. No cambia nada en Google Ads.</p>'+
+ '<div class="actions-row"><button type="button" class="primary" id="gaShow">'+(M.gscript?'Copiar script':'Mostrar script')+'</button>'+(M.gscript?'<button type="button" id="gaRotate">Generar clave nueva</button>':'')+'</div>'+
+ (M.gscript?'<textarea class="mt-script" id="gaScript" readonly rows="14">'+esc(M.gscript)+'</textarea>':'')+'</section>'}
+
+function renderOther(){const head=pageHead("Campañas digitales",M.platform==="google"?"Google Ads":"Meta y Google Ads por espectáculo",M.platform==="google"?'<a class="btn" target="_blank" rel="noopener" href="https://ads.google.com/aw/campaigns">Abrir en Google Ads ↗</a>':'');
+ const g=gRows(),gr=g.filter(r=>r.spend>0||r.impressions>0),gt=gagg(gr);let body="",src="";
+ if(M.platform==="google"){
+  const tabs='<div class="chip-row mt-tabs">'+[["resumen","Resumen"],["palabras","Palabras clave"],["conectar","Conectar"]].map(([k,v])=>'<button type="button" class="chip'+(M.gview===k?" on":"")+'" data-gv="'+k+'">'+v+'</button>').join("")+'</div>';
+  if(M.gview==="conectar"||(!gr.length&&!(M.g&&M.g.connected)))body=(M.gview!=="conectar"?'<section class="card mt-empty"><h2>Google Ads aún no está conectado</h2><p class="muted">Pega el script en tu cuenta de Google Ads y los datos llegarán solos cada mañana.</p></section>':'')+gConnect();
+  else if(!gr.length)body='<section class="card mt-empty"><h2>Sin gasto en Google Ads en '+esc(monthLabel(M.month))+'</h2><p class="muted">El script está conectado; este mes no hay campañas con impresiones.</p></section>';
+  else if(M.gview==="palabras")body='<section class="card"><div class="section-title"><div><small class="section-kicker">Búsqueda</small><h2>Palabras clave · '+esc(monthLabel(M.month))+'</h2></div></div>'+gKeywords()+'</section>';
+  else body='<section class="card"><div class="section-title"><div><small class="section-kicker">Google Ads</small><h2>'+esc(monthLabel(M.month))+'</h2></div></div>'+gKpis(gt,gr)+'</section><section class="card"><div class="section-title"><div><small class="section-kicker">Por espectáculo</small><h2>Espectáculos</h2></div></div>'+gShows(gr)+'</section><section class="card"><div class="section-title"><div><small class="section-kicker">Detalle</small><h2>Campañas</h2></div></div>'+gCampaigns(gr)+'</section>';
+  if(M.g&&M.g.receivedAt&&gr.length)src='<p class="muted mt-src">Datos enviados por Google Ads el '+esc(new Date(M.g.receivedAt).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))+'. Conversiones según Google Ads, no ventas de taquilla.</p>';
+  app.innerHTML=head+platformChips()+monthChips()+tabs+src+body;
+ }else{
+  const mr=prepared().filter(r=>r.spend>0||r.impressions>0),mt=agg(mr);
+  const shows=new Map();const add=(s,k,v)=>{if(!shows.has(s))shows.set(s,{ms:0,gs:0,mp:0,gc:0});shows.get(s)[k]+=v};
+  for(const r of mr){add(r._show,"ms",Number(r.spend)||0);add(r._show,"mp",Number(r.purchases)||0)}
+  for(const r of gr){add(r._show,"gs",Number(r.spend)||0);add(r._show,"gc",Number(r.conversions)||0)}
+  const list=[...shows].map(([s,v])=>({s,...v,t:v.ms+v.gs})).sort((a,b)=>b.t-a.t);
+  body='<section class="card"><div class="section-title"><div><small class="section-kicker">Digital</small><h2>'+esc(monthLabel(M.month))+'</h2></div></div><div class="mt-kpis">'+[["Inversión total",eur(mt.spend+gt.spend)],["Meta",eur(mt.spend)],["Google Ads",eur(gt.spend)],["Espectáculos con gasto",int(list.filter(x=>x.t>0).length)]].map(([k,v])=>'<div class="mt-kpi"><em>'+k+'</em><b>'+v+'</b></div>').join("")+'</div></section>'+
+  '<section class="card"><div class="section-title"><div><small class="section-kicker">Por espectáculo</small><h2>Inversión digital</h2></div></div>'+(list.length?'<div class="bud-table-wrap"><table class="bud-table mt-table"><thead><tr><th>Espectáculo</th><th class="n">Meta</th><th class="n">Google Ads</th><th class="n">Total</th><th class="n">Compras Meta</th><th class="n">Conv. Google</th></tr></thead><tbody>'+
+  list.map(x=>'<tr><td><b>'+esc(x.s)+'</b></td><td class="n">'+(x.ms?eur(x.ms):"—")+'</td><td class="n">'+(x.gs?eur(x.gs):"—")+'</td><td class="n"><b>'+eur(x.t)+'</b></td><td class="n">'+(x.mp?int(x.mp):"—")+'</td><td class="n">'+(x.gc?dec(x.gc,x.gc%1?1:0):"—")+'</td></tr>').join("")+'</tbody></table></div>':'<p class="muted">No hay gasto en '+esc(monthLabel(M.month))+'.</p>')+
+  '<p class="muted mt-note">Las compras de Meta y las conversiones de Google no se suman: cada plataforma se atribuye las ventas a su manera y una misma entrada puede aparecer en las dos.'+(M.g&&M.g.connected?'':' Google Ads aún no está conectado (pestaña Google Ads › Conectar).')+'</p></section>';
+  app.innerHTML=head+platformChips()+monthChips()+body;
+ }
+ bindCommon();
+ const sh=$("#gaShow");if(sh)sh.onclick=async()=>{if(!M.gscript){try{const r=await api("/api/google-ads?script=1",{cache:"no-store"});M.gscript=gadsScript(r.endpoint,r.key);render()}catch(e){say("No se ha podido preparar el script: "+e.message)}return}
+  try{await navigator.clipboard.writeText(M.gscript);say("Script copiado")}catch{const ta=$("#gaScript");ta.select();say("Selecciona y copia el texto")}};
+ const ro=$("#gaRotate");if(ro)ro.onclick=async()=>{if(!confirm("La clave actual dejará de funcionar y tendrás que pegar el script nuevo en Google Ads. ¿Continuar?"))return;try{const r=await api("/api/google-ads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rotate:true})});const e=await api("/api/google-ads?script=1",{cache:"no-store"});M.gscript=gadsScript(e.endpoint,r.key||e.key);say("Clave nueva generada");render()}catch(e){say("No se ha podido: "+e.message)}};
 }
 
 window.metaModule=async function(ctx){({api,esc,pageHead,say,app,$,$$}=ctx);try{await load()}catch(e){app.innerHTML=pageHead("Meta","Inversión y resultados")+'<div class="card notice">'+esc(e.status===403?"No tienes acceso a este módulo.":e.message)+'</div>';return}render()};
