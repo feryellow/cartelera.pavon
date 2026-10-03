@@ -1,4 +1,4 @@
-import { controlStore } from "./store.ts";
+import { controlStore, getManyJSON } from "./store.ts";
 import { madridToday } from "./dates.ts";
 
 export const MODULES = ["radio", "publicidad", "taxis", "intercambiadores", "hometicket", "revistas", "hitos"] as const;
@@ -11,11 +11,7 @@ export function validModule(v: string | null): v is RecordModule {
 export async function listRecords(moduleName: RecordModule, includeDeleted = false) {
   const store = controlStore();
   const res = await store.list({ prefix: `record_${moduleName}_` });
-  const rows: any[] = [];
-  for (const b of res.blobs) {
-    const row = await store.get(b.key, { type: "json" });
-    if (row && (includeDeleted || !row.deletedAt)) rows.push(row);
-  }
+  const rows: any[] = (await getManyJSON(store, res.blobs.map((b) => b.key))).filter((row: any) => includeDeleted || !row.deletedAt);
   return rows.sort((a,b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
 }
 

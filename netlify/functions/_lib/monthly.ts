@@ -1,4 +1,4 @@
-import { carteleriaStore, controlStore } from "./store.ts";
+import { carteleriaStore, controlStore, getManyJSON } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { SLOT_NAMES, slotVenue } from "./calendar.ts";
 import { loadContracts } from "./radio.ts";
@@ -47,10 +47,7 @@ export async function monthSummary(month: string, origin: string, show = ""): Pr
   // Último montaje del mes de cada teatro: si tiene fotos reales, esas son la imagen de la fachada
   const monts: any[] = [];
   const list = await controlStore().list({ prefix: "montaje_" });
-  for (const b of list.blobs) {
-    const r: any = await controlStore().get(b.key, { type: "json" });
-    if (r?.date && r.date >= first && r.date <= last) monts.push(r);
-  }
+  for (const r of await getManyJSON<any>(controlStore(), list.blobs.map((b) => b.key))) if (r?.date && r.date >= first && r.date <= last) monts.push(r);
   const lastMontOf = (venue: string) => monts.filter((r) => (r.slots || []).some((k: string) => slotVenue(k) === venue))
     .sort((a, b) => String(b.createdAt || b.date).localeCompare(String(a.createdAt || a.date)))[0] || null;
   const photosOf = (m: any, venue: string) => m ? (Object.entries(m.photos || {}) as [string, string][]).filter(([k]) => slotVenue(k) === venue) : [];
