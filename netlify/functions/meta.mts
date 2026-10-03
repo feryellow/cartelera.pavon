@@ -1,9 +1,9 @@
 import type { Config } from "@netlify/functions";
-import { requireAccess } from "./_lib/auth.ts";
+import { requireAccess, can } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { controlStore } from "./_lib/store.ts";
 import seed from "./_lib/meta-seed.json";
-import { syncMeta, metaApiReady } from "./_lib/meta-api.ts";
+import { syncMeta, metaToken } from "./_lib/meta-api.ts";
 
 // Meta (Facebook / Instagram Ads) · fase 1: solo lectura.
 // Los datos llegan importando la exportación del Administrador de anuncios (desglose por día y anuncio).
@@ -49,15 +49,14 @@ export default async (req: Request) => {
     const sync = await st.get("meta_sync", { type: "json" }) as any, thumbs = ((await st.get("meta_thumbs", { type: "json" }) as any) || {}).thumbs || {};
     const budgets = (await st.get("meta_budgets", { type: "json" }) as Record<string, Record<string, number>> | null) || {};
     const map = (await st.get("meta_map", { type: "json" }) as Record<string, string> | null) || {};
-    return Response.json({ map, account, month, months: all, rows: doc?.rows || [], totals: doc?.totals || null, importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: doc?.source || "export", api: { ready: metaApiReady(), at: sync?.at || null, okAt: sync?.okAt || null, ok: sync ? !!sync.ok : null, error: sync?.ok === false ? sync.error : null }, thumbs }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ map, account, month, months: all, rows: doc?.rows || [], totals: doc?.totals || null, importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: doc?.source || "export", api: { ...(await metaToken().then((t) => ({ ready: !!t.token, tokenSource: t.source }))), at: sync?.at || null, okAt: sync?.okAt || null, ok: sync ? !!sync.ok : null, error: sync?.ok === false ? sync.error : null }, thumbs }, { headers: { "cache-control": "no-store" } });
   }
   if (req.method === "POST") {
     const auth = await requireAccess(req, "meta", true); if (auth.response) return auth.response;
     let body: any = {}; try { body = await req.json(); } catch {}
     // Botón «Actualizar ahora»: lee Meta en el momento
     if (body?.sync) {
-      if (!metaApiReady()) return Response.json({ error: "Falta META_ACCESS_TOKEN en Netlify." }, { status: 400 });
-      const r = await syncMeta(auth.actor!.email);
+      const r = await syncMeta(auth.actor!.email, !body?.all);
       if (!r.ok) return Response.json({ error: r.error }, { status: 502 });
       await appendAudit({ actor: auth.actor!, module: "meta", elementId: "meta-sync", action: "import", note: `Lectura de Meta: ${r.result!.map((o: any) => `${o.month}: ${o.days} días`).join(", ")}` });
       return Response.json({ ok: true, imported: r.result });
@@ -91,6 +90,15 @@ export default async (req: Request) => {
   if (req.method === "PUT") {
     const auth = await requireAccess(req, "meta", true); if (auth.response) return auth.response;
     let body: any = {}; try { body = await req.json(); } catch {}
+    // Token de Meta pegado desde la app (solo administración). Nunca se devuelve.
+    if (typeof body?.token === "string") {
+      if (!can(auth.actor, "usuarios", true)) return Response.json({ error: "Solo administración puede cambiar el token" }, { status: 403 });
+      const token = body.token.trim();
+      if (token) { if (!/^[A-Za-z0-9_-]{40,}$/.test(token)) return Response.json({ error: "Eso no parece un token de Meta" }, { status: 400 }); await st.setJSON("meta_token", { token, at: new Date().toISOString(), by: auth.actor!.email }); }
+      else await st.delete("meta_token");
+      await appendAudit({ actor: auth.actor!, module: "meta", elementId: "meta-token", action: "update", note: token ? "Token de Meta guardado desde la app" : "Token de Meta borrado de la app" });
+      return Response.json({ ok: true });
+    }
     // Asignar una campaña a un espectáculo (cuando el nombre de la campaña no lo deja claro)
     if (body?.map) {
       const campaign = S(body.map.campaign), show = S(body.map.show, 120).toUpperCase();
