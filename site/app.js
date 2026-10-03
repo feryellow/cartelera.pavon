@@ -2,6 +2,7 @@
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const state={actor:null,route:"dashboard",editing:null,assetUrls:new Map()};
 const gate=$("#loginGate"), app=$("#app"), toast=$("#toast");
+new MutationObserver(()=>compactActions()).observe(app,{childList:true});
 const key=()=>{try{return sessionStorage.getItem("pavon_edit_key")||""}catch{return""}};
 const headers=(extra={})=>({...extra,...(key()?{"x-edit-key":key()}:{})});
 let toastTimer=0;
@@ -45,13 +46,25 @@ function statusBadge(v){const s=(v||"activo").toLowerCase();return '<span class=
 // Presupuesto: módulo aparte (solo Fer y Celia); su código se carga al entrar
 async function loadMeta(){if(!window.metaModule)await new Promise((res,rej)=>{const s=document.createElement("script");s.src="/meta.js?v="+encodeURIComponent(YC_VERSION);s.onload=res;s.onerror=()=>rej(new Error("No se ha podido cargar el módulo Meta"));document.head.appendChild(s)});await window.metaModule({api,esc,pageHead,say,app,$,$$})}
 async function loadPresupuesto(){if(!window.presupuesto)await new Promise((res,rej)=>{const s=document.createElement("script");s.src="/presupuesto.js?v="+encodeURIComponent(YC_VERSION);s.onload=res;s.onerror=()=>rej(new Error("No se ha podido cargar el presupuesto"));document.head.appendChild(s)});await window.presupuesto({api,esc,pageHead,say,app,state,VENUES,$,$$})}
-function pageHead(title,sub,actions=""){const home=state.route==="dashboard"?"":'<a class="btn back-home" href="#dashboard">← Inicio</a>';const m=navMeta(state.route),photo=ROUTE_PHOTOS[state.route];return '<div class="page-banner'+(photo?' has-photo':'')+'"'+(photo?' style="--photo:url('+photo+')"':'')+'><div class="page-banner-txt">'+(m?.small?'<small>'+esc(m.small)+'</small>':'')+'<h1>'+esc(title)+'</h1><p>'+esc(sub||"")+'</p></div></div><div class="page-actions actions-row">'+home+actions+"</div>"}
+function pageHead(title,sub,actions=""){const home="";const m=navMeta(state.route),photo=ROUTE_PHOTOS[state.route];return '<div class="page-banner'+(photo?' has-photo':'')+'"'+(photo?' style="--photo:url('+photo+')"':'')+'><div class="page-banner-txt">'+(m?.small?'<small>'+esc(m.small)+'</small>':'')+'<h1>'+esc(title)+'</h1><p>'+esc(sub||"")+'</p></div></div><div class="page-actions actions-row">'+home+actions+"</div>"}
 async function blobUrl(assetKey,moduleName){if(!assetKey)return null;if(state.assetUrls.has(assetKey))return state.assetUrls.get(assetKey);const r=await fetch("/api/asset?key="+encodeURIComponent(assetKey)+"&module="+moduleName,{headers:headers()});if(!r.ok)return null;const b=await r.blob(),u=URL.createObjectURL(b);state.assetUrls.set(assetKey,u);return u}
 function routeName(){return (location.hash||"#dashboard").slice(1).split("?")[0]||"dashboard"}
 async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}if(nextRoute==="hometicket"&&state.route!=="hometicket")htView="";if((nextRoute==="taxis"||nextRoute==="intercambiadores")&&state.route!==nextRoute){campView="";campMonth=""}state.route=nextRoute;if(!canRoute(state.route))state.route=isProveedor()?"proveedor":"dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard")await dashboard();else if(state.route==="radio")await radio();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="proveedor")await proveedorPage();else if(state.route==="status")await statusPage();else if(state.route==="importar")await importar();else if(state.route==="meta")await loadMeta();else if(state.route==="presupuesto")await loadPresupuesto()
 else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
+// Botones de cabecera: uno principal a la vista y el resto en «Más» (cuando hay más de dos)
+function compactActions(){$$("#app .page-actions:not([data-compact])").forEach(bar=>{bar.dataset.compact="1";
+ const items=[...bar.children].filter(e=>!e.hidden&&!(e.tagName==="INPUT"&&(e.type==="file"||e.type==="hidden"))&&!e.classList.contains("more-menu"));if(items.length<=2)return;
+ const keep=items.find(e=>e.classList.contains("primary"))||items[0],rest=items.filter(e=>e!==keep);
+ const menu=document.createElement("div");menu.className="more-menu";menu.innerHTML='<button type="button" class="btn more-btn" aria-haspopup="true" aria-expanded="false">Más <span aria-hidden="true">▾</span></button><div class="more-pop" role="menu" hidden></div>';
+ const pop=menu.querySelector(".more-pop"),btn=menu.querySelector(".more-btn");rest.forEach(e=>{e.setAttribute("role","menuitem");pop.appendChild(e)});bar.insertBefore(menu,keep);
+ const close=()=>{pop.hidden=true;btn.setAttribute("aria-expanded","false")};
+ btn.onclick=e=>{e.stopPropagation();const open=pop.hidden;pop.hidden=!open;btn.setAttribute("aria-expanded",String(open))};
+ pop.addEventListener("click",()=>setTimeout(close,0));document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape")close()})})}
+// Listas largas: se ven las primeras 5 y un botón para el resto
+function limitLists(sel,n=5){$$(sel).forEach(list=>{if(list.dataset.limited)return;const items=[...list.children].filter(e=>e.classList.contains("item"));if(items.length<=n+1)return;list.dataset.limited="1";
+ items.slice(n).forEach(e=>e.hidden=true);const b=document.createElement("button");b.type="button";b.className="ghost list-more";b.textContent="Ver los "+items.length;b.onclick=()=>{items.forEach(e=>e.hidden=false);b.remove()};list.after(b)})}
 // Inicio: los bloques bajo las secciones se pliegan y despliegan (en el móvil, plegados de entrada); se recuerda la elección
 function foldDashboard(){const mob=matchMedia("(max-width:700px)").matches;let st={};try{st=JSON.parse(localStorage.getItem("yc-fold")||"{}")}catch{}
  $$("#app .home-tiles ~ section.card, #app .home-tiles ~ .grid section.card").forEach(sec=>{const t=sec.querySelector(".section-title");if(!t)return;const key=(t.querySelector("h2")||t).textContent.trim();
@@ -77,7 +90,7 @@ async function dashboard(){
  '</div></section><section class="card"><div class="section-title"><h2>Últimas modificaciones</h2></div><div class="list">'+
  ((d.latest||[]).length?d.latest.map(a=>'<div class="item"><div><h3>'+esc(modLabel(a.module))+" · "+esc(actLabel(a.action))+'</h3><div class="item-meta"><span>'+esc(a.actor?.email||"")+'</span><span>'+new Date(a.at).toLocaleString("es-ES")+'</span></div></div></div>').join(""):'<div class="notice">Todavía no hay histórico.</div>')+
  '</div></section></div>';
- foldDashboard()
+ foldDashboard();limitLists("#app .dash-fold .list")
 }
 
 function homeHeader(alerts,d={}){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
@@ -354,14 +367,14 @@ async function campaigns(moduleName){
  const mine=campView?inM.filter(r=>r.venue===campView):[];
  const work=campView?'<div class="camp-space"><div class="section-title"><div><small class="section-kicker">'+esc(cfg.title)+' · '+esc(monthLabel(campMonth))+'</small><h2>'+esc(campView)+'</h2></div><div class="actions-row"><button type="button" class="primary" data-camp-new>+ Nueva campaña</button><button type="button" class="ghost" data-camp-close>Cerrar</button></div></div>'+
    '<div id="campaignFormCard"></div><div id="campaignList" class="list">'+(mine.length?campaignItems(mine,moduleName):'<div class="notice">No hay campañas en '+esc(monthLabel(campMonth).toLowerCase())+' para este espacio.</div>')+'</div></div>'
-  :'<p class="muted" style="margin:6px 0 0">Elige un espacio para ver sus campañas de '+esc(monthLabel(campMonth).toLowerCase())+'.'+(inM.length?' Este mes hay '+inM.length+(inM.length===1?' campaña.':' campañas.'):'')+'</p><div id="campaignFormCard"></div>';
+  :'<p class="muted" style="margin:6px 0 10px">'+(inM.length?'Todas las campañas de '+esc(monthLabel(campMonth).toLowerCase())+'. Elige un espacio para filtrar o añadir.':'No hay campañas en '+esc(monthLabel(campMonth).toLowerCase())+'.')+'</p><div id="campaignFormCard"></div><div id="campaignList" class="list">'+(inM.length?campaignItems(inM,moduleName):'')+'</div>';
  app.innerHTML=pageHead(cfg.title,cfg.subtitle,campView?'':'<button id="newCampaign" class="btn">+ Nueva campaña</button>')+'<section class="card">'+monthTabs+venueTabs+work+'</section>';
  $$("[data-camp-month]").forEach(b=>b.onclick=()=>{campMonth=b.dataset.campMonth;campaigns(moduleName)});
  $$("[data-camp-tab]").forEach(b=>b.onclick=()=>{campView=campView===b.dataset.campTab?"":b.dataset.campTab;campaigns(moduleName)});
  $$("[data-camp-close]").forEach(b=>b.onclick=()=>{campView="";campaigns(moduleName)});
  const openNew=()=>{const {startDate,endDate}=monthRange(campMonth);const box=$("#campaignFormCard");box.className="card camp-form";box.innerHTML=campaignForm(moduleName,{venue:campView,startDate,endDate});bindCampaignForm(null,moduleName);box.scrollIntoView({behavior:"smooth",block:"start"})};
  const nb=$("#newCampaign");if(nb)nb.onclick=openNew;$$("[data-camp-new]").forEach(b=>b.onclick=openNew);
- bindCampaignRows(mine,moduleName);
+ bindCampaignRows(campView?mine:inM,moduleName);
  if(editRow){const box=$("#campaignFormCard");box.className="card camp-form";box.innerHTML=campaignForm(moduleName,editRow);bindCampaignForm(editRow,moduleName);history.replaceState(null,"","#"+moduleName)}
  await hydrateMedia(moduleName);
 }
@@ -515,7 +528,7 @@ async function homeTicket(){
  // Al entrar solo se ven los nombres de los espacios; el Home Ticket se abre al tocar uno
  const monthTabs='<div class="chip-row ht-month-tabs"><span class="chip-label">Mes</span>'+months.map(m=>'<button type="button" class="chip'+(m===htMonth?" on":"")+'" data-ht-month="'+m+'">'+esc(htMonthShort(m))+'</button>').join("")+'</div>';
  const cnt=v=>rows.filter(r=>r.venue===v&&htRowMonth(r)===htMonth).length;
- const venueTabs='<div class="chip-row ht-tabs"><span class="chip-label">Espacio</span>'+htSpaces.map(v=>'<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(cnt(v)?' <small style="opacity:.6">'+cnt(v)+'</small>':'')+'</button>').join("")+'</div>'+(htView?'':'<p class="muted" style="margin:6px 0 0">Elige un espacio para ver su Home Ticket de '+esc(monthLabel(htMonth).toLowerCase())+'.</p>');
+ const venueTabs='<div class="chip-row ht-tabs"><span class="chip-label">Espacio</span>'+htSpaces.map(v=>'<button type="button" class="chip'+(v===htView?" on":"")+'" data-ht-tab="'+esc(v)+'">'+esc(venueShort(v))+(cnt(v)?' <small style="opacity:.6">'+cnt(v)+'</small>':'')+'</button>').join("")+'</div>'+(htView?'':'<div class="ht-over">'+htSpaces.map(v=>'<button type="button" class="ht-over-row" data-ht-tab="'+esc(v)+'"><b>'+esc(venueShort(v))+'</b><span>'+HT_POS.map(p=>{const r=htRecord(rows,v,htMonth,p);return esc(p.name)+': '+(r?esc(r.spectacle||"pieza sin título"):'<em>sin pieza</em>')}).join(' · ')+'</span></button>').join("")+'</div><p class="muted" style="margin:8px 0 0">Toca un espacio para editar su Home Ticket de '+esc(monthLabel(htMonth).toLowerCase())+'.</p>');
  const v=htView,m=htMonth,mine=rows.filter(r=>r.venue===v&&htRowMonth(r)===m);
  const work=v?'<div class="ht-space" data-venue="'+esc(v)+'"><div class="section-title"><div><small class="section-kicker">Home Ticket · '+esc(monthLabel(m))+'</small><h2>'+esc(v)+'</h2></div><div class="actions-row"><button type="button" class="primary" data-ht-all="'+esc(v)+'">Actualizar los tres</button><button type="button" class="ghost" data-ht-close>Cerrar</button></div></div>'+
   '<div class="ht-panel" data-ht-panel="'+esc(v)+'"></div>'+
@@ -867,7 +880,7 @@ function cartRender(){
  $$("#cartViews .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===cart.view));
  $$("#cartNight button").forEach(b=>b.classList.toggle("on",(b.dataset.n==="1")===cart.night));
  const stage=$("#cartStage");stage.className="cart-stage"+(cart.night?" night":"");stage.style.aspectRatio=v.w+" / "+v.h;
- stage.innerHTML='<img class="cart-bg" src="'+v.img+'" alt="'+esc(v.name)+'">'+CART_SLOTS.filter(s=>s.view===cart.view).map(s=>{const im=cart.img[s.key];return '<button type="button" class="cart-slot'+(s.key===cart.sel?" sel":"")+(im?"":" empty")+'" data-k="'+s.key+'" style="left:'+s.r[0]+'%;top:'+s.r[1]+'%;width:'+s.r[2]+'%;height:'+s.r[3]+'%">'+(im?'<img src="'+im+'" style="object-fit:'+cartMode(s.key)+'" alt="">':'<span>'+esc(s.name)+'</span>')+'</button>'}).join("");
+ stage.innerHTML='<img class="cart-bg" src="'+v.img+'" alt="'+esc(v.name)+'">'+CART_SLOTS.filter(s=>s.view===cart.view).map(s=>{const im=cart.img[s.key];return '<button type="button" class="cart-slot'+(s.key===cart.sel?" sel":"")+(im?"":" empty")+'" data-k="'+s.key+'" aria-label="'+esc(s.name||s.label||s.key)+'" style="left:'+s.r[0]+'%;top:'+s.r[1]+'%;width:'+s.r[2]+'%;height:'+s.r[3]+'%">'+(im?'<img src="'+im+'" style="object-fit:'+cartMode(s.key)+'" alt="">':'<span>'+esc(s.name)+'</span>')+'</button>'}).join("");
  stage.onclick=e=>{const b=e.target.closest(".cart-slot");if(!b)return;cart.sel=b.dataset.k;cartRender();if(matchMedia("(max-width:980px)").matches)$("#cartPanel").scrollIntoView({behavior:"smooth",block:"start"})};
  if(edit){stage.ondragover=e=>{e.preventDefault()};stage.ondrop=async e=>{e.preventDefault();const b=e.target.closest(".cart-slot");const f=e.dataTransfer.files[0];if(b&&f){cart.sel=b.dataset.k;await cartSetFile(b.dataset.k,f)}}}
  $("#cartSlotChips").innerHTML=CART_SLOTS.filter(s=>s.view===cart.view).map(s=>'<button type="button" class="chip'+(s.key===cart.sel?" on":"")+'" data-k="'+s.key+'"><i class="dot'+(cart.img[s.key]?" full":"")+'"></i>'+esc(s.name)+'</button>').join("");
@@ -1529,7 +1542,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v94";
+const YC_VERSION="yellow-control-v95";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
