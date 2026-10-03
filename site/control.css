@@ -1116,3 +1116,4 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .dg-refresh{border:1px solid var(--yellow);background:transparent;color:var(--yellow);font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer;min-height:40px}.dg-refresh:disabled{opacity:.6}
 :root[data-theme="light"] .dg-refresh{color:#131313;background:var(--yellow)}
 @media (max-width:760px){.dg-refresh{width:100%}}
+.dg-token{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dg-token input{flex:1;min-width:220px}

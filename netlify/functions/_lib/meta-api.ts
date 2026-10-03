@@ -4,13 +4,21 @@ import { controlStore } from "./store.ts";
 // Escribe en el mismo almacén que la importación de Excel (meta_rows_YYYY-MM): un mes leído de la API
 // sustituye a lo que hubiera de ese mes. Miniaturas en meta_thumbs y estado de la última lectura en meta_sync.
 const env = (k: string) => (globalThis as any).Netlify?.env?.get(k) || (globalThis as any).process?.env?.[k] || "";
-export const metaApiReady = () => Boolean(env("META_ACCESS_TOKEN"));
+// Token: el de Netlify (META_ACCESS_TOKEN) o, si no lo ve la función, el pegado en Yellow Control (Digital › Datos y conexión)
+let TOKEN = "";
+export async function metaToken(): Promise<{ token: string; source: "netlify" | "app" | "" }> {
+  const e = env("META_ACCESS_TOKEN");
+  if (e) return { token: e, source: "netlify" };
+  const b = await controlStore().get("meta_token", { type: "json" }).catch(() => null) as { token?: string } | null;
+  return b?.token ? { token: b.token, source: "app" } : { token: "", source: "" };
+}
+export async function metaApiReady() { return Boolean((await metaToken()).token); }
 const account = () => "act_" + (env("META_AD_ACCOUNT") || "6036157816619").replace(/^act_/, "");
 const GRAPH = () => `https://graph.facebook.com/${env("META_API_VERSION") || "v23.0"}`;
 
 async function graph(path: string, params: Record<string, string>) {
   const out: any[] = [];
-  let url: string | null = `${GRAPH()}/${path}?` + new URLSearchParams({ ...params, access_token: env("META_ACCESS_TOKEN") });
+  let url: string | null = `${GRAPH()}/${path}?` + new URLSearchParams({ ...params, access_token: TOKEN });
   for (let page = 0; url && page < 40; page++) {
     const r = await fetch(url);
     const j: any = await r.json().catch(() => ({}));
@@ -97,15 +105,16 @@ export async function syncMonth(m: string, info?: Record<string, any>) {
 }
 
 /** Mes en curso siempre; el anterior los 3 primeros días (Meta corrige cifras con retraso) y la primera vez. */
-export async function syncMeta(trigger: string) {
+export async function syncMeta(trigger: string, onlyCurrent = false) {
   const st = controlStore(), now = new Date();
   const cur = now.toISOString().slice(0, 7);
   const prevD = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)), prev = prevD.toISOString().slice(0, 7);
   const last = (await st.get("meta_sync", { type: "json" }) as any) || {};
   const months = [cur];
-  if (now.getUTCDate() <= 3 || !(last.months || []).includes(prev)) months.unshift(prev);
+  if (!onlyCurrent && (now.getUTCDate() <= 3 || !(last.months || []).includes(prev))) months.unshift(prev);
   try {
-    if (!metaApiReady()) throw new Error("Falta META_ACCESS_TOKEN en Netlify.");
+    TOKEN = (await metaToken()).token;
+    if (!TOKEN) throw new Error("Falta el token de Meta: pégalo en Digital › Datos y conexión o en Netlify (META_ACCESS_TOKEN).");
     const info = await adsInfo();
     const out = [];
     for (const m of months) out.push(await syncMonth(m, info));
