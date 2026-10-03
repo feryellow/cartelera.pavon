@@ -32,7 +32,7 @@ export default async (req: Request) => {
       const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket"|"revistas",label:string)=>{
         if(!can(auth.actor,moduleName,false))return;
         const rows=await listRecords(moduleName);
-        payload[moduleName]={total:rows.length,active:rows.filter(r=>isActive(r)).length};
+        {const act=rows.filter(r=>isActive(r));payload[moduleName]={total:rows.length,active:act.length,...(moduleName==="revistas"?{magazines:new Set(act.map((r:any)=>r.magazine).filter(Boolean)).size}:{})};}
         for(const r of rows){
           const title=r.spectacle||r.campaignName||r.position||"Registro";
           const place=(r.magazine==="Revista Teatros"?"Teatros":r.magazine)||r.venue||r.station||r.location||r.support||"";
