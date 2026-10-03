@@ -1113,3 +1113,6 @@ body[data-role-mode="proveedor"] .back-home{display:none}
  .dg-crea{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dg-cr-b{padding:10px}
 }
 :root[data-theme="light"] .dg-seg button.on{color:#131313}:root[data-theme="light"] .dg-kpi b{color:#131313}:root[data-theme="light"] .dg-chip.on{color:#2e7d32;border-color:rgba(46,125,50,.4)}:root[data-theme="light"] .dg-delta.up{color:#2e7d32}:root[data-theme="light"] .dg-delta.down{color:#c0392b}
+.dg-refresh{border:1px solid var(--yellow);background:transparent;color:var(--yellow);font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer;min-height:40px}.dg-refresh:disabled{opacity:.6}
+:root[data-theme="light"] .dg-refresh{color:#131313;background:var(--yellow)}
+@media (max-width:760px){.dg-refresh{width:100%}}
