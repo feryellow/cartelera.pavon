@@ -177,7 +177,7 @@ function render(){if(M.platform!=="meta"&&!M.demo)return renderOther();const d=M
  else if(M.view==="espectaculos")body='<section class="card"><div class="section-title"><div><small class="section-kicker">Por espectáculo</small><h2>Espectáculos · '+esc(monthLabel(M.month))+'</h2></div></div>'+showCards(rows)+'</section>';
  else if(M.view==="creatividades")body='<section class="card"><div class="section-title"><div><small class="section-kicker">Piezas</small><h2>Creatividades · '+esc(monthLabel(M.month))+'</h2></div></div>'+creatives(rows)+'</section>';
  const ap=d.api||{},apiErr=!M.demo&&ap.ready&&ap.ok===false?'<div class="card notice" style="text-align:left">La lectura automática de Meta ha fallado'+(ap.at?' ('+new Date(ap.at).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+')':'')+': '+esc(ap.error||"error desconocido")+'</div>':'';
- app.innerHTML=pageHead("Campañas digitales","Meta · Facebook e Instagram",(ap.ready?'<button type="button" class="primary" id="mtSync">Actualizar ahora</button>':'')+'<a class="btn" target="_blank" rel="noopener" href="'+esc(adsUrl())+'">Abrir en Meta ↗</a>',"/assets/tiles/meta.webp")+apiErr+chips+tabs+meta+body;
+ app.innerHTML=pageHead("Digital","Meta · Facebook e Instagram",(ap.ready?'<button type="button" class="primary" id="mtSync">Actualizar ahora</button>':'')+'<a class="btn" target="_blank" rel="noopener" href="'+esc(adsUrl())+'">Abrir en Meta ↗</a>',"/assets/tiles/meta.webp")+apiErr+chips+tabs+meta+body;
  const sy=$("#mtSync");if(sy)sy.onclick=async()=>{sy.disabled=true;sy.textContent="Leyendo Meta…";try{await api("/api/meta",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sync:true})});say("Datos de Meta actualizados");await load();render()}catch(e){say("No se ha podido leer Meta: "+e.message);sy.disabled=false;sy.textContent="Actualizar ahora"}};
  bindCommon();
  $$("[data-mv]").forEach(b=>b.onclick=()=>{M.view=b.dataset.mv;render()});
@@ -265,7 +265,7 @@ function gConnect(){const g=M.g||{};
  '<div class="actions-row"><button type="button" class="primary" id="gaShow">'+(M.gscript?'Copiar script':'Mostrar script')+'</button>'+(M.gscript?'<button type="button" id="gaRotate">Generar clave nueva</button>':'')+'</div>'+
  (M.gscript?'<textarea class="mt-script" id="gaScript" readonly rows="14">'+esc(M.gscript)+'</textarea>':'')+'</section>'}
 
-function renderOther(){const head=pageHead("Campañas digitales",M.platform==="google"?"Google Ads":"Meta y Google Ads por espectáculo",M.platform==="google"?'<a class="btn" target="_blank" rel="noopener" href="https://ads.google.com/aw/campaigns">Abrir en Google Ads ↗</a>':'',M.platform==="google"?"/assets/tiles/google.webp":"/assets/tiles/digital.webp");
+function renderOther(){const head=pageHead("Digital",M.platform==="google"?"Google Ads":"Meta y Google Ads por espectáculo",M.platform==="google"?'<a class="btn" target="_blank" rel="noopener" href="https://ads.google.com/aw/campaigns">Abrir en Google Ads ↗</a>':'',M.platform==="google"?"/assets/tiles/google.webp":"/assets/tiles/digital.webp");
  const g=gRows(),gr=g.filter(r=>r.spend>0||r.impressions>0),gt=gagg(gr);let body="",src="";
  if(M.platform==="google"){
   const tabs='<div class="chip-row mt-tabs">'+[["resumen","Resumen"],["palabras","Palabras clave"],["conectar","Conectar"]].map(([k,v])=>'<button type="button" class="chip'+(M.gview===k?" on":"")+'" data-gv="'+k+'">'+v+'</button>').join("")+'</div>';
