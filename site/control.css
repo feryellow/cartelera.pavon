@@ -1039,3 +1039,23 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .ht-over-row em{opacity:1;color:var(--muted)}
 .ar-card.empty{opacity:.85}
 @media(max-width:700px){.more-pop{left:0;right:auto}}
+/* Calendario: filtros y leyenda plegables; fechas repetidas agrupadas */
+.cal-opts{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.cal-opts>summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:800;font-size:13px;display:flex;align-items:center;gap:8px;min-height:20px}
+.cal-opts>summary::-webkit-details-marker{display:none}
+.cal-opts>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.6}
+.cal-opts[open]>summary::after{transform:rotate(-135deg)}
+.cal-opts[open]{padding-bottom:12px}
+.cal-opts .cal-legend{margin:10px 0 0}
+.calendar-toolbar{margin-bottom:12px}
+.wk-group{border:1px solid var(--line);border-radius:10px;margin:6px 0;background:color-mix(in srgb,currentColor 3%,transparent)}
+.wk-group>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px;padding:10px 12px}
+.wk-group>summary::-webkit-details-marker{display:none}
+.wk-group>summary b{font-size:13px}.wk-group>summary span{font-size:12px;color:var(--muted)}
+.wk-group[open]{padding:0 6px 6px}
+/* Móvil: botones y campos de al menos 44 px de alto; pestañas de 40 px */
+@media(max-width:700px){
+ #app button:not(.chip):not(.event):not(.cart-slot):not(.ht-over-row):not(.mt-show-h):not(.pv-thumb):not(.day-more),#app .btn,#app select,#app input:not([type=checkbox]):not([type=radio]):not([type=file]),#app textarea{min-height:44px}
+ #app .chip{min-height:40px}
+}
+.wk-group>summary b{overflow-wrap:anywhere;hyphens:auto}

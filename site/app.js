@@ -19,7 +19,7 @@ function isCarteleriaRole(){return roles().includes("carteleria")&&!roles().incl
 function canRoute(route){if(isProveedor())return route==="proveedor";if(route==="proveedor")return roles().some(r=>r==="admin"||r==="gestion");if(route==="presupuesto")return true;if(roles().includes("admin"))return true;if(isCarteleriaRole())return route==="dashboard"||route==="carteleria";if(route==="dashboard"||route==="calendario"||route==="carteleria"||route==="archivo"||route==="status")return true;if((route==="radio"||route==="taxis"||route==="intercambiadores"||route==="hometicket"||route==="revistas"||route==="meta"||route==="importar")&&roles().includes("gestion"))return true;return false}
 const ICON_PATHS={meta:'<path d="M3 15.5c0-4 2-8.5 4.6-8.5 3.4 0 5.4 10 8.8 10 2 0 3.6-2 3.6-4.6 0-3.3-1.8-5.4-3.8-5.4-3.2 0-5.3 9-8.8 9C5 16 3 16.6 3 15.5z"/>',status:'<path d="M4 12l4 4 8-9"/><path d="M14 17h6M14 13h6"/>',presupuesto:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10h8M5 14h8"/>',dashboard:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',carteleria:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/>',hometicket:'<path d="M3 8a2 2 0 0 0 0 4 2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 0 0-4V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',radio:'<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="15.5" cy="14" r="3"/><path d="M7 12h3M7 16h3M6 8l11-4"/>',taxis:'<path d="M5 17V12l2-5h10l2 5v5M3 17h18v3H3zM9 4h6"/><circle cx="7.5" cy="14" r="1"/><circle cx="16.5" cy="14" r="1"/>',intercambiadores:'<rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21l1-3M16 21l-1-3"/>',revistas:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M18 8h2v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/>',archivo:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',admin:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'};
 // Fotos de las tarjetas de Inicio y cabeceras. Para cambiar una foto, sustituye el archivo en /assets/tiles/ (formato 4:3, JPG).
-const ROUTE_PHOTOS={meta:"/assets/tiles/meta.jpg",status:"/assets/tiles/status.jpg",carteleria:"/assets/tiles/carteleria.jpg",revistas:"/assets/tiles/revistas.jpg",calendario:"/assets/tiles/calendario.jpg",hometicket:"/assets/tiles/hometicket.jpg?v=2",radio:"/assets/tiles/radio.jpg",taxis:"/assets/tiles/taxis.jpg",intercambiadores:"/assets/tiles/intercambiadores.jpg",archivo:"/assets/tiles/archivo.jpg",admin:"/assets/tiles/usuarios.jpg"};
+const ROUTE_PHOTOS={meta:"/assets/tiles/meta.webp",status:"/assets/tiles/status.webp",carteleria:"/assets/tiles/carteleria.webp",revistas:"/assets/tiles/revistas.webp",calendario:"/assets/tiles/calendario.webp",hometicket:"/assets/tiles/hometicket.webp",radio:"/assets/tiles/radio.webp",taxis:"/assets/tiles/taxis.webp",intercambiadores:"/assets/tiles/intercambiadores.webp",archivo:"/assets/tiles/archivo.webp",admin:"/assets/tiles/usuarios.webp"};
 function icon(route,cls="nav-ico"){return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[route]||"")+'</svg>'}
 function navMeta(route){const a=$('#mainNav [data-route="'+route+'"]');return a?{href:a.dataset.href||a.getAttribute("href")||("#"+route),small:a.querySelector("small")?.textContent||"",name:a.querySelector("b")?.textContent||""}:null}
 $$("#mainNav a").forEach(a=>{if(!a.dataset.href)a.dataset.href=a.getAttribute("href")||"";if(!a.querySelector("svg"))a.insertAdjacentHTML("afterbegin",icon(a.dataset.route))});
@@ -752,11 +752,11 @@ window.addEventListener("scroll",acPlace,true);window.addEventListener("resize",
 // Teatros con cartelería. Cada vista pertenece a uno; los soportes del Arlequín llevan el prefijo arlequin__
 const CART_VENUES=[{id:"pavon",name:"Gran Teatro Pavón",short:"Pavón",file:"Pavon"},{id:"arlequin",name:"Teatro Arlequín",short:"Arlequín",file:"Arlequin"}];
 const CART_VIEWS=[
- {id:"taquilla",venue:"pavon",name:"Taquilla cerrada",img:"/assets/facade/taquilla.jpg",w:1448,h:1086},
- {id:"lona",venue:"pavon",name:"Lona + secundarios",img:"/assets/facade/lona.jpg",w:856,h:718},
- {id:"abierta",venue:"pavon",name:"Taquilla abierta",img:"/assets/facade/abierta.jpg",w:946,h:1381},
- {id:"columna",venue:"pavon",name:"Columna 1",img:"/assets/columna1.jpg?v=2",w:1086,h:1448},
- {id:"arlequin",venue:"arlequin",name:"Cartelera",img:"/assets/facade/arlequin.jpg",w:1400,h:1254}
+ {id:"taquilla",venue:"pavon",name:"Taquilla cerrada",img:"/assets/facade/taquilla.webp",w:1448,h:1086},
+ {id:"lona",venue:"pavon",name:"Lona + secundarios",img:"/assets/facade/lona.webp",w:856,h:718},
+ {id:"abierta",venue:"pavon",name:"Taquilla abierta",img:"/assets/facade/abierta.webp",w:946,h:1381},
+ {id:"columna",venue:"pavon",name:"Columna 1",img:"/assets/columna1.webp",w:1086,h:1448},
+ {id:"arlequin",venue:"arlequin",name:"Cartelera",img:"/assets/facade/arlequin.webp",w:1400,h:1254}
 ];
 const CART_SLOTS=[
  {key:"taquilla__secundario-1",view:"taquilla",name:"Columna 2",r:[19.06,40.06,13.54,27.90]},
@@ -788,10 +788,16 @@ function cartMode(k){return (cart.slots[k]&&cart.slots[k].mode)||"contain"}
 function cartDaysTo(iso){if(!iso)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(iso+"T00:00:00")-t)/864e5)}
 function cartNextDate(k){const s=cartSched(k);const t=localToday();const ds=[["Instalación",s.installDate],["Retirada",s.removeDate]].filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[1]||""));const fut=ds.filter(x=>x[1]>=t).sort((a,b)=>a[1].localeCompare(b[1]));return fut[0]||null}
 
+// Carteles: se guardan en el navegador por versión (rev) y solo se descargan cuando cambian
+async function cartImgFetch(k){const rev=String(cart.slots[k]?.rev||"0"),u="/api/image?key="+encodeURIComponent(k)+"&rev="+encodeURIComponent(rev);let c=null;try{if(rev&&window.caches)c=await caches.open("yc-cart-img")}catch{}
+ if(c){const hit=await c.match(u).catch(()=>null);if(hit)return hit.text()}
+ const r=await fetch("/api/image?key="+encodeURIComponent(k),{cache:"no-store",headers:headers()});if(!r.ok)return null;const t=await r.text();
+ if(c&&t.startsWith("data:image/")){try{for(const q of await c.keys())if(q.url.includes("key="+encodeURIComponent(k)+"&"))await c.delete(q);await c.put(u,new Response(t))}catch{}}
+ return t}
 async function cartLoad(){
  const d=await api("/api/state",{cache:"no-store"});const st=d.state||{};
  cart.slots=st.slots||{};cart.schedule=st.schedule||{};cart.updatedAt=st.updatedAt||null;cart.base={};CART_SLOTS.forEach(s=>{cart.base[s.key]=cartFingerprint(st,s.key)});cart.img={};cart.dirty.clear();cart.imgDirty.clear();
- await Promise.all(CART_SLOTS.filter(s=>cart.slots[s.key]&&cart.slots[s.key].hasImage).map(async s=>{try{const r=await fetch("/api/image?key="+encodeURIComponent(s.key),{cache:"no-store",headers:headers()});if(r.ok)cart.img[s.key]=await r.text()}catch{}}));
+ await Promise.all(CART_SLOTS.filter(s=>cart.slots[s.key]&&cart.slots[s.key].hasImage).map(async s=>{try{const t=await cartImgFetch(s.key);if(t)cart.img[s.key]=t}catch{}}));
  cart.loaded=true;
 }
 
@@ -1263,20 +1269,25 @@ async function calendario(){
 function calEvBtn(e,wide){const v=venueStyle(e);
  return '<button type="button" class="event k-'+e.kind+(e.auto?" auto":" manual")+(wide?" wide":"")+'" data-ev="'+esc(e.id)+'" style="--v:'+v.line+';--vd:'+v.dark+'">'+
   '<em>'+venueChip(e)+esc(evTag(e))+(e.moduleKey==="hitos"?"":" · "+esc(e.module))+'</em><strong>'+esc((e.time?e.time+" · ":"")+e.title)+'</strong>'+(e.location?'<span>'+esc(e.location)+'</span>':'')+'</button>'}
-let calDaySel="",calDayOpen=new Set();
+let calDaySel="",calDayOpen=new Set(),calOptsOpen=null;
+// Un día con 3 o más fechas automáticas del mismo módulo (p. ej. cuñas de radio) las agrupa en una línea desplegable
+function calDayHtml(de){const groups=new Map();de.forEach(e=>{if(e.auto&&e.moduleKey!=="hitos"){const k=e.moduleKey;groups.set(k,(groups.get(k)||0)+1)}});
+ const done=new Set();return de.map(e=>{const k=e.moduleKey;if(e.auto&&k!=="hitos"&&groups.get(k)>=3){if(done.has(k))return"";done.add(k);const g=de.filter(x=>x.auto&&x.moduleKey===k);
+  return '<details class="wk-group"><summary><b>'+esc(e.module)+'</b><span>'+g.length+' fechas · '+esc([...new Set(g.map(x=>evTag(x)))].join(", ").toLowerCase())+'</span></summary>'+g.map(x=>calEvBtn(x,true)).join("")+'</details>'}
+  return calEvBtn(e,true)}).join("")}
 function calEvMini(e){const v=venueStyle(e);return '<button type="button" class="event mini k-'+e.kind+(e.auto?" auto":" manual")+'" data-ev="'+esc(e.id)+'" title="'+esc(evTag(e)+" · "+e.title)+'" style="--v:'+v.line+';--vd:'+v.dark+'"><i class="mdot"></i><strong>'+esc((e.time?e.time+" ":"")+e.title)+'</strong></button>'}
 function renderCalendar(){
  const today=localToday(),ev=calFiltered();
  const mods=CAL_MODS.filter(([k])=>k==="hitos"||k==="carteleria"||canRoute(k));
  const filters='<div class="cal-filters"><div class="chip-row"><button type="button" class="chip'+(calMods.size?"":" on")+'" data-mod="">Todo</button>'+mods.map(([k,l])=>'<button type="button" class="chip'+(calMods.has(k)?" on":"")+'" data-mod="'+k+'">'+l+'</button>').join("")+'</div>'+
   '<select id="calVenue" aria-label="Filtrar por espacio"><option value="">Todos los espacios</option>'+VENUES.map(v=>'<option'+(v===calVenue?" selected":"")+'>'+esc(v)+'</option>').join("")+'</select></div>';
- const views='<div class="seg" role="tablist"><button type="button" data-view="semana" class="'+(calView==="semana"?"on":"")+'">Semana</button><button type="button" data-view="mes" class="'+(calView==="mes"?"on":"")+'">Mes</button></div>';
+ const views='<div class="seg" role="group" aria-label="Vista"><button type="button" data-view="semana" class="'+(calView==="semana"?"on":"")+'">Semana</button><button type="button" data-view="mes" class="'+(calView==="mes"?"on":"")+'">Mes</button></div>';
  let body="",label="";
  if(calView==="semana"){
   const days=weekRange(calWeekOffset);label=weekTitle(days);
   body='<div class="wk-list">'+days.map(d=>{const iso=isoOf(d),de=ev.filter(e=>e.date===iso);
    return '<div class="wk-day'+(iso===today?" today":"")+(de.length?"":" empty")+'"><div class="wk-head"><b>'+esc(cap(d.toLocaleDateString("es-ES",{weekday:"long"})))+'</b><span>'+d.getDate()+' '+esc(d.toLocaleDateString("es-ES",{month:"short"}))+'</span>'+(iso===today?'<i>Hoy</i>':'')+'</div>'+
-    (de.length?de.map(e=>calEvBtn(e,true)).join(""):'<div class="wk-none">Sin fechas</div>')+'</div>'}).join("")+'</div>';
+    (de.length?calDayHtml(de):'<div class="wk-none">Sin fechas</div>')+'</div>'}).join("")+'</div>';
  }else{
   const y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),n=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7;
   label=cap(calCursor.toLocaleDateString("es-ES",{month:"long",year:"numeric"}));
@@ -1292,14 +1303,13 @@ function renderCalendar(){
   for(let i=(offset+n)%7;i&&i<7;i++)cells+='<div class="day empty"></div>';
   const sd=ev.filter(e=>e.date===calDaySel),sdd=new Date(calDaySel+"T12:00:00");
   body='<div class="calendar-grid month">'+cells+'</div>'+(ev.some(e=>e.date.startsWith(ym))?'':'<div class="notice" style="margin-top:10px">No hay fechas este mes con estos filtros.</div>')+
-   '<div class="cal-daylist" id="calDayList"><div class="wk-head"><b>'+esc(cap(sdd.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})))+'</b><span>'+sd.length+(sd.length===1?" fecha":" fechas")+'</span></div>'+(sd.length?sd.map(e=>calEvBtn(e,true)).join(""):'<div class="wk-none">Sin fechas</div>')+'</div>';
+   '<div class="cal-daylist" id="calDayList"><div class="wk-head"><b>'+esc(cap(sdd.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})))+'</b><span>'+sd.length+(sd.length===1?" fecha":" fechas")+'</span></div>'+(sd.length?calDayHtml(sd):'<div class="wk-none">Sin fechas</div>')+'</div>';
  }
  app.innerHTML=pageHead("Calendario","Campañas, montajes, entregas e hitos de comunicación de todos los espacios",
   '<button type="button" id="calSub">Suscribirme</button><button type="button" id="calWeek">Compartir semana</button><button type="button" id="calMonth">Imprimir mes</button>'+(calCanHito()?'<button type="button" class="primary" id="calNewHito">+ Nuevo hito</button>':''))+
   '<div id="calPanel"></div>'+
-  '<div class="card cal-card">'+filters+
-  '<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+
-  '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Yellow / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip nl" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip nl" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div>'+
+  '<div class="card cal-card">'+'<div class="calendar-toolbar"><button id="calPrev" aria-label="Anterior">‹</button><div class="cal-now"><strong>'+esc(label)+'</strong><button type="button" class="ghost" id="calToday">Hoy</button></div><button id="calNext" aria-label="Siguiente">›</button>'+views+'</div>'+'<details class="cal-opts" id="calOpts"'+((calOptsOpen??!matchMedia("(max-width:700px)").matches)?" open":"")+'><summary>Filtros y leyenda'+((calMods.size||calVenue)?' <span class="badge">'+(calMods.size+(calVenue?1:0))+' activos</span>':'')+'</summary>'+filters+
+  '<div class="cal-legend cal-venues">'+[...Object.entries(VENUE_STYLE),["Yellow / otros",VENUE_NONE]].map(([k,v])=>'<span><b class="vchip" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</b>'+esc(k)+'</span>').join("")+'<span><b class="vchip nl" style="background:#FFE01B;color:#241C15">MAILCHIMP</b><b class="vchip nl" style="background:#0B996E;color:#fff">BREVO</b>Newsletter</span></div></details>'+
   body+'</div>';
  $$("[data-more]").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=b.dataset.more;calDayOpen.has(d)?calDayOpen.delete(d):calDayOpen.add(d);renderCalendar()});
  $$(".calendar-grid.month .day[data-day]").forEach(c=>c.addEventListener("click",e=>{if(e.target.closest("[data-ev],[data-more]")&&!matchMedia("(max-width:700px)").matches)return;e.preventDefault();e.stopPropagation();calDaySel=c.dataset.day;renderCalendar();if(matchMedia("(max-width:700px)").matches){const l=$("#calDayList");if(l)l.scrollIntoView({behavior:"smooth",block:"start"})}},true));
@@ -1308,7 +1318,7 @@ function renderCalendar(){
  $("#calToday").onclick=()=>{calWeekOffset=0;calCursor=new Date();renderCalendar()};
  $$(".seg [data-view]").forEach(b=>b.onclick=()=>{calView=b.dataset.view;calLS.set("yc-cal-view",calView);renderCalendar()});
  $$(".cal-filters [data-mod]").forEach(b=>b.onclick=()=>{const k=b.dataset.mod;if(!k)calMods.clear();else if(calMods.has(k))calMods.delete(k);else calMods.add(k);renderCalendar()});
- $("#calVenue").onchange=e=>{calVenue=e.target.value;renderCalendar()};
+ $("#calVenue").onchange=e=>{calVenue=e.target.value;renderCalendar()};$("#calOpts").ontoggle=e=>{calOptsOpen=e.target.open};
  $(".cal-card").addEventListener("click",e=>{const b=e.target.closest("[data-ev]");if(!b)return;const x=calEvents.find(y=>y.id===b.dataset.ev);if(x)calDetail(x)});
  $("#calSub").onclick=()=>calSubscribe();$("#calWeek").onclick=()=>calWeekPanel();$("#calMonth").onclick=()=>{if(calView==="semana"){const d=calWeekOffset?weekRange(calWeekOffset)[3]:new Date();calCursor=new Date(d.getFullYear(),d.getMonth(),1)}calMonthPanel()};
  if(calCanHito())$("#calNewHito").onclick=()=>calHitoForm({date:localToday()});
@@ -1542,7 +1552,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v95";
+const YC_VERSION="yellow-control-v96";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
