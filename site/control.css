@@ -1060,3 +1060,6 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 }
 .wk-group>summary b{overflow-wrap:anywhere;hyphens:auto}
 .mt-piece{display:flex;align-items:center;gap:10px}.mt-piece img{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:0 0 44px;background:var(--line)}
+.mt-platforms{flex-wrap:wrap;margin:0 0 10px}.mt-platforms .chip{font-weight:800}
+.mt-script{width:100%;margin-top:12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card2,rgba(0,0,0,.25));color:inherit;resize:vertical}
+.mt-assign-in{min-width:150px;max-width:220px;padding:6px 8px;font-size:12px}
