@@ -1018,3 +1018,24 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .dash-fold>.section-title::after{content:"";position:absolute;right:4px;top:50%;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-70%) rotate(45deg);opacity:.6;transition:transform .15s}
 .dash-fold.folded>.section-title::after{transform:translateY(-35%) rotate(-45deg)}
 .dash-fold.folded>:not(.section-title){display:none}.dash-fold.folded>.section-title{margin-bottom:0}
+/* Home Ticket: vista general del mes */
+.ht-over{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ht-over-row{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.ht-over-row b{font-size:14px}.ht-over-row span{font-size:12px;color:var(--muted)}.ht-over-row em{font-style:normal;opacity:.6}
+.ht-over-row:hover,.ht-over-row:focus-visible{border-color:var(--yellow)}
+/* Menú «Más» de la cabecera de cada sección */
+.more-menu{position:relative;display:inline-flex}
+.more-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:60;min-width:220px;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.more-pop[hidden]{display:none}
+.more-pop>*{all:unset;box-sizing:border-box;display:block;width:100%;padding:11px 12px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;color:var(--cream);text-align:left}
+.more-pop>*:hover,.more-pop>*:focus-visible{background:var(--panel2)}
+.list-more{margin-top:8px;width:100%}
+/* Contraste en tema claro: el amarillo solo como fondo o acento, nunca como texto sobre claro */
+:root[data-theme="light"] .home-kicker,:root[data-theme="light"] .section-kicker,:root[data-theme="light"] .mag-head,:root[data-theme="light"] .mag-name,:root[data-theme="light"] .ar-title em,:root[data-theme="light"] .radio-inv-kpi small,:root[data-theme="light"] .radio-week small,:root[data-theme="light"] .radio-contract-tab.on small,:root[data-theme="light"] .ac-opt b,:root[data-theme="light"] .cart-slot.empty span{color:#6b5300}
+:root[data-theme="light"] .kpi b,:root[data-theme="light"] .stat strong,:root[data-theme="light"] .mt-kpi b,:root[data-theme="light"] .rsum-big strong,:root[data-theme="light"] .cart-next b,:root[data-theme="light"] .ht-slot-head b{color:#161616}
+:root[data-theme="light"] .mt-kpi{border-left:4px solid var(--yellow)}
+.cal-venues .vchip{font-size:11px!important;padding:2px 6px}
+.list>.item[hidden]{display:none!important}
+.ht-over-row em{opacity:1;color:var(--muted)}
+.ar-card.empty{opacity:.85}
+@media(max-width:700px){.more-pop{left:0;right:auto}}
