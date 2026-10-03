@@ -3,10 +3,11 @@ import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { controlStore } from "./_lib/store.ts";
 import seed from "./_lib/meta-seed.json";
+import { syncMeta, metaApiReady } from "./_lib/meta-api.ts";
 
 // Meta (Facebook / Instagram Ads) · fase 1: solo lectura.
 // Los datos llegan importando la exportación del Administrador de anuncios (desglose por día y anuncio).
-// Más adelante, la lectura diaria por API escribirá en este mismo almacén (meta_rows_YYYY-MM).
+// Con META_ACCESS_TOKEN en Netlify, meta-sync.mts lo lee de la API cada mañana y escribe en este mismo almacén (meta_rows_YYYY-MM).
 // GET  ?month=YYYY-MM → filas del mes, meses con datos, presupuestos por espectáculo y cuenta
 // POST {rows}         → importa filas; sustituye las de los mismos días y deja el resto
 // PUT  {month,show,budget} → presupuesto Meta de un espectáculo en un mes
@@ -44,14 +45,23 @@ export default async (req: Request) => {
     await ensureSeed().catch((e) => console.error("meta seed", e));
     const all = await months(), cur = new Date().toISOString().slice(0, 7);
     const month = okMonth(url.searchParams.get("month")) ? url.searchParams.get("month")! : all.includes(cur) || !all.length ? cur : all[all.length - 1];
-    const doc = await st.get(`meta_rows_${month}`, { type: "json" }) as { rows: Row[]; importedAt?: string; importedBy?: string; totals?: unknown } | null;
+    const doc = await st.get(`meta_rows_${month}`, { type: "json" }) as { rows: Row[]; importedAt?: string; importedBy?: string; totals?: unknown; source?: string } | null;
+    const sync = await st.get("meta_sync", { type: "json" }) as any, thumbs = ((await st.get("meta_thumbs", { type: "json" }) as any) || {}).thumbs || {};
     const budgets = (await st.get("meta_budgets", { type: "json" }) as Record<string, Record<string, number>> | null) || {};
     const map = (await st.get("meta_map", { type: "json" }) as Record<string, string> | null) || {};
-    return Response.json({ map, account, month, months: all, rows: doc?.rows || [], totals: doc?.totals || null, importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: "export" }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ map, account, month, months: all, rows: doc?.rows || [], totals: doc?.totals || null, importedAt: doc?.importedAt || null, importedBy: doc?.importedBy || null, budgets: budgets[month] || {}, source: doc?.source || "export", api: { ready: metaApiReady(), at: sync?.at || null, okAt: sync?.okAt || null, ok: sync ? !!sync.ok : null, error: sync?.ok === false ? sync.error : null }, thumbs }, { headers: { "cache-control": "no-store" } });
   }
   if (req.method === "POST") {
     const auth = await requireAccess(req, "meta", true); if (auth.response) return auth.response;
     let body: any = {}; try { body = await req.json(); } catch {}
+    // Botón «Actualizar ahora»: lee Meta en el momento
+    if (body?.sync) {
+      if (!metaApiReady()) return Response.json({ error: "Falta META_ACCESS_TOKEN en Netlify." }, { status: 400 });
+      const r = await syncMeta(auth.actor!.email);
+      if (!r.ok) return Response.json({ error: r.error }, { status: 502 });
+      await appendAudit({ actor: auth.actor!, module: "meta", elementId: "meta-sync", action: "import", note: `Lectura de Meta: ${r.result!.map((o: any) => `${o.month}: ${o.days} días`).join(", ")}` });
+      return Response.json({ ok: true, imported: r.result });
+    }
     const rows: Row[] = (Array.isArray(body?.rows) ? body.rows : []).slice(0, 50000).map((r: any) => ({
       date: S(r.date, 10), campaign: S(r.campaign), adset: S(r.adset), ad: S(r.ad), spend: N(r.spend), impressions: N(r.impressions), reach: N(r.reach),
       clicks: N(r.clicks), lpv: N(r.lpv), checkouts: N(r.checkouts), purchases: N(r.purchases), value: N(r.value), campaignId: S(r.campaignId, 40) || undefined, adId: S(r.adId, 40) || undefined,
