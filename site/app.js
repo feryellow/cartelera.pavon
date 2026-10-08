@@ -1189,7 +1189,9 @@ function xlParse(wb){const items=[],errors=[];let found=0;
   const idx={};(rows[hr]||[]).forEach((c,i)=>{const col=cfg.cols.find(([h])=>xlNorm(h)===xlNorm(c));if(col&&idx[col[1]]==null)idx[col[1]]=i});
   if(wb.SheetNames.length===1&&cfg.cols.filter(c=>c[2]).some(c=>idx[c[1]]==null))continue;
   found++;
-  rows.slice(hr+1).forEach((r,k)=>{if(!(r||[]).some(c=>String(c??"").trim()))return;const line=cfg.sheet+", fila "+(hr+k+2),data={},bad=[];
+  rows.slice(hr+1).forEach((r,k)=>{if(!(r||[]).some(c=>String(c??"").trim()))return;
+   // La fila de ejemplo de la plantilla no se sube aunque no la hayan borrado
+   if(cfg.cols.every(([,key],j)=>{const ex=cfg.example[j];return ex===""||ex==null||idx[key]==null||xlNorm(r[idx[key]])===xlNorm(ex)})&&cfg.cols.some(([,key],j)=>cfg.example[j]!==""&&idx[key]!=null)){errors.push(cfg.sheet+", fila "+(hr+k+2)+": es la fila de ejemplo de la plantilla, no se sube");return}const line=cfg.sheet+", fila "+(hr+k+2),data={},bad=[];
    for(const [h,key,req,kind] of cfg.cols){const raw=idx[key]==null?null:r[idx[key]];let v;
     if(kind==="date"){v=xlDate(raw);if(v===null){bad.push(h+" «"+raw+"» no es una fecha");continue}}
     else if(kind==="time")v=xlTime(raw);else if(kind==="venue")v=xlVenue(raw);else if(kind==="type")v=xlType(raw);
