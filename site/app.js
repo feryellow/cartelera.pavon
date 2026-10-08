@@ -1209,11 +1209,102 @@ async function xlTemplate(){await loadXLSX();const wb=XLSX.utils.book_new();
  for(const cfg of Object.values(XL_SHEETS)){const ws=XLSX.utils.aoa_to_sheet([cfg.cols.map(c=>c[0]),cfg.example]);ws["!cols"]=cfg.cols.map(c=>({wch:Math.max(12,c[0].length+4)}));XLSX.utils.book_append_sheet(wb,ws,cfg.sheet)}
  const ay=XLSX.utils.aoa_to_sheet([["Cómo rellenarla"],["Una fila por cuña (hoja Radio) o por fecha del calendario (hoja Calendario). Borra la fila de ejemplo."],["No cambies los títulos de las columnas. Fechas como 01/10/2026; horas como 20:00."],["Radio, obligatorio: Espectáculo, Teatro, Emisora e Inicio. Si no pones Fin, se toma el mismo día."],["Calendario, obligatorio: Tipo y Fecha, y Título o Espectáculo. Tipos: "+HITO_TYPES.join(", ")+"."],["Teatros: "+VENUES.join(", ")+"."],["Al subirla, la app enseña la lista y avisa de lo que ya existe. No se guarda nada hasta pulsar «Añadir seleccionados»."]]);ay["!cols"]=[{wch:110}];XLSX.utils.book_append_sheet(wb,ay,"Instrucciones");
  XLSX.writeFile(wb,"Plantilla Yellow Control.xlsx")}
+// ===== Texto libre → registros =====
+// Se escribe o se pega tal cual (una lista de fechas, un correo con cuñas) y la app lo interpreta:
+// fechas sueltas, listas («12, 13 y 14 de octubre»), rangos («del 7 al 30 de septiembre»), horas, tipo de hito,
+// teatro y espectáculo (de la lista de espectáculos de la app). Si hay cuñas, las reparte por semanas y las mete
+// en el acuerdo de radio de esa emisora sin pasar del inventario contratado. Siempre pasa por la vista previa.
+const TX_MONTHS={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12,ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,sept:9,oct:10,nov:11,dic:12};
+const TX_MON='(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|sept|ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)';
+const TX_TYPES=[["rueda de prensa","Rueda de prensa"],["nota de prensa","Nota de prensa"],["newsletter","Newsletter"],["boletin","Newsletter"],["pase grafico","Pase gráfico"],["pase de prensa","Pase gráfico"],["entrevista","Entrevista / medios"],["reunion","Reunión"],["cierre","Cierre de edición"],["estreno","Estreno"],["premiere","Estreno"],["nota","Nota de prensa"],["evento","Evento"],["photocall","Evento"],["solicitud","Solicitud de proveedor"]];
+const TX_VENUES=[["principe pio","Gran Teatro CaixaBank Príncipe Pío"],["la estacion","Gran Teatro CaixaBank Príncipe Pío"],["pavon","Gran Teatro Pavón"],["serrano","Teatro Serrano"],["arlequin","Teatro Arlequín"],["pedraza","Gran Castillo de Pedraza"],["abonoteatro","Abono Teatro"],["abono teatro","Abono Teatro"],["soho","Soho City Madrid"]];
+const TX_STATIONS=[["europa fm","Europa FM"],["europa","Europa FM"],["melodia","Melodía FM"],["onda cero","Onda Cero"],["kiss","KISS FM"],["cadena ser","Cadena SER"],["los 40","LOS40"],["cadena dial","Cadena Dial"],["cope","COPE"],["cadena 100","Cadena 100"],["rock fm","Rock FM"],["radio nacional","Radio Nacional"],["rne","Radio Nacional"],["hit fm","Hit FM"],["radio marca","Radio Marca"],["esradio","esRadio"]];
+const txLow=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const txHas=(low,k)=>new RegExp("(^|[^a-z0-9])"+k.replace(/ /g,"\\s+")+"($|[^a-z0-9])").test(low);
+const txIso=(y,m,d)=>{const iso=y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0"),t=new Date(iso+"T12:00:00Z");return !isNaN(t)&&t.toISOString().slice(0,10)===iso?iso:""};
+// Sin año: el de este año salvo que la fecha quede más de 4 meses atrás (entonces, el siguiente)
+function txYear(m,d,y){if(y)return Number(String(y).length===2?"20"+y:y);const now=new Date(),cy=now.getFullYear(),t=new Date(cy,m-1,d);return (now-t)/864e5>120?cy+1:cy}
+// Devuelve {dates:[iso], range:[a,b]|null, rest} quitando del texto lo que ya se ha leído
+function txDates(low){let rest=low;const dates=[];let range=null;const cut=m=>{rest=rest.replace(m," ")};
+ let m=new RegExp("(?:del?\\s+)?(\\d{1,2})(?:\\s+de\\s+"+TX_MON+")?\\s+(?:al|hasta el|a|-)\\s+(\\d{1,2})\\s+de\\s+"+TX_MON+"(?:\\s+(?:de\\s+)?(\\d{4}))?").exec(rest);
+ if(m){const m2=TX_MONTHS[m[4]],m1=m[2]?TX_MONTHS[m[2]]:m2,y2=txYear(m2,+m[3],m[5]),y1=m1>m2?y2-1:y2,a=txIso(y1,m1,+m[1]),b=txIso(y2,m2,+m[3]);if(a&&b&&a<=b){range=[a,b];cut(m[0])}}
+ if(!range){m=/(?:del?\s+)?(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\s+(?:al|hasta el|a|-)\s+(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/.exec(rest);
+  if(m){const a=txIso(txYear(+m[2],+m[1],m[3]||m[6]),+m[2],+m[1]),b=txIso(txYear(+m[5],+m[4],m[6]),+m[5],+m[4]);if(a&&b&&a<=b){range=[a,b];cut(m[0])}}}
+ const reList=new RegExp("(\\d{1,2})((?:\\s*,\\s*\\d{1,2})*)\\s+y\\s+(\\d{1,2})\\s+de\\s+"+TX_MON+"(?:\\s+(?:de\\s+)?(\\d{4}))?","g");
+ for(const x of [...rest.matchAll(reList)]){const mo=TX_MONTHS[x[4]],ds=[x[1],...(x[2].match(/\d{1,2}/g)||[]),x[3]];ds.forEach(d=>{const i=txIso(txYear(mo,+d,x[5]),mo,+d);if(i)dates.push(i)});cut(x[0])}
+ const reOne=new RegExp("(\\d{1,2})\\s+(?:de\\s+)?"+TX_MON+"(?![a-z])(?:\\s+(?:de\\s+)?(\\d{4}))?","g");
+ for(const x of [...rest.matchAll(reOne)]){const mo=TX_MONTHS[x[2]],i=txIso(txYear(mo,+x[1],x[3]),mo,+x[1]);if(i){dates.push(i);cut(x[0])}}
+ for(const x of [...rest.matchAll(/(?<![\d:.])(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?(?![\d:])/g)]){const i=txIso(txYear(+x[2],+x[1],x[3]),+x[2],+x[1]);if(i){dates.push(i);cut(x[0])}}
+ return {dates:[...new Set(dates)].sort(),range,rest}}
+function txTime(low){const m=/(?:a\s+las\s+)?(?<![\d\/])(\d{1,2})[:.](\d{2})\s*(?:h\b|horas)?/.exec(low)||/(?:a\s+las\s+)(\d{1,2})(?![\d\/:])(?:\s*h\b|\s*horas)?/.exec(low)||/(?<![\d\/])(\d{1,2})\s*(?:h|horas)\b/.exec(low);
+ if(!m)return {time:"",rest:low};const h=+m[1],mi=m[2]?+m[2]:0;if(h>23||mi>59)return {time:"",rest:low};return {time:String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0"),rest:low.replace(m[0]," ")}}
+function txVenue(low){const v=TX_VENUES.find(([k])=>txHas(low,k));return v?v[1]:""}
+function txSpectacle(low){let best="";for(const s of SPECTACLES){const k=txLow(s).replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();if(k.length>=3&&txHas(low.replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," "),k)&&k.length>best.length)best=s}return best}
+const txCap=s=>{s=s.replace(/\s+/g," ").replace(/^[\s,.;:·\-–—]+|[\s,.;:·\-–—]+$/g,"");return s?s[0].toUpperCase()+s.slice(1):""};
+// Hitos: una línea con fecha = un hito por fecha (un rango da un hito en la fecha de inicio)
+function txHitos(lines,skip){const items=[],warn=[];
+ lines.forEach((line,i)=>{if(skip.has(i))return;const low=txLow(line);const {dates,range,rest}=txDates(low);const all=dates.length?dates:range?[range[0]]:[];if(!all.length)return;
+  const {time}=txTime(rest),tp=TX_TYPES.find(([k])=>txHas(low,k+"(?:e?s)?")),venue=txVenue(low),spectacle=txSpectacle(low);
+  // Título: la línea original sin fechas, horas ni la palabra «el/día»
+  let title=line;const strip=[new RegExp("(?:del?\\s+)?\\d{1,2}(?:\\s*,\\s*\\d{1,2})*(?:\\s+y\\s+\\d{1,2})?(?:\\s+(?:de\\s+)?[a-záéíóú]+)?\\s+(?:al|hasta el|a|-)\\s+\\d{1,2}\\s+de\\s+[a-záéíóú]+(?:\\s+(?:de\\s+)?\\d{4})?","i"),new RegExp("(?:el\\s+|día\\s+|dia\\s+)?(?:(?:lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\\s+)?\\d{1,2}(?:\\s*,\\s*\\d{1,2})*(?:\\s+y\\s+\\d{1,2})?\\s+(?:de\\s+)?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|sept?|ene|feb|mar|abr|may|jun|jul|ago|oct|nov|dic)\\.?(?:\\s+(?:de\\s+)?\\d{4})?","gi"),/(?:el\s+)?\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?/g,/(?:a\s+las\s+)?\d{1,2}[:.]\d{2}\s*(?:h\b|horas)?/gi,/a\s+las\s+\d{1,2}\s*(?:h\b|horas)?/gi,/\b\d{1,2}\s*h\b/gi];
+  strip.push(/\s+en\s+(?:el\s+)?(?:gran\s+)?(?:teatro\s+)?(?:caixabank\s+)?(?:pr[ií]ncipe\s+p[ií]o|pav[oó]n|serrano|arlequ[ií]n|castillo\s+de\s+pedraza|pedraza|la\s+estaci[oó]n|soho(?:\s+city)?)\b/gi,/\s+(?:pr[ií]ncipe\s+p[ií]o|pav[oó]n|serrano|arlequ[ií]n)\s*$/i);strip.forEach(r=>title=title.replace(r," "));title=txCap(title.replace(/^\s*[-•*]\s*/,""));
+  const type=tp?tp[1]:"Otro";
+  all.forEach(date=>{const data={type,date,title:title||spectacle||type};if(time)data.time=time;if(venue)data.venue=venue;if(spectacle)data.spectacle=spectacle;if(range&&!dates.length)data.notes="Hasta el "+fdate(range[1]);items.push({module:"hitos",data})})});
+ return {items,warn}}
+// Cuñas: rango de fechas del texto + líneas «N cuñas (diarias|a la semana|en total) … en EMISORA, EMISORA»
+function txRadio(text,lines,existing){const low=txLow(text),warn=[],items=[],used=new Set();
+ if(!/cun/.test(low))return {items,warn,used};
+ let range=null;lines.forEach((l,i)=>{if(range)return;const r=txDates(txLow(l)).range;if(r){range=r;if(!/cun/.test(txLow(l)))used.add(i)}});
+ if(!range){warn.push("Hay cuñas pero no encuentro las fechas (por ejemplo, «del 7 al 30 de septiembre»).");return {items,warn,used}}
+ const spectacle=txSpectacle(low),venueTxt=txVenue(low),allWeekdays=/lunes\s+a\s+viernes|l\s*-\s*v\b|laborables/.test(low);
+ const reqs=[];
+ lines.forEach((l,i)=>{const ll=txLow(l);const m=/(\d+)\s*cun[a-z]*\s*(diarias|al dia|por dia|cada dia|semanales|a la semana|por semana|en total|totales)?/.exec(ll);if(!m)return;
+  const sts=[...new Set(TX_STATIONS.filter(([k])=>txHas(ll,k)).map(s=>s[1]))];if(!sts.length)return;used.add(i);
+  const per=/semana/.test(m[2]||"")?"week":/total/.test(m[2]||"")?"total":"day",wd=/lunes\s+a\s+viernes|l\s*-\s*v\b|laborables/.test(ll)||(allWeekdays&&!/lunes\s+a\s+domingo|todos los dias|l\s*-\s*d\b/.test(ll));
+  sts.forEach(st=>reqs.push({station:st,n:+m[1],per,wd}))});
+ if(!reqs.length){warn.push("Hay cuñas pero no encuentro cuántas ni en qué emisora (por ejemplo, «4 cuñas diarias en Europa FM»).");return {items,warn,used}}
+ // Semanas (lunes a domingo) dentro de cada mes
+ const weeks=[];{let d=new Date(range[0]+"T12:00:00Z");const end=new Date(range[1]+"T12:00:00Z");while(d<=end){const s=new Date(d);let e=new Date(d);while(true){const n=new Date(e);n.setUTCDate(n.getUTCDate()+1);if(n>end||n.getUTCDay()===1||n.getUTCMonth()!==e.getUTCMonth())break;e=n}
+  let all=0,wk=0;for(let x=new Date(s);x<=e;x.setUTCDate(x.getUTCDate()+1)){all++;if(x.getUTCDay()%6)wk++}
+  weeks.push({s:s.toISOString().slice(0,10),e:e.toISOString().slice(0,10),all,wk});d=new Date(e);d.setUTCDate(d.getUTCDate()+1)}}
+ const share=(total,w)=>{const tot=w.reduce((a,b)=>a+b,0);if(!tot||!total)return w.map(()=>0);const raw=w.map(x=>total*x/tot),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){base[i]++;left--}});return base};
+ const today=new Date().toISOString().slice(0,10),status=range[1]<today?"finalizado":"activo";
+ for(const q of reqs){const months=[...new Set(weeks.map(w=>w.s.slice(0,7)))];
+  for(const mo of months){const ws=weeks.filter(w=>w.s.slice(0,7)===mo),wt=ws.map(w=>q.wd?w.wk:w.all);
+   const asked=q.per==="day"?wt.reduce((a,b)=>a+b,0)*q.n:q.per==="week"?ws.length*q.n:Math.round(q.n*wt.reduce((a,b)=>a+b,0)/weeks.reduce((a,w)=>a+(q.wd?w.wk:w.all),0));
+   if(!asked)continue;
+   // Programas del acuerdo con inventario ese mes para esa emisora (mejor el del teatro que se nombra)
+   const k=txLow(q.station).replace(/\s*fm$/,"");let cands=[];
+   for(const c of RADIO_CONTRACTS)for(const l of c.lines||[]){if(!txLow(l.station).includes(k)||!(radioNum(l.monthly?.[mo])>0)||l.unit!=="cuñas")continue;cands.push({c,l})}
+   if(venueTxt&&cands.some(x=>x.c.venue===venueTxt))cands=cands.filter(x=>x.c.venue===venueTxt);
+   const cid=cands[0]?.c.id;cands=cands.filter(x=>x.c.id===cid);
+   const base={venue:cands[0]?.c.venue||venueTxt,spectacle,campaignName:q.station+" · "+radioMonthLabel(mo),spotName:spectacle?"Cuña "+spectacle:"Cuña",unit:"cuñas",status,materialStatus:"pendiente"};
+   if(!cands.length){const n=share(asked,wt);ws.forEach((w,i)=>{if(!n[i])return;items.push({module:"radio",detail:q.station+" · "+n[i]+" cuñas · sin acuerdo en la app",data:{...base,station:q.station,startDate:w.s,endDate:q.wd&&w.wk?txLastWeekday(w):w.e,plannedSpots:n[i],frequency:n[i]+" cuñas",timeSlot:q.wd?"Lunes a viernes":"Lunes a domingo"}})});
+    warn.push(q.station+" ("+radioMonthLabel(mo)+"): no hay acuerdo en la app; se guardan "+asked+" cuñas sin contrato.");continue}
+   const free=cands.map(x=>Math.max(0,radioNum(x.l.monthly[mo])-radioRows(existing,x.c.id,mo).filter(r=>r.lineId===x.l.id&&!r.deletedAt).reduce((a,r)=>a+radioNum(r.plannedSpots),0)));
+   const cap=free.reduce((a,b)=>a+b,0),give=Math.min(asked,cap);
+   if(asked>cap)warn.push(q.station+" ("+radioMonthLabel(mo)+"): pedidas "+asked+" cuñas, quedan "+cap+" en el acuerdo; se asignan "+give+".");
+   const perLine=share(give,free).map((n,j)=>Math.min(n,free[j]));
+   cands.forEach((x,j)=>{const lwt=ws.map((w,i)=>/L-V/.test(x.l.timeSlot||"")?w.wk:wt[i]),n=share(perLine[j],lwt);
+    ws.forEach((w,i)=>{if(!n[i])return;items.push({module:"radio",detail:x.l.station+" · "+(x.l.program||"")+" · "+n[i]+" cuñas",data:{...base,station:x.l.station,duration:x.l.duration,timeSlot:x.l.timeSlot,contractId:x.c.id,lineId:x.l.id,inventoryMonth:mo,startDate:w.s,endDate:w.e,plannedSpots:n[i],frequency:n[i]+" cuñas",notes:x.l.program||""}})})})}}
+ if(!spectacle)warn.push("No encuentro el espectáculo en el texto: las cuñas se guardan sin espectáculo. Si lo escribes (tal como está en la app), lo recojo.");
+ return {items,warn,used}}
+function txLastWeekday(w){const d=new Date(w.e+"T12:00:00Z");while(d.getUTCDay()%6===0&&d.toISOString().slice(0,10)>w.s)d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)}
+async function txInterpret(text){await loadSpectacles();let existing=[];
+ if(/cun/.test(txLow(text))){try{await loadRadioContracts();const d=await api("/api/control?module=radio");existing=d.rows||[];learnSpectacles(existing)}catch{}}
+ try{const h=await api("/api/control?module=hitos");learnSpectacles(h.rows||[])}catch{}
+ const lines=String(text||"").split(/\n|;/).map(s=>s.trim()).filter(Boolean);
+ const r=txRadio(text,lines,existing),h=txHitos(lines,r.used);
+ return {items:[...r.items,...h.items],warn:[...r.warn,...h.warn]}}
 async function importar(){
  const q=new URLSearchParams(location.hash.split("?")[1]||"").get("d");
- app.innerHTML=pageHead("Importar","Sube de golpe cuñas de radio y fechas del calendario: revisa la lista y pulsa Añadir")+'<section class="card"><div id="impBody"></div></section>';
+ app.innerHTML=pageHead("Importar","Escribe o pega fechas y cuñas, o sube un Excel: revisa la lista y pulsa Añadir")+'<section class="card"><div id="impBody"></div></section>';
  const body=$("#impBody");
- const show=async d=>{const items=importItems(d);if(!items.length){body.innerHTML='<h2 style="margin:0 0 6px">Subir un Excel</h2><p class="muted" style="margin:0 0 10px">Cuñas de radio y fechas del calendario de golpe. Descarga la plantilla, rellénala (una fila por cuña o por fecha) y súbela: verás la lista antes de guardar nada.</p><div class="actions-row"><a class="btn" id="xlTpl" href="/plantillas/Plantilla-Yellow-Control.xlsx" download="Plantilla Yellow Control.xlsx">Descargar plantilla</a><button type="button" class="primary" id="xlPick">Subir Excel</button><input type="file" id="xlFile" accept=".xlsx,.xls,.csv" hidden></div><div id="xlMsg"></div><details style="margin-top:18px"><summary class="muted">Pegar un bloque preparado</summary><textarea id="impText" rows="6" style="width:100%;margin-top:8px"></textarea><div class="actions-row" style="margin-top:10px"><button type="button" class="primary" id="impRead">Ver datos</button></div></details>';$("#impRead").onclick=()=>{const x=importDecode($("#impText").value);if(!x)say("No se entienden los datos pegados");else show(x)};
+ const show=async d=>{const items=importItems(d);if(!items.length){body.innerHTML='<h2 style="margin:0 0 6px">Escribir o pegar</h2><p class="muted" style="margin:0 0 10px">Escribe las fechas como te salga, una por línea, o pega el correo con las cuñas. La app lo interpreta y te enseña la lista antes de guardar nada.</p><textarea id="txText" rows="8" style="width:100%" placeholder="Rueda de prensa 101 Dálmatas 15 de octubre a las 11:30 en Príncipe Pío&#10;Estreno Pegados 28/10 20:00 Pavón&#10;Entrevistas 12, 13 y 14 de noviembre&#10;&#10;Cuñas: del 7 al 30 de septiembre, 4 cuñas diarias de lunes a viernes en Europa FM y Melodía, 2 cuñas diarias en Onda Cero"></textarea><div class="actions-row" style="margin-top:10px"><button type="button" class="primary" id="txGo">Interpretar</button></div><div id="txMsg"></div><hr style="border:0;border-top:1px solid var(--line);margin:22px 0 18px"><h2 style="margin:0 0 6px">Subir un Excel</h2><p class="muted" style="margin:0 0 10px">Cuñas de radio y fechas del calendario de golpe. Descarga la plantilla, rellénala (una fila por cuña o por fecha) y súbela: verás la lista antes de guardar nada.</p><div class="actions-row"><a class="btn" id="xlTpl" href="/plantillas/Plantilla-Yellow-Control.xlsx" download="Plantilla Yellow Control.xlsx">Descargar plantilla</a><button type="button" class="primary" id="xlPick">Subir Excel</button><input type="file" id="xlFile" accept=".xlsx,.xls,.csv" hidden></div><div id="xlMsg"></div><details style="margin-top:18px"><summary class="muted">Pegar un bloque preparado</summary><textarea id="impText" rows="6" style="width:100%;margin-top:8px"></textarea><div class="actions-row" style="margin-top:10px"><button type="button" class="primary" id="impRead">Ver datos</button></div></details>';$("#impRead").onclick=()=>{const x=importDecode($("#impText").value);if(!x)say("No se entienden los datos pegados");else show(x)};
+   $("#txGo").onclick=async()=>{const t=$("#txText").value.trim(),msg=$("#txMsg");if(!t){say("Escribe o pega algo primero");return}importar.lastText=t;msg.innerHTML='<p class="muted">Interpretando…</p>';
+    try{const r=await txInterpret(t);if(!r.items.length){msg.innerHTML='<div class="notice" style="text-align:left;margin-top:12px">No encuentro fechas que guardar. Pon cada fecha con su día y mes (15 de octubre, 15/10) y, si son cuñas, cuántas y en qué emisora.'+(r.warn.length?'<br>'+r.warn.map(esc).join("<br>"):'')+'</div>';return}
+     await show({items:r.items,note:r.items.length+" registros interpretados."+(r.warn.length?" "+r.warn.join(" "):""),back:true})}catch(err){msg.innerHTML='<div class="notice" style="margin-top:12px">'+esc(err.message)+'</div>'}};
+   if(importar.lastText)$("#txText").value=importar.lastText;
    $("#xlPick").onclick=()=>$("#xlFile").click();
    $("#xlFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;const msg=$("#xlMsg");msg.innerHTML='<p class="muted">Leyendo «'+esc(f.name)+'»…</p>';
     try{await loadXLSX();const buf=await f.arrayBuffer();let wb;if(/\.csv$/i.test(f.name)){let t=new TextDecoder("utf-8").decode(buf);if(t.includes("\ufffd"))t=new TextDecoder("windows-1252").decode(buf);wb=XLSX.read(t.replace(/^\ufeff/,""),{type:"string",raw:true})}else wb=XLSX.read(buf,{type:"array"});
@@ -1223,7 +1314,7 @@ async function importar(){
   // Duplicados: mismo módulo y mismos datos clave que un registro existente
   const mods=[...new Set(items.map(x=>x.module))],existing={};for(const m of mods){try{existing[m]=(await api("/api/control?module="+m)).rows||[]}catch{existing[m]=[]}}
   const norm=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ").trim();
-  const dup=x=>!x.data?false:(existing[x.module]||[]).some(r=>x.module==="hitos"?norm(r.type)===norm(x.data.type)&&r.date===x.data.date&&(norm(r.title).includes(norm(x.data.spectacle))||norm(r.spectacle)===norm(x.data.spectacle)||norm(r.title)===norm(x.data.title)):norm(r.spectacle)===norm(x.data.spectacle)&&(r.startDate||"")===(x.data.startDate||"")&&(r.venue||"")===(x.data.venue||"")&&(r.month||"")===(x.data.month||"")&&(r.magazine||"")===(x.data.magazine||"")&&(r.position||"")===(x.data.position||"")&&(x.module!=="radio"||((r.contractId||"")===(x.data.contractId||"")&&(r.inventoryMonth||"")===(x.data.inventoryMonth||"")&&norm(r.spotName)===norm(x.data.spotName))));
+  const dup=x=>!x.data?false:(existing[x.module]||[]).some(r=>x.module==="hitos"?norm(r.type)===norm(x.data.type)&&r.date===x.data.date&&(norm(r.title).includes(norm(x.data.spectacle))||norm(r.spectacle)===norm(x.data.spectacle)||norm(r.title)===norm(x.data.title)):norm(r.spectacle)===norm(x.data.spectacle)&&(r.startDate||"")===(x.data.startDate||"")&&(r.venue||"")===(x.data.venue||"")&&(r.month||"")===(x.data.month||"")&&(r.magazine||"")===(x.data.magazine||"")&&(r.position||"")===(x.data.position||"")&&(x.module!=="radio"||((r.contractId||"")===(x.data.contractId||"")&&(r.inventoryMonth||"")===(x.data.inventoryMonth||"")&&(r.lineId||"")===(x.data.lineId||"")&&(r.station||"")===(x.data.station||"")&&norm(r.spotName)===norm(x.data.spotName))));
   // Fusión: un registro preparado con «merge» sustituye a los que se solapan (mismo tipo, fechas cercanas, misma palabra clave)
   // y se queda con los datos de la versión más completa; los demás se quitan (recuperables en Archivo)
   const HF=["type","title","spectacle","date","time","venue","place","contact","responsable","reminder","link","notes","status"],filled=o=>HF.filter(k=>String(o[k]??"").trim()).length;
@@ -1259,7 +1350,8 @@ async function importar(){
    x.detail=rows.length?tot+" cuñas en "+x.weeks.length+" semana"+(x.weeks.length>1?"s":"")+" ("+x.weeks.map(w=>w.plannedSpots).join(" · ")+")":"No está esta cuña en la app: carga antes las cuñas";
    if(!rows.length)x.same=true}
   body.innerHTML=(d.note?'<p class="muted" style="margin:0 0 10px">'+esc(d.note)+'</p>':'')+'<div class="list">'+items.map((x,i)=>{const dp=x.op==="keepOnly"||x.op==="splitWeeks"||x.op==="dropAll"||(x.matches&&x.matches.length)?!!x.same:dup(x);return '<label class="item imp-row'+(dp?" dup":"")+'"><input type="checkbox" data-imp="'+i+'"'+(dp?"":" checked")+'><div><h3>'+esc(importLabel(x))+'</h3><div class="item-meta"><span class="badge">'+esc(IMPORT_MODULES[x.module])+'</span>'+(x.detail?'<span>'+esc(x.detail)+'</span>':'')+(x.data&&x.data.venue?'<span>'+esc(x.data.venue)+'</span>':'')+(x.data&&x.data.spotName?'<span>'+esc(x.data.spotName)+'</span>':'')+(x.asset?'<span class="badge">'+(/^video/.test(x.asset.type||"")?"Con vídeo":/^audio/.test(x.asset.type||"")?"Con audio":"Con archivo")+'</span>':'')+(dp?'<span class="badge warn">Ya existe</span>':'')+(x.matches&&x.matches.length&&!dp?'<span class="badge">'+(x.matches.length===1&&x.matches[0].date===x.data.date&&(x.matches[0].time||"")===(x.data.time||"")?"Completa":"Sustituye a")+': '+x.matches.map(r=>esc((r.title||r.type)+" · "+fdate(r.date)+(r.time?" "+r.time:""))).join(" / ")+'</span>':'')+'</div></div></label>'}).join("")+'</div>'+
-   '<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="impGo">Añadir seleccionados</button></div><div id="impRes"></div>';
+   '<div class="actions-row" style="margin-top:12px">'+(d.back?'<button type="button" id="impBack">Corregir el texto</button>':'')+'<button type="button" class="primary" id="impGo">Añadir seleccionados</button></div><div id="impRes"></div>';
+  if(d.back)$("#impBack").onclick=()=>show(null);
   $("#impGo").onclick=async()=>{const sel=$$("[data-imp]").filter(c=>c.checked).map(c=>items[+c.dataset.imp]);if(!sel.length){say("No hay nada seleccionado");return}
    const b=$("#impGo");b.disabled=true;b.textContent="Añadiendo…";let ok=0;const errs=[];
    for(const x of sel){try{
@@ -1613,7 +1705,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v103";
+const YC_VERSION="yellow-control-v104";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
