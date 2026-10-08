@@ -1117,3 +1117,4 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 :root[data-theme="light"] .dg-refresh{color:#131313;background:var(--yellow)}
 @media (max-width:760px){.dg-refresh{width:100%}}
 .dg-token{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dg-token input{flex:1;min-width:220px}
+.pw-wrap{position:relative;display:block}.pw-wrap input{width:100%;padding-right:72px}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);min-height:32px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--cream);font-size:12px;font-weight:700;cursor:pointer}

@@ -35,7 +35,18 @@ async function authenticate(){
  try{const d=await api("/api/me",{cache:"no-store"});state.actor=d.actor;state.budget=!!d.budget;const bn=$('#mainNav [data-route="presupuesto"]');if(bn)bn.hidden=!state.budget;gate.classList.add("hidden");applyNav();return true}
  catch{gate.classList.remove("hidden");return false}
 }
-$("#loginForm").addEventListener("submit",async e=>{e.preventDefault();$("#loginError").textContent="";try{await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#loginEmail").value,password:$("#loginPassword").value})}).then(async r=>{if(!r.ok)throw new Error((await r.json()).error||"No se ha podido iniciar sesión")});if(await authenticate())route()}catch(err){$("#loginError").textContent=err.message}});
+// Entrada: correo sin espacios ni mayúsculas (el móvil pone la primera en mayúscula), botón bloqueado mientras entra,
+// mensajes en español y, si la sesión tarda en confirmarse tras entrar, se reintenta en vez de quedarse sin hacer nada.
+{const eye=$("#pwEye");if(eye)eye.onclick=()=>{const p=$("#loginPassword");const show=p.type==="password";p.type=show?"text":"password";eye.textContent=show?"Ocultar":"Ver";eye.setAttribute("aria-label",show?"Ocultar contraseña":"Mostrar contraseña")}}
+const loginMsg=(status,msg)=>{const m=String(msg||"").toLowerCase();if(status===429||/too many|rate/.test(m))return "Demasiados intentos seguidos. Espera un minuto y vuelve a probar.";if(/no user|invalid|password|credential|unauthorized|not found/.test(m)||status===400||status===401)return "Correo o contraseña incorrectos. Revisa que no haya espacios y prueba a pulsar «Ver» para comprobar la contraseña.";if(/confirm/.test(m))return "Tu usuario aún no está activado: busca el correo de invitación o pide que te la reenvíen.";if(/origin/.test(m))return "Entra desde yellow-control.netlify.app.";return "No se ha podido entrar ("+(msg||("error "+status))+"). Vuelve a intentarlo."};
+$("#loginForm").addEventListener("submit",async e=>{e.preventDefault();const btn=$("#loginBtn"),err=$("#loginError");err.textContent="";if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Entrando…"}
+ const em=$("#loginEmail");em.value=em.value.trim().toLowerCase();
+ try{let r;try{r=await fetch("/api/login",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({email:em.value,password:$("#loginPassword").value})})}catch{throw new Error("Sin conexión. Comprueba internet y vuelve a intentarlo.")}
+  if(!r.ok){let d={};try{d=await r.json()}catch{}throw new Error(loginMsg(r.status,d.error))}
+  let ok=false;for(let i=0;i<3&&!ok;i++){if(i)await new Promise(res=>setTimeout(res,400*i));ok=await authenticate()}
+  if(ok){$("#loginPassword").value="";route()}else throw new Error("La contraseña es correcta, pero el navegador no ha guardado la sesión. Comprueba que no estás en modo privado y que las cookies están permitidas, y vuelve a pulsar Entrar.")}
+ catch(e2){err.textContent=e2.message;$("#loginGate").classList.remove("hidden")}
+ finally{if(btn){btn.disabled=false;btn.textContent="Entrar"}}});
 {const rb=$("#recoverBtn");if(rb)rb.onclick=async()=>{const em=$("#loginEmail").value.trim();if(!em){$("#loginError").textContent="Escribe tu correo arriba y vuelve a pulsar";return}rb.disabled=true;try{const r=await fetch("/api/recover",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:em})});$("#loginError").textContent=r.ok?"Si ese correo tiene acceso, te llegará un enlace para crear una contraseña nueva.":"No se ha podido enviar. Inténtalo de nuevo."}catch{$("#loginError").textContent="No se ha podido enviar. Inténtalo de nuevo."}finally{rb.disabled=false}}}
 $("#keyForm").addEventListener("submit",async e=>{e.preventDefault();try{sessionStorage.setItem("pavon_edit_key",$("#legacyKey").value.trim())}catch{};if(await authenticate())route();else $("#loginError").textContent="Clave no válida"});
 document.addEventListener("click",e=>{if(e.target.closest(".nav-logout"))$("#logoutBtn").click()});
@@ -1552,7 +1563,7 @@ async function admin(){
 (async()=>{try{await window.ycIdentityReady}catch{}if(await authenticate())route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v100";
+const YC_VERSION="yellow-control-v101";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
