@@ -16,15 +16,22 @@ export async function metaApiReady() { return Boolean((await metaToken()).token)
 const account = () => "act_" + (env("META_AD_ACCOUNT") || "6036157816619").replace(/^act_/, "");
 const GRAPH = () => `https://graph.facebook.com/${env("META_API_VERSION") || "v23.0"}`;
 
+// Si Meta responde «Please reduce the amount of data you're asking for», se repite la misma página
+// pidiendo la mitad de filas (hasta 10), en lugar de dar la lectura por fallida.
+const tooMuch = (e: any) => /reduce the amount of data/i.test(String(e?.message || "")) || e?.error_subcode === 1504018;
 async function graph(path: string, params: Record<string, string>) {
   const out: any[] = [];
   let url: string | null = `${GRAPH()}/${path}?` + new URLSearchParams({ ...params, access_token: TOKEN });
-  for (let page = 0; url && page < 40; page++) {
+  for (let page = 0; url && page < 200; page++) {
     const r = await fetch(url);
     const j: any = await r.json().catch(() => ({}));
+    if ((!r.ok || j.error) && tooMuch(j.error)) {
+      const u = new URL(url), lim = Number(u.searchParams.get("limit") || 100);
+      if (lim > 10) { u.searchParams.set("limit", String(Math.max(10, Math.floor(lim / 2)))); url = u.toString(); page--; continue; }
+    }
     if (!r.ok || j.error) {
       const e = j.error || {};
-      const msg = e.code === 190 ? "El token de Meta no es válido o se ha revocado." : e.code === 200 || e.code === 10 ? "El token no tiene permiso ads_read sobre la cuenta publicitaria." : e.code === 17 || e.code === 4 || e.code === 80004 ? "Meta ha limitado las consultas por exceso de uso; se reintentará mañana." : `Meta ${r.status}: ${String(e.message || "error").slice(0, 200)}`;
+      const msg = tooMuch(e) ? "Meta no deja leer tantos datos de una vez ni pidiendo páginas pequeñas; se reintentará mañana." : e.code === 190 ? "El token de Meta no es válido o se ha revocado." : e.code === 200 || e.code === 10 ? "El token no tiene permiso ads_read sobre la cuenta publicitaria." : e.code === 17 || e.code === 4 || e.code === 80004 ? "Meta ha limitado las consultas por exceso de uso; se reintentará mañana." : `Meta ${r.status}: ${String(e.message || "error").slice(0, 200)}`;
       throw new Error(msg);
     }
     out.push(...(j.data || []));
@@ -50,7 +57,7 @@ function monthRange(m: string) {
 /** Metadatos de los anuncios: estado, objetivo, presupuesto, fin y miniatura. */
 async function adsInfo() {
   const ads = await graph(`${account()}/ads`, {
-    limit: "500",
+    limit: "100",
     fields: "id,name,effective_status,adset{optimization_goal,end_time,lifetime_budget,daily_budget},campaign{name,stop_time,lifetime_budget,daily_budget},creative.thumbnail_width(320).thumbnail_height(320){thumbnail_url,image_url}",
   });
   const info: Record<string, any> = {};
@@ -76,7 +83,7 @@ export async function syncMonth(m: string, info?: Record<string, any>) {
   info = info || (await adsInfo());
   const { since, until } = monthRange(m);
   const data = await graph(`${account()}/insights`, {
-    level: "ad", time_increment: "1", limit: "500",
+    level: "ad", time_increment: "1", limit: "200",
     time_range: JSON.stringify({ since, until }),
     fields: "date_start,campaign_id,campaign_name,adset_name,ad_id,ad_name,spend,impressions,reach,inline_link_clicks,actions,action_values",
   });
