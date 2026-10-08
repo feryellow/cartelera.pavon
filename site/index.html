@@ -34,9 +34,9 @@
       <h1>Acceso interno</h1>
       <p id="loginInfo" class="muted">Inicia sesión con tu usuario de Yellow Media.</p>
       <form id="loginForm" class="stack">
-        <label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
-        <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" required></label>
-        <button class="primary" type="submit">Entrar</button>
+        <label>Email<input id="loginEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></label>
+        <label>Contraseña<span class="pw-wrap"><input id="loginPassword" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required><button type="button" class="pw-eye" id="pwEye" aria-label="Mostrar contraseña">Ver</button></span></label>
+        <button class="primary" type="submit" id="loginBtn">Entrar</button>
       </form>
       <button type="button" class="ghost" id="recoverBtn" style="margin-top:8px">He olvidado la contraseña</button>
       <details class="legacy-access">
