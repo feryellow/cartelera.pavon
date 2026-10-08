@@ -1,0 +1,233 @@
+{
+ "note": "Cuñas de septiembre en Atresmedia (Europa FM, Melodía FM y Onda Cero), del 7 al 30 de septiembre, de lunes a viernes: 180 cuñas en 12 asignaciones semanales.",
+ "items": [
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Europa FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-11",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Europa FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-14",
+    "endDate": "2026-09-18",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Europa FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-21",
+    "endDate": "2026-09-25",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Europa FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-28",
+    "endDate": "2026-09-30",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 12,
+    "frequency": "12 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Melodía FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-11",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Melodía FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-14",
+    "endDate": "2026-09-18",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Melodía FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-21",
+    "endDate": "2026-09-25",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Melodía FM",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-28",
+    "endDate": "2026-09-30",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 12,
+    "frequency": "12 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Onda Cero",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-11",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Onda Cero",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-14",
+    "endDate": "2026-09-18",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Onda Cero",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-21",
+    "endDate": "2026-09-25",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN SEPTIEMBRE",
+    "station": "Onda Cero",
+    "campaignName": "Atresmedia septiembre",
+    "spotName": "Cuña septiembre",
+    "startDate": "2026-09-28",
+    "endDate": "2026-09-30",
+    "timeSlot": "Lunes a viernes",
+    "plannedSpots": 6,
+    "frequency": "6 cuñas",
+    "unit": "cuñas",
+    "status": "finalizado",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  }
+ ]
+}
