@@ -1,0 +1,77 @@
+{
+ "note": "Calendario de octubre: notas de prensa de André y Dorine (8), Pegados (13) y 101 Dálmatas (15), y las visitas guiadas de Madrid con otra mirada (13 en el Pavón y 16 en Príncipe Pío, unas 30 personas cada una). Si alguna ya está en el Calendario, sale como «Ya existe» o «Completa» y no se duplica.",
+ "items": [
+  {
+   "module": "hitos",
+   "merge": {
+    "key": "andre y dorine",
+    "days": 2
+   },
+   "data": {
+    "type": "Nota de prensa",
+    "title": "Nota de prensa André y Dorine (Kulunka Teatro)",
+    "spectacle": "ANDRÉ Y DORINE",
+    "date": "2026-10-08",
+    "venue": "Gran Teatro Pavón"
+   }
+  },
+  {
+   "module": "hitos",
+   "merge": {
+    "key": "pegados",
+    "days": 2
+   },
+   "data": {
+    "type": "Nota de prensa",
+    "title": "Nota de prensa Pegados",
+    "spectacle": "PEGADOS",
+    "date": "2026-10-13",
+    "venue": "Gran Teatro Pavón"
+   }
+  },
+  {
+   "module": "hitos",
+   "merge": {
+    "key": "101",
+    "days": 2
+   },
+   "data": {
+    "type": "Nota de prensa",
+    "title": "Nota de prensa 101 Dálmatas",
+    "spectacle": "101 DÁLMATAS",
+    "date": "2026-10-15",
+    "venue": "Gran Teatro CaixaBank Príncipe Pío"
+   }
+  },
+  {
+   "module": "hitos",
+   "merge": {
+    "key": "otra mirada",
+    "days": 0
+   },
+   "data": {
+    "type": "Evento",
+    "title": "Visita guiada · Madrid con otra mirada (Pavón)",
+    "date": "2026-10-13",
+    "venue": "Gran Teatro Pavón",
+    "responsable": "Fernando",
+    "notes": "Unas 30 personas."
+   }
+  },
+  {
+   "module": "hitos",
+   "merge": {
+    "key": "otra mirada",
+    "days": 0
+   },
+   "data": {
+    "type": "Evento",
+    "title": "Visita guiada · Madrid con otra mirada (Príncipe Pío)",
+    "date": "2026-10-16",
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "responsable": "Fernando",
+    "notes": "Unas 30 personas."
+   }
+  }
+ ]
+}
