@@ -1,5 +1,5 @@
 {
- "note": "Calendario: notas de prensa de André y Dorine (8/10), Pegados (13/10) y 101 Dálmatas (15/10); visitas guiadas de Madrid con otra mirada (13/10 Pavón y 16/10 Príncipe Pío, unas 30 personas); entrevista por escrito a los protagonistas de Pegados (hasta el 20/10); y fechas límite de materiales de Kulunka para André y Dorine (cuña 13/10, flyer A5 y cartel 70 x 100 14/10, páginas Godot y Teatros y adaptaciones Meta 16/10, lona 2/11). Lo que ya esté en el Calendario sale como «Ya existe» y no se duplica.",
+ "note": "Calendario: notas de prensa de André y Dorine (8/10), Pegados (13/10) y 101 Dálmatas (15/10); visitas guiadas de Madrid con otra mirada (13/10 Pavón y 16/10 Príncipe Pío, unas 30 personas); entrevista por escrito a los protagonistas de Pegados (hasta el 20/10);; materiales de Kulunka para André y Dorine (cuña, flyer A5, cartel 70 x 100, páginas Godot y Teatros y adaptaciones Meta el jueves 22/10; lona el 2/11) y montaje de la lona el 9/11. Lo que ya esté en el Calendario sale como «Ya existe» y no se duplica.",
  "items": [
   {
    "module": "hitos",
@@ -90,7 +90,7 @@
     "type": "Otro",
     "title": "Kulunka entrega: cuña",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-13",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -101,7 +101,7 @@
     "type": "Otro",
     "title": "Kulunka entrega: flyer A5",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-14",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -112,7 +112,7 @@
     "type": "Otro",
     "title": "Kulunka entrega: cartel 70 x 100",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-14",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -123,7 +123,7 @@
     "type": "Cierre de edición",
     "title": "Kulunka entrega: página Godot",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-16",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -134,7 +134,7 @@
     "type": "Cierre de edición",
     "title": "Kulunka entrega: página revista Teatros",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-16",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -145,7 +145,7 @@
     "type": "Otro",
     "title": "Kulunka entrega: adaptaciones Meta",
     "spectacle": "ANDRÉ Y DORINE",
-    "date": "2026-10-16",
+    "date": "2026-10-22",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
    }
@@ -159,6 +159,16 @@
     "date": "2026-11-02",
     "venue": "Gran Teatro Pavón",
     "notes": "Fecha límite de Kulunka Teatro para entregar el material."
+   }
+  },
+  {
+   "module": "hitos",
+   "data": {
+    "type": "Otro",
+    "title": "Montaje de la lona de André y Dorine",
+    "spectacle": "ANDRÉ Y DORINE",
+    "date": "2026-11-09",
+    "venue": "Gran Teatro Pavón"
    }
   }
  ]
