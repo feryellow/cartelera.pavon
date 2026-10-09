@@ -1118,3 +1118,18 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 @media (max-width:760px){.dg-refresh{width:100%}}
 .dg-token{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dg-token input{flex:1;min-width:220px}
 .pw-wrap{position:relative;display:block}.pw-wrap input{width:100%;padding-right:72px}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);min-height:32px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--cream);font-size:12px;font-weight:700;cursor:pointer}
+
+/* Televisión */
+.tv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:6px}
+.tv-kpi{padding:12px 14px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.tv-kpi b{font-size:22px;color:var(--yellow)}.tv-kpi span{font-size:12px;opacity:.75}
+.tv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:14px 0}
+.tv-grid .card{margin:0}
+.tv-list{margin:6px 0 0;padding-left:18px;display:grid;gap:6px}
+.tv-money b{font-size:22px;color:var(--yellow)}
+.tv-contact{margin:6px 0 0;line-height:1.6}.tv-contact a{color:inherit}
+.tv-channel{margin:18px 0 8px;font-size:16px}
+.tv-table{width:100%;border-collapse:collapse;font-size:13px}
+.tv-table th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tv-table td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.tv-table .num{text-align:right;white-space:nowrap}

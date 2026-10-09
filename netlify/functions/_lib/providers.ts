@@ -1,4 +1,4 @@
-import { controlStore } from "./store.ts";
+import { controlStore, getManyJSON } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { mediaUrl } from "./media.ts";
 import { loadContracts } from "./radio.ts";
@@ -82,6 +82,6 @@ export type ProviderRequest = { id: string; provider: string; providerName: stri
 export async function saveRequest(r: ProviderRequest) { await controlStore().setJSON(`provreq_${r.id}`, r); }
 export async function listRequests(): Promise<ProviderRequest[]> {
   const st = controlStore(), res = await st.list({ prefix: "provreq_" }), out: ProviderRequest[] = [];
-  for (const b of res.blobs) { const v = await st.get(b.key, { type: "json" }) as ProviderRequest | null; if (v) out.push(v); }
+  out.push(...await getManyJSON<ProviderRequest>(st, res.blobs.map((b) => b.key)));
   return out.sort((a, b) => String(a.deadline || "9999").localeCompare(String(b.deadline || "9999")));
 }

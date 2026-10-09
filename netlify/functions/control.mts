@@ -19,7 +19,8 @@ export default async (req: Request) => {
     }
     if (moduleName === "dashboard") {
       const auth = await requireAccess(req,"dashboard",false); if(auth.response) return auth.response;
-      const state = await carteleriaStore().get("state",{type:"json"}) as any || {schedule:{},updatedAt:null};
+      const [stateRaw, latest] = await Promise.all([carteleriaStore().get("state",{type:"json"}), listAudit(8)]);
+      const state = stateRaw as any || {schedule:{},updatedAt:null};
       const schedule = state.schedule || {};
       const today = madridToday();
       const carteleria = Object.entries(schedule).map(([key,v]: any)=>{
@@ -28,7 +29,7 @@ export default async (req: Request) => {
         const future=dates.filter(x=>x>=today).sort(), past=dates.filter(x=>x<today).sort();
         return { key, title:v?.title||"", date:v?.date||"", next: future[0] || past[past.length-1] || "" };
       });
-      const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest:await listAudit(8), attention:[], currentMaterial:[] };
+      const payload:any = { carteleria, carteleriaUpdatedAt:state.updatedAt||null, latest, attention:[], currentMaterial:[] };
       const addModule=async(moduleName:"radio"|"taxis"|"intercambiadores"|"hometicket"|"revistas",label:string)=>{
         if(!can(auth.actor,moduleName,false))return;
         const rows=await listRecords(moduleName);
@@ -42,11 +43,7 @@ export default async (req: Request) => {
           }
         }
       };
-      await addModule("radio","Radio");
-      await addModule("taxis","Taxis");
-      await addModule("intercambiadores","Intercambiadores");
-      await addModule("hometicket","Home Ticket");
-      await addModule("revistas","Revistas de Teatros");
+      await Promise.all([addModule("radio","Radio"),addModule("taxis","Taxis"),addModule("intercambiadores","Intercambiadores"),addModule("hometicket","Home Ticket"),addModule("revistas","Revistas de Teatros")]);
       payload.attention.sort((a:any,b:any)=>String(a.deliveryDate).localeCompare(String(b.deliveryDate)));
       payload.currentMaterial.sort((a:any,b:any)=>String(a.module).localeCompare(String(b.module))||String(a.title).localeCompare(String(b.title)));
       return json(payload);

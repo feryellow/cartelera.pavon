@@ -1,0 +1,323 @@
+{
+ "note": "Atresmedia octubre (Príncipe Pío): del 7 al 30 de octubre, de lunes a viernes. Europa FM y Melodía FM 4 cuñas diarias (72 cada una), Onda Cero 2 diarias (36). Primero se quita lo que hubiera asignado en octubre en esas tres emisoras (queda en Archivo).",
+ "items": [
+  {
+   "module": "radio",
+   "op": "dropAll",
+   "label": "Quitar lo que hubiera asignado en octubre en Onda Cero Madrid",
+   "match": {
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "onda-cero-2026-10",
+    "inventoryMonth": "2026-10"
+   }
+  },
+  {
+   "module": "radio",
+   "op": "dropAll",
+   "label": "Quitar lo que hubiera asignado en octubre en Europa FM Madrid",
+   "match": {
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "europa-fm-2026-10",
+    "inventoryMonth": "2026-10"
+   }
+  },
+  {
+   "module": "radio",
+   "op": "dropAll",
+   "label": "Quitar lo que hubiera asignado en octubre en Melodía FM Majadahonda",
+   "match": {
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "melodia-fm-2026-10",
+    "inventoryMonth": "2026-10"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Europa FM Madrid · 12 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Europa FM Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "europa-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-07",
+    "endDate": "2026-10-09",
+    "plannedSpots": 12,
+    "frequency": "12 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Europa FM Madrid · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Europa FM Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "europa-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-16",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Europa FM Madrid · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Europa FM Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "europa-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-19",
+    "endDate": "2026-10-23",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Europa FM Madrid · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Europa FM Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "europa-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-26",
+    "endDate": "2026-10-30",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Melodía FM Majadahonda · 12 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Melodía FM Majadahonda",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "melodia-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-07",
+    "endDate": "2026-10-09",
+    "plannedSpots": 12,
+    "frequency": "12 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Melodía FM Majadahonda · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Melodía FM Majadahonda",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "melodia-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-16",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Melodía FM Majadahonda · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Melodía FM Majadahonda",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "melodia-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-19",
+    "endDate": "2026-10-23",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Melodía FM Majadahonda · 20 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Melodía FM Majadahonda",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "melodia-fm-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-26",
+    "endDate": "2026-10-30",
+    "plannedSpots": 20,
+    "frequency": "20 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "4 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Onda Cero Madrid · 6 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Onda Cero Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "onda-cero-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-07",
+    "endDate": "2026-10-09",
+    "plannedSpots": 6,
+    "frequency": "6 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Onda Cero Madrid · 10 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Onda Cero Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "onda-cero-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-16",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Onda Cero Madrid · 10 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Onda Cero Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "onda-cero-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-19",
+    "endDate": "2026-10-23",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  },
+  {
+   "module": "radio",
+   "detail": "Onda Cero Madrid · 10 cuñas",
+   "data": {
+    "venue": "Gran Teatro CaixaBank Príncipe Pío",
+    "spectacle": "PROGRAMACIÓN OCTUBRE",
+    "station": "Onda Cero Madrid",
+    "campaignName": "Atresmedia octubre",
+    "spotName": "Cuña octubre",
+    "duration": "20\"",
+    "timeSlot": "Lunes a viernes",
+    "unit": "cuñas",
+    "contractId": "principe-atresmedia-2026",
+    "lineId": "onda-cero-2026-10",
+    "inventoryMonth": "2026-10",
+    "startDate": "2026-10-26",
+    "endDate": "2026-10-30",
+    "plannedSpots": 10,
+    "frequency": "10 cuñas",
+    "status": "activo",
+    "materialStatus": "pendiente",
+    "notes": "2 cuñas diarias de lunes a viernes"
+   }
+  }
+ ]
+}

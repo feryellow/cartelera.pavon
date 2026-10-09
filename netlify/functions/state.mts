@@ -18,6 +18,8 @@ export default async (req: Request, _context: Context) => {
   if (req.method === "GET") {
     const saved = await store.get("state", { type: "json" });
     const actor = await resolveActor(req);
+    // Un proveedor solo ve su portal: tampoco el estado de la cartelería
+    if (actor && actor.roles.includes("proveedor") && !actor.roles.some((r) => r === "admin" || r === "gestion" || r === "carteleria")) return json({ error: "Forbidden" }, 403);
     return json({
       state: saved ?? { slots: {}, schedule: {}, updatedAt: null },
       publicEdit: false,

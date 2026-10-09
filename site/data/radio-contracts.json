@@ -238,12 +238,12 @@
         {
           "id": "onda-cero-2026-10",
           "station": "Onda Cero Madrid",
-          "program": "Cuñas 20\" en rotación",
-          "timeSlot": "Rotación",
+          "program": "2 cuñas diarias de lunes a viernes, del 7 al 30 de octubre",
+          "timeSlot": "Lunes a viernes",
           "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
-            "2026-10": 48,
+            "2026-10": 36,
             "2026-11": 48,
             "2026-12": 48
           }
@@ -251,12 +251,12 @@
         {
           "id": "europa-fm-2026-10",
           "station": "Europa FM Madrid",
-          "program": "Cuñas 20\" en rotación",
-          "timeSlot": "Rotación",
+          "program": "4 cuñas diarias de lunes a viernes, del 7 al 30 de octubre",
+          "timeSlot": "Lunes a viernes",
           "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
-            "2026-10": 50,
+            "2026-10": 72,
             "2026-11": 50,
             "2026-12": 50
           }
@@ -264,12 +264,12 @@
         {
           "id": "melodia-fm-2026-10",
           "station": "Melodía FM Majadahonda",
-          "program": "Cuñas 20\" en rotación",
-          "timeSlot": "Rotación",
+          "program": "4 cuñas diarias de lunes a viernes, del 7 al 30 de octubre",
+          "timeSlot": "Lunes a viernes",
           "duration": "20\"",
           "unit": "cuñas",
           "monthly": {
-            "2026-10": 50,
+            "2026-10": 72,
             "2026-11": 50,
             "2026-12": 50
           }
