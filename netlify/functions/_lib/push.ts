@@ -6,8 +6,8 @@ import { controlStore } from "./store.ts";
 // en «Avisos», que solo ven Fer y Celia. Sin ajustes guardados: solo Fer, todos los tipos, a las 9.
 const env = (k: string) => (globalThis as any).Netlify?.env?.get(k) || (globalThis as any).process?.env?.[k] || "";
 
-export type PushType = "diario" | "urgente" | "proveedores" | "meta" | "prueba";
-export const PUSH_TYPES: { id: Exclude<PushType, "prueba">; label: string; detail: string }[] = [
+export type PushType = "diario" | "urgente" | "proveedores" | "meta" | "prueba" | "manual";
+export const PUSH_TYPES: { id: Exclude<PushType, "prueba" | "manual">; label: string; detail: string }[] = [
   { id: "diario", label: "Fechas del día", detail: "Cada mañana, lo que hay hoy en el Calendario" },
   { id: "urgente", label: "Urgente de cartelería y material", detail: "En el mismo aviso de la mañana, lo que vence hoy o mañana" },
   { id: "proveedores", label: "Proveedores", detail: "Cuando un proveedor pide material o escribe desde su portal" },
@@ -75,7 +75,7 @@ export type PushMsg = { title: string; body: string; url?: string; tag?: string 
 /** Envía un aviso de un tipo a esos correos (o a todos los de la lista). Respeta los ajustes y deja rastro en el historial. */
 export async function sendPush(emails: string[] | "all", msg: PushMsg, type: PushType = "prueba") {
   const st = await getSettings(), at = new Date().toISOString();
-  if (type !== "prueba" && st.types[type] === false) { await logPush({ at, type, title: msg.title, body: msg.body, to: [], sent: 0, failed: 0, skipped: "Tipo de aviso desactivado" }); return { sent: 0, failed: 0 }; }
+  if (type !== "prueba" && type !== "manual" && st.types[type] === false) { await logPush({ at, type, title: msg.title, body: msg.body, to: [], sent: 0, failed: 0, skipped: "Tipo de aviso desactivado" }); return { sent: 0, failed: 0 }; }
   const want = emails === "all" ? st.users : emails.map((e) => e.toLowerCase()).filter((e) => st.users.includes(e));
   const list = await load(), targets = list.filter((s) => want.includes(s.email));
   if (!targets.length) { await logPush({ at, type, title: msg.title, body: msg.body, to: want, sent: 0, failed: 0, skipped: "Nadie tiene los avisos activados en un dispositivo" }); return { sent: 0, failed: 0 }; }
