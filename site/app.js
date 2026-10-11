@@ -1161,20 +1161,34 @@ function provLogo(p,size){const t=PROV_THEME[p.id],ini=String(p.name||"?").repla
 // ===================== TELEVISIÓN =====================
 // Acuerdo con Mediaset (Taquilla Mediaset). Los datos los sirve /api/television; el importe y los pagos
 // solo llegan a quien tiene acceso al presupuesto.
+let tvSel="";
 async function television(){
- const d=await api("/api/television"),eur=n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" €";
- const perWave=d.plan.reduce((a,c)=>a+c.pases.length,0),waves=d.ratePerWave?Math.round(d.rateValue/d.ratePerWave):0;
+ const all=(await api("/api/television")).proposals||[],eur=n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" €";
+ if(!all.some(p=>p.id===tvSel))tvSel=all[0]?.id||"";
+ const d=all.find(p=>p.id===tvSel)||{};
  const kpi=(v,l)=>'<div class="tv-kpi"><b>'+v+'</b><span>'+esc(l)+'</span></div>';
- app.innerHTML=pageHead("Televisión",d.provider+" · "+d.format+" · temporada "+d.season)+
- '<section class="card tv-head"><div class="section-title"><div><small class="section-kicker">'+esc(d.venue)+'</small><h2>'+esc(d.campaign)+'</h2></div><span class="badge warn">'+esc(d.status)+'</span></div>'+
- '<div class="tv-kpis">'+kpi(d.passesProposal,"pases en la propuesta")+kpi(waves,"oleadas")+kpi(perWave,"pases por oleada")+kpi(esc(d.duration),"duración · "+d.target)+kpi(eur(d.rateValue),"valor tarifa")+(d.money?kpi(eur(d.money.cost),"coste · + IVA"):'')+'</div></section>'+
- '<div class="tv-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Qué incluye</small><h2>Propuesta</h2></div></div><ul class="tv-list"><li>Campaña de '+d.passesProposal+' pases en formato '+esc(d.format)+'.</li>'+d.extras.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></section>'+
- (d.money?'<section class="card"><div class="section-title"><div><small class="section-kicker">Solo Fer y Celia</small><h2>Condiciones</h2></div></div><p class="tv-money"><b>'+eur(d.money.cost)+'</b> '+esc(d.money.costNote)+'</p><p class="muted">'+esc(d.money.payment)+'</p><ul class="tv-list">'+d.money.split.map(x=>'<li><b>'+eur(x.amount)+'</b> · '+esc(x.when)+'</li>').join("")+'</ul></section>':'')+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Por cerrar</small><h2>Pendiente</h2></div></div><ul class="tv-list">'+d.pending.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></section>'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">'+esc(d.provider)+'</small><h2>Contacto</h2></div></div><p class="tv-contact"><b>'+esc(d.contact.name)+'</b><br>'+esc(d.contact.role)+'<br>'+esc(d.contact.address)+'<br>Tel. <a href="tel:+34913966513">'+esc(d.contact.phone)+'</a> · Móvil <a href="tel:+34'+d.contact.mobile.replace(/\D/g,"")+'">'+esc(d.contact.mobile)+'</a></p></section></div>'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Se repite en cada oleada · '+esc(d.target)+' · '+esc(d.duration)+'</small><h2>Planificación por oleada</h2></div><b>'+eur(d.ratePerWave)+' <span class="muted">tarifa por oleada</span></b></div>'+
- d.plan.map(c=>{const tot=c.pases.reduce((a,p)=>a+p[4],0);return '<h3 class="tv-channel">'+esc(c.canal)+' <span class="muted">· '+c.pases.length+' pases · '+eur(tot)+'</span></h3><div class="table-wrap"><table class="tv-table"><thead><tr><th>Día</th><th>Hora</th><th>Franja</th><th class="num">Tarifa</th></tr></thead><tbody>'+c.pases.map(p=>'<tr><td>'+esc(p[2])+'</td><td>'+esc(p[3])+'</td><td>'+esc(p[1])+'</td><td class="num">'+eur(p[4])+'</td></tr>').join("")+'</tbody></table></div>'}).join("")+
- '<p class="muted" style="margin-top:12px">Valor tarifa de la campaña: '+eur(d.rateValue)+' ('+waves+' oleadas de '+eur(d.ratePerWave)+'). Es el precio de tarifa de los pases, no lo que se paga.</p></section>';
+ const list=(arr)=>'<ul class="tv-list">'+arr.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+ const sec=(kick,title,body)=>'<section class="card"><div class="section-title"><div><small class="section-kicker">'+esc(kick)+'</small><h2>'+esc(title)+'</h2></div></div>'+body+'</section>';
+ const tabs='<div class="tv-tabs">'+all.map(p=>'<button type="button" class="tv-tab'+(p.id===tvSel?' on':'')+'" data-tv="'+esc(p.id)+'" aria-label="'+esc(p.provider)+'"><img src="'+esc(p.logo)+'" alt="'+esc(p.provider)+'"></button>').join("")+'</div>';
+ let kpis,blocks,plan="";
+ if(d.id==="atresmedia"){
+  kpis=kpi(d.waves.length,"oleadas")+kpi(esc(d.contactsPerWave),"contactos por oleada")+kpi(esc(d.passesPerWave),"pases por oleada")+kpi(esc(d.contactsTotal),"contactos en total")+kpi(esc(d.target),"target")+(d.money?kpi(eur(d.money.cost),"opción 1 · + IVA"):"");
+  blocks=sec("Contenido editorial","Atresmúsica",list(d.editorial))+sec("Antena 3 · laSexta · temáticos","Avances promocionales",list(d.promo))+sec("Valor añadido","Amplificación",list(d.extras));
+  plan=sec("Planificación inicial","Oleadas",'<div class="tv-waves">'+d.waves.map((w,i)=>'<div class="tv-wave"><small>Oleada '+(i+1)+'</small><b>'+esc(w)+'</b><span>'+esc(d.contactsPerWave)+' contactos · '+esc(d.passesPerWave)+' pases</span></div>').join("")+'</div>');
+ }else{
+  const perWave=d.plan.reduce((a,c)=>a+c.pases.length,0),waves=d.ratePerWave?Math.round(d.rateValue/d.ratePerWave):0;
+  kpis=kpi(d.passesProposal,"pases en la propuesta")+kpi(waves,"oleadas")+kpi(perWave,"pases por oleada")+kpi(esc(d.duration),"duración · "+d.target)+kpi(eur(d.rateValue),"valor tarifa")+(d.money?kpi(eur(d.money.cost),"coste · + IVA"):"");
+  blocks=sec("Qué incluye","Propuesta",list(["Campaña de "+d.passesProposal+" pases en formato "+d.format+".",...d.extras]));
+  plan='<section class="card"><div class="section-title"><div><small class="section-kicker">Se repite en cada oleada · '+esc(d.target)+' · '+esc(d.duration)+'</small><h2>Planificación por oleada</h2></div><b>'+eur(d.ratePerWave)+' <span class="muted">tarifa por oleada</span></b></div>'+
+   d.plan.map(c=>{const tot=c.pases.reduce((a,p)=>a+p[4],0);return '<h3 class="tv-channel">'+esc(c.canal)+' <span class="muted">· '+c.pases.length+' pases · '+eur(tot)+'</span></h3><div class="table-wrap"><table class="tv-table"><thead><tr><th>Día</th><th>Hora</th><th>Franja</th><th class="num">Tarifa</th></tr></thead><tbody>'+c.pases.map(p=>'<tr><td>'+esc(p[2])+'</td><td>'+esc(p[3])+'</td><td>'+esc(p[1])+'</td><td class="num">'+eur(p[4])+'</td></tr>').join("")+'</tbody></table></div>'}).join("")+
+   '<p class="muted" style="margin-top:12px">Valor tarifa de la campaña: '+eur(d.rateValue)+' ('+waves+' oleadas de '+eur(d.ratePerWave)+'). Es el precio de tarifa de los pases, no lo que se paga.</p></section>';
+ }
+ const money=d.money?sec("Solo Fer y Celia","Condiciones",'<p class="tv-money"><b>'+eur(d.money.cost)+'</b> '+esc(d.money.costNote)+'</p><p class="muted">'+esc(d.money.payment)+'</p><ul class="tv-list">'+d.money.split.map(x=>'<li><b>'+eur(x.amount)+'</b> · '+esc(x.when)+'</li>').join("")+'</ul>'):"";
+ const contact=d.contact?sec(d.provider,"Contacto",'<p class="tv-contact"><b>'+esc(d.contact.name)+'</b><br>'+esc(d.contact.role)+'<br>'+esc(d.contact.address)+'<br>Tel. <a href="tel:+34913966513">'+esc(d.contact.phone)+'</a> · Móvil <a href="tel:+34'+d.contact.mobile.replace(/\D/g,"")+'">'+esc(d.contact.mobile)+'</a></p>'):"";
+ app.innerHTML=pageHead("Televisión","Propuestas de Mediaset y Atresmedia · temporada 2026/27","","/assets/tv/banner.webp")+tabs+
+  '<section class="card tv-head"><div class="section-title"><div class="tv-who"><img src="'+esc(d.logo)+'" alt=""><div><small class="section-kicker">'+esc(d.venue)+'</small><h2>'+esc(d.campaign)+'</h2><p class="muted">'+esc(d.provider+" · "+d.format+" · "+d.season)+'</p></div></div><span class="badge warn">'+esc(d.status)+'</span></div><div class="tv-kpis">'+kpis+'</div></section>'+
+  '<div class="tv-grid">'+blocks+money+sec("Por cerrar","Pendiente",list(d.pending))+contact+'</div>'+plan;
+ $$("[data-tv]").forEach(b=>b.onclick=()=>{tvSel=b.dataset.tv;television()});
 }
 // ===================== IMPORTAR =====================
 // Añade de una vez datos preparados fuera de la app (por ejemplo, por Claude a partir de una tabla
@@ -1726,7 +1740,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v110";
+const YC_VERSION="yellow-control-v111";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

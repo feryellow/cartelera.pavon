@@ -1137,3 +1137,15 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 /* Avisos push */
 .push-card{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .push-card p{margin:4px 0 0;max-width:640px}
+
+.tv-tabs{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.tv-tab{background:#fff;border:2px solid transparent;border-radius:12px;padding:10px 16px;height:64px;display:flex;align-items:center;opacity:.55}
+.tv-tab img{max-height:40px;max-width:180px;display:block}
+.tv-tab.on{border-color:var(--yellow);opacity:1}
+.tv-who{display:flex;gap:14px;align-items:center}
+.tv-who img{background:#fff;border-radius:10px;padding:8px 10px;max-height:56px;max-width:150px}
+.tv-who p{margin:2px 0 0}
+.tv-waves{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.tv-wave{padding:12px 14px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.tv-wave b{font-size:18px;color:var(--yellow)}.tv-wave span{font-size:12px;opacity:.75}
+@media(max-width:640px){.tv-who{flex-direction:column;align-items:flex-start}}
