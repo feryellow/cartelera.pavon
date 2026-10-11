@@ -1185,7 +1185,7 @@ async function television(){
  }
  const money=d.money?sec("Solo Fer y Celia","Condiciones",'<p class="tv-money"><b>'+eur(d.money.cost)+'</b> '+esc(d.money.costNote)+'</p><p class="muted">'+esc(d.money.payment)+'</p><ul class="tv-list">'+d.money.split.map(x=>'<li><b>'+eur(x.amount)+'</b> · '+esc(x.when)+'</li>').join("")+'</ul>'):"";
  const contact=d.contact?sec(d.provider,"Contacto",'<p class="tv-contact"><b>'+esc(d.contact.name)+'</b><br>'+esc(d.contact.role)+'<br>'+esc(d.contact.address)+'<br>Tel. <a href="tel:+34913966513">'+esc(d.contact.phone)+'</a> · Móvil <a href="tel:+34'+d.contact.mobile.replace(/\D/g,"")+'">'+esc(d.contact.mobile)+'</a></p>'):"";
- app.innerHTML=pageHead("Televisión","Propuestas de Mediaset y Atresmedia · temporada 2026/27","","/assets/tv/banner.webp")+tabs+
+ app.innerHTML=pageHead("Televisión","Propuestas de Mediaset y Atresmedia · temporada 2026/27")+tabs+
   '<section class="card tv-head"><div class="section-title"><div class="tv-who"><img src="'+esc(d.logo)+'" alt=""><div><small class="section-kicker">'+esc(d.venue)+'</small><h2>'+esc(d.campaign)+'</h2><p class="muted">'+esc(d.provider+" · "+d.format+" · "+d.season)+'</p></div></div><span class="badge warn">'+esc(d.status)+'</span></div><div class="tv-kpis">'+kpis+'</div></section>'+
   '<div class="tv-grid">'+blocks+money+sec("Por cerrar","Pendiente",list(d.pending))+contact+'</div>'+plan;
  $$("[data-tv]").forEach(b=>b.onclick=()=>{tvSel=b.dataset.tv;television()});
@@ -1740,7 +1740,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v115";
+const YC_VERSION="yellow-control-v116";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
