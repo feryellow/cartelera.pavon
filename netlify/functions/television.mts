@@ -7,6 +7,6 @@ import { TELEVISION, TELEVISION_MONEY } from "./_lib/television.ts";
 export default async (req: Request) => {
   const auth = await requireAccess(req, "radio", false); if (auth.response) return auth.response;
   const money = (await budgetAccess(req).catch(() => ({ status: "forbidden" }))).status === "ok";
-  return Response.json({ ...TELEVISION, money: money ? TELEVISION_MONEY : null }, { headers: { "cache-control": "no-store, private" } });
+  return Response.json({ proposals: TELEVISION.proposals.map((p) => ({ ...p, money: money ? TELEVISION_MONEY[p.id] || null : null })) }, { headers: { "cache-control": "no-store, private" } });
 };
 export const config: Config = { path: "/api/television" };

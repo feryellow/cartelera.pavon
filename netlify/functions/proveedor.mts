@@ -1,4 +1,5 @@
 import type { Config } from "@netlify/functions";
+import { sendPush } from "./_lib/push.ts";
 import { resolveActor } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { putRecord, getRecord, type RecordModule } from "./_lib/records.ts";
@@ -70,6 +71,7 @@ export default async (req: Request) => {
 <p style="font-size:12px;color:#6b665d;margin:20px 0 0">Responde a este correo para contestar a ${esc(p.name)} · <a href="${origin}/#calendario" style="color:#111">ver en Yellow Control</a></p></div></body></html>`;
     const r: any = await sendPavonMail({ subject: `Mensaje de proveedor · ${p.name}${general ? "" : " · " + it.title}`, html, to: TEAM, extra: TEAM.slice(1), replyTo: isProv ? actor.email : undefined });
     if (!r.sent) console.error("proveedor mail", r.reason);
+    await sendPush(TEAM, { title: `${p.name} ${general ? "os escribe" : "pide material"}`, body: (general ? "" : it.title + " · ") + message, url: "/#dashboard", tag: "proveedor" }).catch(() => null);
     // Aviso en el Calendario el día límite (o hoy, si no hay fecha)
     const id = crypto.randomUUID(), now = new Date().toISOString(), hitoId = crypto.randomUUID();
     await putRecord("hitos", hitoId, { id: hitoId, type: "Solicitud de proveedor", title: general ? `Mensaje de ${p.name}` : `${p.name} pide material · ${it.title}`, spectacle: general ? "" : it.title, date: it.deadline || today,
