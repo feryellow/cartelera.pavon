@@ -1740,7 +1740,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v113";
+const YC_VERSION="yellow-control-v115";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
@@ -1753,26 +1753,38 @@ async function ycCheckVersion(){try{const r=await fetch("/sw.js?check="+Date.now
 async function avisosPage(){
  const d=await api("/api/push-settings",{cache:"no-store"}),st=d.settings;
  const when=iso=>{try{return new Date(iso).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}catch{return iso}};
- const typeName=id=>(d.types.find(t=>t.id===id)||{label:id==="prueba"?"Prueba":id}).label;
- app.innerHTML=pageHead("Avisos","Notificaciones en el móvil: quién las recibe, cuáles y a qué hora")+
+ app.innerHTML=pageHead("Avisos","Avisos automáticos de lunes a viernes y avisos que envías tú cuando quieras")+
  '<div class="tv-grid">'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Qué avisos se envían</small><h2>Tipos</h2></div></div>'+
+ '<section class="card"><div class="section-title"><div><small class="section-kicker">Automáticos · de lunes a viernes, salvo festivos</small><h2>Tipos</h2></div></div>'+
   d.types.map(t=>'<label class="av-row"><input type="checkbox" data-type="'+t.id+'"'+(st.types[t.id]!==false?' checked':'')+'><span><b>'+esc(t.label)+'</b><small>'+esc(t.detail)+'</small></span></label>').join("")+
   '<label class="av-hour">Hora del aviso de la mañana <select id="avHour">'+Array.from({length:17},(_,i)=>i+6).map(h=>'<option value="'+h+'"'+(h===st.hour?' selected':'')+'>'+String(h).padStart(2,"0")+':00</option>').join("")+'</select></label></section>'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Quién los recibe</small><h2>Personas</h2></div></div><div id="avUsers"></div>'+
+ '<section class="card"><div class="section-title"><div><small class="section-kicker">Avisos automáticos</small><h2>Quién los recibe</h2></div></div><div id="avUsers"></div>'+
   '<div class="actions-row" style="margin-top:10px"><input id="avNew" type="email" placeholder="correo@yellowmedia.es" style="flex:1;min-width:180px"><button type="button" id="avAdd">Añadir</button></div>'+
-  '<p class="muted" style="margin:10px 0 0">Cada persona tiene que activar los avisos una vez en su móvil, desde la tarjeta de Inicio.</p></section></div>'+
- '<div class="actions-row" style="margin:0 0 14px"><button type="button" class="primary" id="avSave">Guardar cambios</button><button type="button" id="avTest">Enviar prueba a todos</button>'+(st.updatedAt?'<span class="muted">Último cambio: '+esc(when(st.updatedAt))+' · '+esc(st.updatedBy||"")+'</span>':'')+'</div>'+
- '<section class="card"><div class="section-title"><div><small class="section-kicker">Últimos 60</small><h2>Historial de envíos</h2></div></div>'+
-  (d.log.length?'<div class="table-wrap"><table class="tv-table"><thead><tr><th>Cuándo</th><th>Tipo</th><th>Aviso</th><th>A quién</th><th>Resultado</th></tr></thead><tbody>'+d.log.map(r=>'<tr><td>'+esc(when(r.at))+'</td><td>'+esc(typeName(r.type))+'</td><td><b>'+esc(r.title)+'</b><br><span class="muted">'+esc(r.body)+'</span></td><td>'+esc((r.to||[]).map(e=>e.split("@")[0]).join(", ")||"—")+'</td><td>'+(r.skipped?'<span class="badge">'+esc(r.skipped)+'</span>':r.failed?'<span class="badge warn">'+r.sent+' entregado'+(r.sent===1?'':'s')+' · '+r.failed+' fallido'+(r.failed===1?'':'s')+'</span>':'<span class="badge">'+r.sent+' entregado'+(r.sent===1?'':'s')+'</span>')+'</td></tr>').join("")+'</tbody></table></div>':'<p class="muted">Todavía no se ha enviado ningún aviso.</p>')+'</section>';
- const users=[...st.users];
+  '<p class="muted" style="margin:10px 0 0">Cada persona tiene que activar los avisos una vez en su móvil, desde la tarjeta de Inicio.</p></section>'+
+ '<section class="card"><div class="section-title"><div><small class="section-kicker">Ese día no sale el aviso de la mañana</small><h2>Festivos</h2></div></div><div id="avHol"></div>'+
+  '<div class="actions-row" style="margin-top:10px"><input id="avHolNew" type="date"><button type="button" id="avHolAdd">Añadir festivo</button></div>'+
+  '<p class="muted" style="margin:10px 0 0">También se salta cualquier día que tenga en el Calendario un hito cuyo título empiece por «Festivo».</p></section></div>'+
+ '<div class="actions-row" style="margin:0 0 14px"><button type="button" class="primary" id="avSave">Guardar cambios</button>'+(st.updatedAt?'<span class="muted">Último cambio: '+esc(when(st.updatedAt))+' · '+esc(st.updatedBy||"")+'</span>':'')+'</div>'+
+ '<section class="card"><div class="section-title"><div><small class="section-kicker">Cuando quieras · escrito por ti</small><h2>Enviar un aviso</h2></div></div><div class="form-grid">'+
+  '<label class="wide">Título<input id="avTitle" maxlength="80" placeholder="Por ejemplo: Estreno de Pegados"></label>'+
+  '<label class="wide">Texto<textarea id="avBody" maxlength="240" rows="3" placeholder="Por ejemplo: Hoy a las 20:00. Photocall a las 19:15."></textarea></label>'+
+  '<label>Al pulsarlo, abre<select id="avUrl">'+[["/#dashboard","Inicio"],["/#calendario","Calendario"],["/#carteleria","Cartelería"],["/#radio","Radio"],["/#television","Televisión"],["/#meta","Digital"]].map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select></label>'+
+  '<label>Para<select id="avTo"><option value="">Todo el equipo con la app y los avisos activados ('+Object.keys(d.devices).length+(Object.keys(d.devices).length===1?' persona':' personas')+')</option>'+Object.keys(d.devices).sort().map(u=>'<option value="'+esc(u)+'">'+esc(u)+'</option>').join("")+'</select></label>'+
+  '</div><div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="avSend">Enviar aviso</button></div></section>';
+ const users=[...st.users],hol=[...(st.holidays||[])];
+ const drawHol=()=>{const today=new Date().toISOString().slice(0,10),up=hol.filter(x=>x>=today).sort();$("#avHol").innerHTML=up.length?up.map(h=>'<div class="av-user"><span><b>'+esc(new Date(h+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+'</b></span><button type="button" class="ghost" data-hrm="'+h+'">Quitar</button></div>').join(""):'<p class="muted">No hay festivos apuntados.</p>';
+  $$("[data-hrm]").forEach(b=>b.onclick=()=>{hol.splice(hol.indexOf(b.dataset.hrm),1);drawHol()})};
+ drawHol();
+ $("#avHolAdd").onclick=()=>{const v=$("#avHolNew").value;if(!v){say("Elige una fecha");return}if(!hol.includes(v))hol.push(v);$("#avHolNew").value="";drawHol()};
  const draw=()=>{$("#avUsers").innerHTML=users.length?users.map((u,i)=>'<div class="av-user"><span><b>'+esc(u)+'</b><small>'+(d.devices[u]?d.devices[u]+' dispositivo'+(d.devices[u]===1?'':'s')+' con avisos activados':'Sin avisos activados en ningún dispositivo')+'</small></span><button type="button" class="ghost" data-rm="'+i+'">Quitar</button></div>').join(""):'<p class="muted">Nadie recibe avisos.</p>';
   $$("[data-rm]").forEach(b=>b.onclick=()=>{users.splice(+b.dataset.rm,1);draw()})};
  draw();
  $("#avAdd").onclick=()=>{const v=$("#avNew").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){say("Escribe un correo válido");return}if(!users.includes(v))users.push(v);$("#avNew").value="";draw()};
  $("#avSave").onclick=async()=>{const types={};$$("[data-type]").forEach(c=>types[c.dataset.type]=c.checked);
-  try{await api("/api/push-settings",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:{users,types,hour:+$("#avHour").value}})});say("Avisos guardados");avisosPage()}catch(e){say(e.message)}};
- $("#avTest").onclick=async()=>{try{const r=await api("/api/push-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({test:true})});say(r.sent?"Prueba enviada a "+r.sent+" dispositivo"+(r.sent===1?"":"s"):"Nadie de la lista tiene los avisos activados");setTimeout(avisosPage,1200)}catch(e){say(e.message)}};
+  try{await api("/api/push-settings",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:{users,types,hour:+$("#avHour").value,holidays:hol}})});say("Avisos guardados");avisosPage()}catch(e){say(e.message)}};
+ $("#avSend").onclick=async()=>{const title=$("#avTitle").value.trim(),body=$("#avBody").value.trim(),to=$("#avTo").value;if(!title&&!body){say("Escribe el título o el texto");return}
+  const btn=$("#avSend");btn.disabled=true;try{const r=await api("/api/push-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({custom:{title,body,url:$("#avUrl").value,to:to?[to]:[]}})});
+  say(r.sent?"Aviso enviado a "+r.sent+" dispositivo"+(r.sent===1?"":"s"):"No ha salido: nadie de los elegidos tiene los avisos activados en el móvil");if(r.sent){$("#avTitle").value="";$("#avBody").value=""}}catch(e){say(e.message)}btn.disabled=false};
 }
 // ===================== AVISOS EN EL MÓVIL (Web Push) =====================
 // En prueba: solo aparece para los usuarios de la lista (de momento, Fer). En iPhone hace falta abrir la app
@@ -1784,13 +1796,13 @@ async function pushCard(){const box=$("#pushCard");if(!box)return;
  let reg=null,sub=null;try{if(supported){reg=await navigator.serviceWorker.ready;sub=await reg.pushManager.getSubscription()}}catch{}
  let info;try{info=await api("/api/push"+(sub?"?endpoint="+encodeURIComponent(sub.endpoint):""),{cache:"no-store"})}catch{return}
  if(!info.allowed)return;
- const card=(txt,btns)=>{box.innerHTML='<section class="card push-card"><div><small class="section-kicker">Avisos en este dispositivo · en prueba</small><p>'+txt+'</p></div><div class="actions-row">'+btns+'</div></section>'};
+ const card=(txt,btns)=>{box.innerHTML='<section class="card push-card"><div><small class="section-kicker">Avisos en este dispositivo</small><p>'+txt+'</p></div><div class="actions-row">'+btns+'</div></section>'};
  if(!supported){card(ios&&!standalone?"En iPhone los avisos solo funcionan con la app abierta desde el icono de la pantalla de inicio: en Safari, Compartir › Añadir a pantalla de inicio, y ábrela desde ahí.":"Este navegador no admite avisos.","");return}
  if(Notification.permission==="denied"){card("Los avisos están bloqueados para Yellow Control en este dispositivo. Actívalos en los ajustes de notificaciones del móvil o del navegador.","");return}
- if(sub&&info.subscribed){card("Avisos activados. Cada mañana te llega lo que hay hoy en el Calendario y lo urgente.",'<button type="button" id="pushTest">Probar</button><button type="button" class="ghost" id="pushOff">Desactivar</button>');
+ if(sub&&info.subscribed){card("Avisos de Yellow Control activados en este dispositivo.",'<button type="button" id="pushTest">Probar</button><button type="button" class="ghost" id="pushOff">Desactivar</button>');
   $("#pushTest").onclick=async()=>{try{const r=await api("/api/push",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({test:true})});say(r.ok?"Aviso enviado: te llegará en unos segundos":"No se ha podido enviar")}catch(e){say(e.message)}};
   $("#pushOff").onclick=async()=>{try{await api("/api/push",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe()}catch{}say("Avisos desactivados en este dispositivo");pushCard()};return}
- card("Recibe en este dispositivo las fechas del día y lo urgente, como una notificación del móvil.",'<button type="button" class="primary" id="pushOn">Activar avisos</button>');
+ card("Recibe en este dispositivo los avisos de Yellow Control, como una notificación del móvil.",'<button type="button" class="primary" id="pushOn">Activar avisos</button>');
  $("#pushOn").onclick=async()=>{try{const perm=await Notification.requestPermission();if(perm!=="granted"){say("No se han permitido los avisos");pushCard();return}
   const s=sub||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(info.publicKey)});
   await api("/api/push",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({subscription:s.toJSON()})});

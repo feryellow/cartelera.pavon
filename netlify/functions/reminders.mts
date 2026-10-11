@@ -67,9 +67,14 @@ async function dailyPush(now:Date,alerts:Alert[],forced:boolean){
   if(!forced&&(await ns.get(key,{type:"json"})))return;
   const useToday=st.types.diario!==false,useUrgent=st.types.urgente!==false;
   if(!useToday&&!useUrgent)return;
+  // Solo de lunes a viernes y nunca en festivo (lista de «Avisos» o un hito del Calendario que empiece por «Festivo»)
+  const dow=new Date(day+"T12:00:00Z").getUTCDay();
+  if(!forced&&(dow===0||dow===6||(st.holidays||[]).includes(day)))return;
+  let events:any[]=[];
+  try{events=await collectEvents({id:"system",email:"Yellow Control",roles:["admin"],mode:"legacy"} as any)}catch{}
+  if(!forced&&events.some(ev=>ev.date===day&&/^festivo/i.test(String(ev.title||"").trim())))return;
   let today:any[]=[];
-  if(useToday)try{today=(await collectEvents({id:"system",email:"Yellow Control",roles:["admin"],mode:"legacy"} as any)).filter(ev=>ev.date===day&&ev.kind!=="fin")
-    .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")));}catch{}
+  if(useToday)today=events.filter(ev=>ev.date===day&&ev.kind!=="fin").sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")));
   const urgent=useUrgent?alerts.filter(a=>a.days<=1):[];
   if(!today.length&&!urgent.length)return;
   const lines=today.slice(0,3).map(ev=>(ev.time?ev.time+" ":"")+ev.title);

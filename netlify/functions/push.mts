@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { resolveActor } from "./_lib/auth.ts";
-import { pushAllowed, publicKey, addSub, removeSub, hasSub, sendPush } from "./_lib/push.ts";
+import { publicKey, addSub, removeSub, hasSub, sendPush } from "./_lib/push.ts";
 
 // /api/push
 //   GET  ?endpoint=…        → { allowed, publicKey, subscribed }
@@ -10,22 +10,23 @@ import { pushAllowed, publicKey, addSub, removeSub, hasSub, sendPush } from "./_
 export default async (req: Request) => {
   const actor = await resolveActor(req);
   if (!actor) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const allowed = await pushAllowed(actor.email);
+  // Cualquier persona del equipo con usuario puede activar los avisos en su móvil (los proveedores, no).
+  const allowed = !(actor.roles.includes("proveedor") && !actor.roles.some((r) => r === "admin" || r === "gestion")) && !!actor.email && actor.email.includes("@");
   if (req.method === "GET") {
     if (!allowed) return Response.json({ allowed: false });
     const ep = new URL(req.url).searchParams.get("endpoint") || "";
     return Response.json({ allowed: true, publicKey: await publicKey(), subscribed: ep ? await hasSub(actor.email, ep) : false }, { headers: { "cache-control": "no-store" } });
   }
-  if (!allowed) return Response.json({ error: "Tu usuario no está en la lista de avisos. Fer o Celia pueden añadirte en «Avisos»." }, { status: 403 });
+  if (!allowed) return Response.json({ error: "Los avisos son solo para el equipo." }, { status: 403 });
   let body: any = {}; try { body = await req.json(); } catch {}
   if (req.method === "POST" && body?.test) {
-    const r = await sendPush([actor.email], { title: "Yellow Control", body: "Avisos activados. Así te llegarán las fechas del día y lo urgente.", url: "/#calendario", tag: "prueba" }, "prueba");
+    const r = await sendPush({ only: [actor.email] }, { title: "Yellow Control", body: "Avisos activados en este móvil.", url: "/#dashboard", tag: "prueba" }, "prueba");
     return Response.json({ ok: r.sent > 0, ...r });
   }
   if (req.method === "POST") {
     const s = body?.subscription;
     if (!s?.endpoint || !/^https:\/\//.test(s.endpoint) || !s?.keys?.p256dh || !s?.keys?.auth) return Response.json({ error: "Suscripción no válida" }, { status: 400 });
-    await addSub(actor.email, { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth } }, req.headers.get("user-agent") || "");
+    await addSub(actor.email, { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth } }, req.headers.get("user-agent") || "", actor.roles);
     return Response.json({ ok: true });
   }
   if (req.method === "DELETE") { if (body?.endpoint) await removeSub(String(body.endpoint)); return Response.json({ ok: true }); }
