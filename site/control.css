@@ -1149,3 +1149,10 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .tv-wave{padding:12px 14px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
 .tv-wave b{font-size:18px;color:var(--yellow)}.tv-wave span{font-size:12px;opacity:.75}
 @media(max-width:640px){.tv-who{flex-direction:column;align-items:flex-start}}
+
+/* Avisos (ajustes) */
+.av-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.av-row input{margin-top:4px;width:18px;height:18px;accent-color:var(--yellow)}
+.av-row span,.av-user span{display:flex;flex-direction:column;gap:2px}.av-row small,.av-user small{opacity:.7;font-size:12px}
+.av-hour{display:flex;gap:10px;align-items:center;margin-top:14px}
+.av-user{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}

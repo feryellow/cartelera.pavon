@@ -10,16 +10,16 @@ import { pushAllowed, publicKey, addSub, removeSub, hasSub, sendPush } from "./_
 export default async (req: Request) => {
   const actor = await resolveActor(req);
   if (!actor) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const allowed = pushAllowed(actor.email);
+  const allowed = await pushAllowed(actor.email);
   if (req.method === "GET") {
     if (!allowed) return Response.json({ allowed: false });
     const ep = new URL(req.url).searchParams.get("endpoint") || "";
     return Response.json({ allowed: true, publicKey: await publicKey(), subscribed: ep ? await hasSub(actor.email, ep) : false }, { headers: { "cache-control": "no-store" } });
   }
-  if (!allowed) return Response.json({ error: "Los avisos están en prueba y tu usuario todavía no los tiene." }, { status: 403 });
+  if (!allowed) return Response.json({ error: "Tu usuario no está en la lista de avisos. Fer o Celia pueden añadirte en «Avisos»." }, { status: 403 });
   let body: any = {}; try { body = await req.json(); } catch {}
   if (req.method === "POST" && body?.test) {
-    const r = await sendPush([actor.email], { title: "Yellow Control", body: "Avisos activados. Así te llegarán las fechas del día y lo urgente.", url: "/#calendario", tag: "prueba" });
+    const r = await sendPush([actor.email], { title: "Yellow Control", body: "Avisos activados. Así te llegarán las fechas del día y lo urgente.", url: "/#calendario", tag: "prueba" }, "prueba");
     return Response.json({ ok: r.sent > 0, ...r });
   }
   if (req.method === "POST") {
