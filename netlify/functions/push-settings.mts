@@ -17,7 +17,7 @@ export default async (req: Request) => {
     const c = body.custom, title = String(c.title || "").trim(), text = String(c.body || "").trim();
     if (!title && !text) return Response.json({ error: "Escribe el título o el texto del aviso." }, { status: 400, headers: noStore });
     const url = typeof c.url === "string" && /^\/#[a-z]+$/.test(c.url) ? c.url : "/#dashboard";
-    const to = Array.isArray(c.to) && c.to.length ? c.to.map((x: any) => String(x).toLowerCase()) : "all";
+    const to = Array.isArray(c.to) && c.to.length ? { only: c.to.map((x: any) => String(x).toLowerCase()) } : { everyone: true as const };
     const r = await sendPush(to, { title: title || "Yellow Control", body: text, url, tag: "manual-" + Date.now() }, "manual");
     return Response.json({ ok: true, ...r }, { headers: noStore });
   }
