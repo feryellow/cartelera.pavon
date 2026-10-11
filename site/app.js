@@ -1185,7 +1185,7 @@ async function television(){
  }
  const money=d.money?sec("Solo Fer y Celia","Condiciones",'<p class="tv-money"><b>'+eur(d.money.cost)+'</b> '+esc(d.money.costNote)+'</p><p class="muted">'+esc(d.money.payment)+'</p><ul class="tv-list">'+d.money.split.map(x=>'<li><b>'+eur(x.amount)+'</b> · '+esc(x.when)+'</li>').join("")+'</ul>'):"";
  const contact=d.contact?sec(d.provider,"Contacto",'<p class="tv-contact"><b>'+esc(d.contact.name)+'</b><br>'+esc(d.contact.role)+'<br>'+esc(d.contact.address)+'<br>Tel. <a href="tel:+34913966513">'+esc(d.contact.phone)+'</a> · Móvil <a href="tel:+34'+d.contact.mobile.replace(/\D/g,"")+'">'+esc(d.contact.mobile)+'</a></p>'):"";
- app.innerHTML=pageHead("Televisión","Propuestas de Mediaset y Atresmedia · temporada 2026/27","","/assets/tv/banner.webp")+tabs+
+ app.innerHTML=pageHead("Televisión","Propuestas de Mediaset y Atresmedia · temporada 2026/27")+tabs+
   '<section class="card tv-head"><div class="section-title"><div class="tv-who"><img src="'+esc(d.logo)+'" alt=""><div><small class="section-kicker">'+esc(d.venue)+'</small><h2>'+esc(d.campaign)+'</h2><p class="muted">'+esc(d.provider+" · "+d.format+" · "+d.season)+'</p></div></div><span class="badge warn">'+esc(d.status)+'</span></div><div class="tv-kpis">'+kpis+'</div></section>'+
   '<div class="tv-grid">'+blocks+money+sec("Por cerrar","Pendiente",list(d.pending))+contact+'</div>'+plan;
  $$("[data-tv]").forEach(b=>b.onclick=()=>{tvSel=b.dataset.tv;television()});
@@ -1740,7 +1740,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v115";
+const YC_VERSION="yellow-control-v117";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
@@ -1799,9 +1799,8 @@ async function pushCard(){const box=$("#pushCard");if(!box)return;
  const card=(txt,btns)=>{box.innerHTML='<section class="card push-card"><div><small class="section-kicker">Avisos en este dispositivo</small><p>'+txt+'</p></div><div class="actions-row">'+btns+'</div></section>'};
  if(!supported){card(ios&&!standalone?"En iPhone los avisos solo funcionan con la app abierta desde el icono de la pantalla de inicio: en Safari, Compartir › Añadir a pantalla de inicio, y ábrela desde ahí.":"Este navegador no admite avisos.","");return}
  if(Notification.permission==="denied"){card("Los avisos están bloqueados para Yellow Control en este dispositivo. Actívalos en los ajustes de notificaciones del móvil o del navegador.","");return}
- if(sub&&info.subscribed){card("Avisos de Yellow Control activados en este dispositivo.",'<button type="button" id="pushTest">Probar</button><button type="button" class="ghost" id="pushOff">Desactivar</button>');
-  $("#pushTest").onclick=async()=>{try{const r=await api("/api/push",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({test:true})});say(r.ok?"Aviso enviado: te llegará en unos segundos":"No se ha podido enviar")}catch(e){say(e.message)}};
-  $("#pushOff").onclick=async()=>{try{await api("/api/push",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe()}catch{}say("Avisos desactivados en este dispositivo");pushCard()};return}
+ // Con los avisos ya aceptados en este dispositivo, la tarjeta desaparece de Inicio
+ if(sub&&info.subscribed){box.innerHTML="";return}
  card("Recibe en este dispositivo los avisos de Yellow Control, como una notificación del móvil.",'<button type="button" class="primary" id="pushOn">Activar avisos</button>');
  $("#pushOn").onclick=async()=>{try{const perm=await Notification.requestPermission();if(perm!=="granted"){say("No se han permitido los avisos");pushCard();return}
   const s=sub||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(info.publicKey)});
