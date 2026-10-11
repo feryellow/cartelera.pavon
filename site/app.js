@@ -1740,7 +1740,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v116";
+const YC_VERSION="yellow-control-v117";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
@@ -1799,9 +1799,8 @@ async function pushCard(){const box=$("#pushCard");if(!box)return;
  const card=(txt,btns)=>{box.innerHTML='<section class="card push-card"><div><small class="section-kicker">Avisos en este dispositivo</small><p>'+txt+'</p></div><div class="actions-row">'+btns+'</div></section>'};
  if(!supported){card(ios&&!standalone?"En iPhone los avisos solo funcionan con la app abierta desde el icono de la pantalla de inicio: en Safari, Compartir › Añadir a pantalla de inicio, y ábrela desde ahí.":"Este navegador no admite avisos.","");return}
  if(Notification.permission==="denied"){card("Los avisos están bloqueados para Yellow Control en este dispositivo. Actívalos en los ajustes de notificaciones del móvil o del navegador.","");return}
- if(sub&&info.subscribed){card("Avisos de Yellow Control activados en este dispositivo.",'<button type="button" id="pushTest">Probar</button><button type="button" class="ghost" id="pushOff">Desactivar</button>');
-  $("#pushTest").onclick=async()=>{try{const r=await api("/api/push",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({test:true})});say(r.ok?"Aviso enviado: te llegará en unos segundos":"No se ha podido enviar")}catch(e){say(e.message)}};
-  $("#pushOff").onclick=async()=>{try{await api("/api/push",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe()}catch{}say("Avisos desactivados en este dispositivo");pushCard()};return}
+ // Con los avisos ya aceptados en este dispositivo, la tarjeta desaparece de Inicio
+ if(sub&&info.subscribed){box.innerHTML="";return}
  card("Recibe en este dispositivo los avisos de Yellow Control, como una notificación del móvil.",'<button type="button" class="primary" id="pushOn">Activar avisos</button>');
  $("#pushOn").onclick=async()=>{try{const perm=await Notification.requestPermission();if(perm!=="granted"){say("No se han permitido los avisos");pushCard();return}
   const s=sub||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(info.publicKey)});
