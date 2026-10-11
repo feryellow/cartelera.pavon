@@ -6,6 +6,7 @@ import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
 import { renderDigest } from "./_lib/digest.ts";
 import { collectEvents, SLOT_NAMES } from "./_lib/calendar.ts";
 import { appendAudit } from "./_lib/audit.ts";
+import { sendPush } from "./_lib/push.ts";
 
 type Alert={key:string,date:string,days:number,module:string,title:string,location:string,action:string,materialStatus?:string,kind?:string};
 type Current={module:string,title:string,location:string,materialStatus:string,endDate:string};
@@ -61,12 +62,30 @@ async function collect(now=new Date()){
   return {alerts,current,ends};
 }
 
+async function dailyPush(now:Date,alerts:Alert[],forced:boolean){
+  const day=madridToday(now),ns=notificationStore(),key=`push-daily-${day}`;
+  if(!forced&&(await ns.get(key,{type:"json"})))return;
+  let today:any[]=[];
+  try{today=(await collectEvents({id:"system",email:"Yellow Control",roles:["admin"],mode:"legacy"} as any)).filter(ev=>ev.date===day&&ev.kind!=="fin")
+    .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")));}catch{}
+  const urgent=alerts.filter(a=>a.days<=1);
+  if(!today.length&&!urgent.length)return;
+  const lines=today.slice(0,3).map(ev=>(ev.time?ev.time+" ":"")+ev.title);
+  if(today.length>3)lines.push(`y ${today.length-3} más`);
+  const body=[today.length?lines.join(" · "):"",urgent.length?`${urgent.length} ${urgent.length===1?"aviso urgente":"avisos urgentes"} (cartelería o material)`:""].filter(Boolean).join(" — ");
+  const title=today.length?`Hoy: ${today.length} ${today.length===1?"fecha":"fechas"} en el Calendario`:"Yellow Control · urgente";
+  const r=await sendPush("all",{title,body,url:today.length?"/#calendario":"/#carteleria",tag:"diario"});
+  if(!forced)await ns.setJSON(key,{at:new Date().toISOString(),...r});
+}
+
 export default async(req?:Request)=>{
   const now=new Date();
   // Se programa a las 07:00 y 08:00 UTC; solo actúa cuando en Madrid son las 9 (verano e invierno).
   const forced=req?new URL(req.url).searchParams.get("force")==="1":false;
   if(!forced&&madridHour(now)!==9){console.log(JSON.stringify({skipped:true,madridHour:madridHour(now)}));return;}
   const {alerts,current,ends}=await collect(now);
+  // Aviso en el móvil (Web Push): lo que hay hoy en el Calendario y lo urgente. Uno al día.
+  try{await dailyPush(now,alerts,forced)}catch(e){console.error("push diario",String(e))}
   const ns=notificationStore();
   const pending:Alert[]=[];
 
