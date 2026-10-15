@@ -1236,3 +1236,16 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .dsu-feed{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}.dsu-feed:first-of-type{border-top:0;padding-top:0}
 .dsu-feed small{font-size:11px;color:var(--muted)}.dsu-feed span{color:var(--muted);font-size:12px}.dsu-feed em{font-style:normal;color:var(--cream);font-weight:700}
 @media (max-width:860px){.dsu-grid{grid-template-columns:1fr}.dsu-stats{grid-template-columns:repeat(2,1fr)}.dsu-steps{grid-template-columns:1fr}.dsu-row{grid-template-columns:1fr;gap:6px}.dsu-pill{justify-self:start}.dsu-foot>div{width:100%}.dsu-foot>div button{flex:1}}
+/* Diseño · aviso por correo */
+.ds-sheet{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.ds-sheet-box{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.ds-sheet-box h2{margin:0;font-size:20px}.ds-sheet-x{position:absolute;top:12px;right:12px;width:36px;height:36px;padding:0;border-radius:50%;font-size:20px}
+.ds-test{padding:10px 12px;border-radius:12px;background:rgba(255,212,0,.1);border:1px solid rgba(255,212,0,.35);font-size:13px}
+.ds-rcpt{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ds-rcpt>div{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:10px 14px;border-top:1px solid var(--line);font-size:14px}.ds-rcpt>div:first-child{border-top:0}
+.ds-rcpt span{color:var(--muted);font-size:13px;flex:1}.ds-rcpt em{font-style:normal;font-size:12px;color:var(--muted)}.ds-rcpt .off span{color:#ff8a80}
+.ds-msg{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700}.ds-msg textarea{font-weight:400}
+.ds-prev summary{cursor:pointer;font-weight:800;font-size:14px}
+.ds-mailprev{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-height:420px;overflow-y:auto}
+@media (max-width:640px){.ds-sheet{align-items:flex-end;padding:0}.ds-sheet-box{border-radius:20px 20px 0 0;max-height:94vh}}
+.ds-sheet-box>*{flex-shrink:0}.ds-mailprev iframe{display:block;width:100%;height:420px;border:0;background:#f5f3ee}

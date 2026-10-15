@@ -4,9 +4,9 @@ import { controlStore, getManyJSON } from "./store.ts";
 export const STATUSES = ["pendiente", "en_proceso", "en_revision", "parado", "entregado", "cancelado"] as const;
 export const OPEN = ["pendiente", "en_proceso", "en_revision", "parado"];
 export const PIECE_TYPES = ["Cartel", "Lona / gran formato", "Flyer / folleto / díptico", "Redes sociales", "Adaptaciones de formatos", "Newsletter / email", "Banner web", "Pantallas", "Señalética / vinilo", "Logo / identidad", "Photocall", "Otro"];
-const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt"];
+const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt", "cancelReason"];
 
-export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
+export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
 const DEFAULTS: DisenoSettings = {
   // Personas y colores de la hoja (pestaña CONFIG). Los correos sirven para el aviso del día antes en el móvil.
   people: [
@@ -20,6 +20,8 @@ const DEFAULTS: DisenoSettings = {
     { name: "ABONOTEATRO", color: "#BC2C4F" }, { name: "LA ESTACION", color: "#0095DA" }, { name: "PAVON", color: "#C9A227" },
     { name: "CASTILLO", color: "#7B1E2B" }, { name: "SERRANO", color: "#003438" }, { name: "EL GURÚ", color: "#6A4C93" }, { name: "SOHO CITY", color: "#E8590C" },
   ],
+  // Avisos por correo de la diseñadora: hasta que Fer o Celia los activen, van solo a fernando@yellowmedia.es
+  mailLive: false,
   // Umbrales de partida (no medidos): se revisan tras unas semanas de uso
   wipLimit: 8, urgentQuota: 3, stallDays: 10, peakPerWeek: 4, soonDays: 3,
 };
@@ -33,6 +35,7 @@ export async function saveSettings(s: any) {
   const clean: DisenoSettings = {
     people: (Array.isArray(s.people) ? s.people : []).map((p: any) => ({ name: String(p.name || "").trim().toUpperCase().slice(0, 40), email: String(p.email || "").trim().toLowerCase().slice(0, 120), color: color(p.color) })).filter((p: any) => p.name).slice(0, 40),
     companies: (Array.isArray(s.companies) ? s.companies : []).map((c: any) => ({ name: String(c.name || "").trim().toUpperCase().slice(0, 40), color: color(c.color) })).filter((c: any) => c.name).slice(0, 40),
+    mailLive: s.mailLive === true,
     wipLimit: n(s.wipLimit, 8, 1, 50), urgentQuota: n(s.urgentQuota, 3, 0, 50), stallDays: n(s.stallDays, 10, 2, 90), peakPerWeek: n(s.peakPerWeek, 4, 1, 50), soonDays: n(s.soonDays, 3, 1, 14),
   };
   await controlStore().setJSON("diseno_settings", clean);
