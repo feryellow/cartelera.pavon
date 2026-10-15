@@ -1267,3 +1267,5 @@ button.mag-label svg{flex:none;width:18px;height:18px;fill:none;stroke:currentCo
 body[data-route="diseno"] .page-banner.has-photo{background-position:right center}
 body[data-route="diseno"] .page-banner::before{background:linear-gradient(to right,rgba(10,10,10,.9) 0%,rgba(10,10,10,.6) 38%,transparent 62%)}
 @media(max-width:700px){body[data-route="diseno"] .page-banner.has-photo{background-position:left center}body[data-route="diseno"] .page-banner::before{background:linear-gradient(to top,rgba(10,10,10,.9),rgba(10,10,10,.45) 70%,transparent)}}
+/* Calendario: leyenda de espacios y newsletter oculta (se pidió quitarla de la vista) */
+.cal-legend.cal-venues{display:none!important}
