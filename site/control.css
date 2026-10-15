@@ -1394,3 +1394,12 @@ body[data-route="diseno"] .page-banner::before{background:linear-gradient(to rig
 .hc-activity{list-style:none;margin:0;padding:0}.hc-activity li{padding:8px 0;border-top:1px solid var(--line);font-size:13px}.hc-activity li:first-child{border-top:0}.hc-activity small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
 .hc-tools .home-section-label{display:none}
 @media(max-width:860px){.hc-two{grid-template-columns:1fr}.hc-hero h1{font-size:34px}.hc-issues{grid-template-columns:1fr}.hc-events li{grid-template-columns:84px 1fr}}
+/* Salud */
+.sl-checks{list-style:none;margin:0;padding:0}
+.sl-checks li{display:grid;grid-template-columns:96px 170px 1fr;gap:4px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.sl-checks li:first-child{border-top:0}.sl-checks span{color:var(--muted);font-size:13px}
+.sl-restore{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 16px}
+.sl-restore label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}
+.sl-restore .wide{grid-column:1/-1}.sl-restore select[size]{height:auto}
+@media(max-width:760px){.sl-checks li{grid-template-columns:90px 1fr}.sl-checks span{grid-column:1/-1}.sl-restore{grid-template-columns:1fr}}
+.sl-restore [hidden]{display:none!important}.sl-checks .yc-state{justify-content:center}
