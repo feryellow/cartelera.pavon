@@ -1224,12 +1224,12 @@ const DS_ALERT={vencida:["Vencida","late"],pronto:["Vence pronto","warn"],sinfec
 async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});dsRender()}
 function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
  if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
- const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
+ const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
  app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
   '<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
  $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
  if($("#dsNew"))$("#dsNew").onclick=()=>dsForm(null);
- if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
+ if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="campanas")dsCampaigns();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
 function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAlerts(d);
  const counts={};Object.values(per).forEach(ks=>ks.forEach(k=>counts[k]=(counts[k]||0)+1));
  let rows=d.rows.slice();
@@ -1242,7 +1242,8 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
  rows.sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999")||String(b.requestDate||"").localeCompare(String(a.requestDate||"")));
  const people=[...new Set([...st.people.map(p=>p.name),...d.rows.map(r=>r.requester).filter(Boolean)])],companies=[...new Set([...st.companies.map(c=>c.name),...d.rows.map(r=>r.company).filter(Boolean)])];
  const sel=(id,val,opts,first)=>'<select id="'+id+'"><option value="">'+first+'</option>'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("")+'</select>';
- $("#dsBody").innerHTML=(glob.length?'<section class="card ds-glob">'+glob.map(g=>'<p><b>'+esc(g.txt.split(":")[0])+'</b>'+esc(g.txt.slice(g.txt.indexOf(":")))+'</p>').join("")+'</section>':'')+
+ const tm=+t.slice(5,7),ty=+t.slice(0,4),campDue=(st.campaigns||[]).filter(c=>c.month===tm||c.month===tm%12+1).filter(c=>!dsCampMatch(c,c.month>=tm?ty:ty+1).length);
+ $("#dsBody").innerHTML=(campDue.length?'<button type="button" class="ds-campnote" id="dsCampGo"><b>Campañas por pedir</b> '+campDue.map(c=>esc(DS_MONTHS[c.month-1]+': '+(c.creative||c.dates))).join(' · ')+'<span>Ver campañas del año</span></button>':'')+(glob.length?'<section class="card ds-glob">'+glob.map(g=>'<p><b>'+esc(g.txt.split(":")[0])+'</b>'+esc(g.txt.slice(g.txt.indexOf(":")))+'</p>').join("")+'</section>':'')+
   '<div class="ds-alertbar">'+Object.entries(DS_ALERT).filter(([k])=>counts[k]).map(([k,[l,c]])=>'<button type="button" class="ds-chip '+c+(dsView.alert===k?' on':'')+'" data-dsalert="'+k+'">'+l+' <b>'+counts[k]+'</b></button>').join("")+(dsView.alert?'<button type="button" class="ds-chip" data-dsalert="">Quitar filtro</button>':'')+'</div>'+
   '<section class="card ds-filters"><div class="actions-row">'+
    '<select id="dsState">'+[["abiertas","Abiertas"],["entregado","Entregadas"],["cancelado","Canceladas"],["todas","Todas"]].map(([v,l])=>'<option value="'+v+'"'+(dsView.state===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
@@ -1258,6 +1259,7 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
     '<div class="ds-actions"><select data-dsst="'+r.id+'">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
     '<select data-dspr="'+r.id+'">'+[0,25,50,75,100].map(p=>'<option value="'+p+'"'+(Number(r.progress||0)===p?' selected':'')+'>'+p+' %</option>').join("")+'</select>'+
     '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" class="ghost" data-dsnot>Avisar</button><button type="button" class="ghost" data-dscan>'+(DS_OPEN.includes(r.status)?'Cancelar o borrar':'Borrar')+'</button><button type="button" class="ghost" data-dshist>Historial'+((r.history||[]).length?' ('+r.history.length+')':'')+'</button><button type="button" data-dsed="'+r.id+'">Editar</button></div><div class="ds-edit"></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
+ if($("#dsCampGo"))$("#dsCampGo").onclick=()=>{dsView.tab="campanas";dsRender()};
  $$("[data-dsalert]").forEach(b=>b.onclick=()=>{dsView.alert=b.dataset.dsalert;if(dsView.alert)dsView.state="abiertas";dsList(isDesigner)});
  $("#dsState").onchange=e=>{dsView.state=e.target.value;dsList(isDesigner)};$("#dsWho").onchange=e=>{dsView.who=e.target.value;dsList(isDesigner)};$("#dsCo").onchange=e=>{dsView.company=e.target.value;dsList(isDesigner)};
  $("#dsQ").oninput=e=>{dsView.q=e.target.value;clearTimeout(dsList.t);dsList.t=setTimeout(()=>{dsList(isDesigner);const q=$("#dsQ");q.focus();q.setSelectionRange(q.value.length,q.value.length)},350)};
@@ -1270,7 +1272,7 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
  $$("[data-dshist]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsHistory(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
  $$("[data-dscan]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsCancel(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
  $$("[data-dsnot]").forEach(b=>b.onclick=()=>dsNotify([b.closest("[data-dsid]").dataset.dsid]))}
-function dsForm(r){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me||"",status:"pendiente",progress:0};
+function dsForm(r,preset){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me||"",status:"pendiente",progress:0,...(preset||{})};
  const people=[...new Set([...st.people.map(p=>p.name),r.requester].filter(Boolean))],companies=[...new Set([...st.companies.map(c=>c.name),r.company].filter(Boolean))];
  const opt=(list,val)=>list.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("");
  $("#dsBody").innerHTML='<section class="card"><div class="section-title"><div><small class="section-kicker">'+(isNew?"Nueva":"Editar")+'</small><h2>Petición de diseño</h2></div></div><form id="dsF" class="form-grid">'+
@@ -1492,6 +1494,35 @@ async function dsNotify(ids){if(!ids.length)return;const el=document.createEleme
    box.innerHTML='<button type="button" class="ghost ds-sheet-x" aria-label="Cerrar">×</button><h2>'+(sent.length?'Aviso enviado':'No se ha enviado')+'</h2><div class="ds-rcpt">'+r.results.map(x=>'<div class="'+(x.sent?'':'off')+'"><b>'+esc(x.name.charAt(0)+x.name.slice(1).toLowerCase())+'</b><span>'+(x.sent?(r.live?'Enviado a '+esc(x.email):'En pruebas: enviado a fernando@yellowmedia.es'):esc(x.error||"No enviado"))+'</span></div>').join("")+'</div><div class="actions-row"><button type="button" class="primary" id="dsnOk">Hecho</button></div>';
    box.querySelector(".ds-sheet-x").onclick=close;$("#dsnOk").onclick=close;
    DS=await api("/api/diseno",{cache:"no-store"})}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
+// ---- Campañas del año (pestaña «CALENDARIO CAMPAÑAS» de la hoja): qué fechas y creatividades tocan cada mes,
+// si ya hay petición hecha y un botón para pedirla con los datos puestos. Fer y Celia pueden editarlo.
+const DS_MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DS_CGEN=new Set("creatividad creatividades cambio general final nueva dia campana campanas para teatro teatros web redes".split(" "));
+function dsCampMatch(c,year){const keys=DSN(c.dates||c.creative).split(/[^a-z0-9ñ]+/).filter(w=>w.length>=4&&!DS_STOP.has(w)&&!DS_CGEN.has(w));if(!keys.length)return [];const has=(title,k)=>DSN(title).split(/[^a-z0-9ñ]+/).some(w=>w===k||w===k+"s"||w===k+"es");
+ const from=new Date(year,c.month-1,1);from.setMonth(from.getMonth()-3);const fromIso=from.toISOString().slice(0,10),toIso=year+"-"+String(c.month).padStart(2,"0")+"-31";
+ return DS.rows.filter(r=>{const ref=r.deadline||r.deliveredAt||r.requestDate||"";return r.status!=="cancelado"&&ref>=fromIso&&ref<=toIso}).filter(r=>(!c.company||r.company===c.company)&&keys.some(k=>has(r.title,k)))}
+function dsCampTitle(c){return c.creative?c.creative+(c.dates?" ("+c.dates+")":""):"Creatividad "+c.dates}
+function dsCampaigns(){const d=DS,st=d.settings,list=st.campaigns||[],t=d.today,ty=+t.slice(0,4),tm=+t.slice(5,7);
+ const order=Array.from({length:12},(_,i)=>((tm-1+i)%12)+1);
+ const when=m=>{const diff=(m-tm+12)%12;return diff===0?"Este mes":diff===1?"El mes que viene":"Dentro de "+diff+" meses"};
+ const yearOf=m=>m>=tm?ty:ty+1;
+ $("#dsBody").innerHTML='<div class="dsc-head"><p class="muted">Campañas fijas de cada año. Empieza por el mes en curso. Si ya hay una petición que encaja, aparece; si no, se puede pedir desde aquí.</p>'+(d.canSettings?'<button type="button" class="ghost" id="dscEdit">Editar calendario</button>':'')+'</div>'+
+  '<div class="dsc-grid">'+order.map((m,i)=>{const items=list.filter(c=>c.month===m),soon=i<2;
+   return '<section class="dsc-month'+(soon?' soon':'')+(items.length?'':' empty')+'"><header><h3>'+DS_MONTHS[m-1]+'</h3><small>'+when(m)+(m<tm?' · '+(ty+1):'')+'</small></header>'+
+    (items.length?items.map(c=>{const hits=dsCampMatch(c,yearOf(m));return '<div class="dsc-item">'+(c.dates?'<b>'+esc(c.dates)+'</b>':'')+(c.creative?'<span>'+esc(c.creative)+'</span>':'')+'<div class="dsc-foot"><i class="ds-co" style="--c:'+dsColor(st.companies,c.company)+'">'+esc(c.company)+'</i>'+
+      (hits.length?hits.slice(0,2).map(r=>'<em class="dsc-hit '+(r.status==="entregado"?'ok':'')+'" title="'+esc(r.title)+'">'+(r.status==="entregado"?'Entregada':'Pedida')+' · '+esc(r.title.slice(0,40))+(r.title.length>40?'…':'')+'</em>').join(""):'<button type="button" class="'+(soon?'primary':'ghost')+' dsc-ask" data-camp="'+c.id+'" data-y="'+yearOf(m)+'">Pedir creatividad</button>')+'</div></div>'}).join(""):'<p class="muted">Sin campaña fija.</p>')+'</section>'}).join("")+'</div>';
+ $$(".dsc-ask").forEach(b=>b.onclick=()=>{const c=list.find(x=>x.id===b.dataset.camp);dsView.tab="peticiones";dsRender();dsForm(null,{title:dsCampTitle(c),company:c.company,notes:"Campaña del año · "+DS_MONTHS[c.month-1]+" "+b.dataset.y+(c.dates?" · "+c.dates:"")})});
+ if($("#dscEdit"))$("#dscEdit").onclick=dsCampEdit}
+function dsCampEdit(){const st=JSON.parse(JSON.stringify(DS.settings)),list=st.campaigns=st.campaigns||[];
+ const draw=()=>{$("#dsBody").innerHTML='<section class="card"><div class="section-title"><div><small class="section-kicker">Fer y Celia</small><h2>Editar campañas del año</h2></div></div><div class="dsc-edit">'+
+  list.map((c,i)=>'<div class="dsc-row"><select data-cm="'+i+'">'+DS_MONTHS.map((n,k)=>'<option value="'+(k+1)+'"'+(c.month===k+1?' selected':'')+'>'+n+'</option>').join("")+'</select><input data-cd="'+i+'" value="'+esc(c.dates)+'" placeholder="Fechas (14 San Valentín…)"><input data-cc="'+i+'" value="'+esc(c.creative)+'" placeholder="Creatividad"><select data-co="'+i+'">'+st.companies.map(x=>'<option'+(x.name===c.company?' selected':'')+'>'+esc(x.name)+'</option>').join("")+'</select><button type="button" class="ghost" data-crm="'+i+'">Quitar</button></div>').join("")+
+  '</div><div class="actions-row" style="margin-top:12px"><button type="button" id="dscAdd">Añadir campaña</button><button type="button" class="primary" id="dscSave">Guardar</button><button type="button" class="ghost" id="dscBack">Volver</button></div></section>';
+  $$("[data-cm]").forEach(x=>x.onchange=()=>list[x.dataset.cm].month=+x.value);$$("[data-cd]").forEach(x=>x.oninput=()=>list[x.dataset.cd].dates=x.value);$$("[data-cc]").forEach(x=>x.oninput=()=>list[x.dataset.cc].creative=x.value);$$("[data-co]").forEach(x=>x.onchange=()=>list[x.dataset.co].company=x.value);
+  $$("[data-crm]").forEach(b=>b.onclick=()=>{list.splice(+b.dataset.crm,1);draw()});
+  $("#dscAdd").onclick=()=>{list.push({id:"c"+Date.now().toString(36),month:+DS.today.slice(5,7),dates:"",creative:"",company:"ABONOTEATRO"});list.sort((a,b)=>a.month-b.month);draw()};
+  $("#dscBack").onclick=()=>dsCampaigns();
+  $("#dscSave").onclick=async()=>{try{const r=await api("/api/diseno?settings=1",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:st})});DS.settings=r.settings;say("Campañas guardadas");dsCampaigns()}catch(e){say(e.message)}}};
+ draw()}
 // ===================== IMPORTAR =====================
 // Añade de una vez datos preparados fuera de la app (por ejemplo, por Claude a partir de una tabla
 // pegada en el chat). Llega en el enlace #importar?d=<datos> o se pega en el cuadro. Siempre se
@@ -2042,7 +2073,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v122";
+const YC_VERSION="yellow-control-v123";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
