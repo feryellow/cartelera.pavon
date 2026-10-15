@@ -1232,9 +1232,10 @@ function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno
  if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
  const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
  app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
-  '<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
+  dsCampTable()+'<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
  $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
  if($("#dsNew"))$("#dsNew").onclick=()=>dsForm(null);
+ if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()};
  if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="campanas")dsCampaigns();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
 function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAlerts(d);
  const counts={};Object.values(per).forEach(ks=>ks.forEach(k=>counts[k]=(counts[k]||0)+1));
@@ -1508,6 +1509,11 @@ function dsCampMatch(c,year){const keys=DSN(c.dates||c.creative).split(/[^a-z0-9
  const from=new Date(year,c.month-1,1);from.setMonth(from.getMonth()-3);const fromIso=from.toISOString().slice(0,10),toIso=year+"-"+String(c.month).padStart(2,"0")+"-31";
  return DS.rows.filter(r=>{const ref=r.deadline||r.deliveredAt||r.requestDate||"";return r.status!=="cancelado"&&ref>=fromIso&&ref<=toIso}).filter(r=>(!c.company||r.company===c.company)&&keys.some(k=>has(r.title,k)))}
 function dsCampTitle(c){return c.creative?c.creative+(c.dates?" ("+c.dates+")":""):"Creatividad "+c.dates}
+// La tabla de la hoja («CALENDARIO CAMPAÑAS»), tal cual, arriba del todo en Diseño: se ve nada más entrar
+function dsCampTable(){const st=DS.settings,list=st.campaigns||[],tm=+DS.today.slice(5,7),onlyAbt=list.every(c=>c.company==="ABONOTEATRO");
+ const cell=(m,f)=>list.filter(c=>c.month===m&&c[f]).map(c=>esc(c[f])+(onlyAbt||f!=="dates"?'':' <i class="dst-co">'+esc(c.company)+'</i>')).join(" / ");
+ return '<section class="dst"><div class="dst-head"><h2>'+(onlyAbt?'Campañas para Abonoteatro anuales':'Calendario de campañas')+'</h2>'+(DS.canSettings?'<button type="button" class="ghost" id="dstEdit">Editar</button>':'')+'</div><table><thead><tr><th>Mes</th><th>Campaña</th><th>Creatividad</th></tr></thead><tbody>'+
+  DS_MONTHS.map((n,i)=>'<tr'+(i+1===tm?' class="now"':'')+'><th>'+n+(i+1===tm?' <em>este mes</em>':'')+'</th><td>'+cell(i+1,"dates")+'</td><td>'+cell(i+1,"creative")+'</td></tr>').join("")+'</tbody></table></section>'}
 function dsCampaigns(){const d=DS,st=d.settings,list=st.campaigns||[],t=d.today,ty=+t.slice(0,4),tm=+t.slice(5,7);
  const order=Array.from({length:12},(_,i)=>((tm-1+i)%12)+1);
  const when=m=>{const diff=(m-tm+12)%12;return diff===0?"Este mes":diff===1?"El mes que viene":"Dentro de "+diff+" meses"};
@@ -2080,7 +2086,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v124";
+const YC_VERSION="yellow-control-v125";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
