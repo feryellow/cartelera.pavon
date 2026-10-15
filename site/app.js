@@ -1201,7 +1201,7 @@ async function television(){
 // Los indicadores son del proceso, no de personas.
 const DS_STATUS=[["pendiente","Pendiente"],["en_proceso","En proceso"],["en_revision","En revisión"],["parado","Parado"],["entregado","Entregado"],["cancelado","Cancelado"]];
 const DS_OPEN=["pendiente","en_proceso","en_revision","parado"];
-const dsView={tab:"peticiones",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
+const dsView={tab:"panel",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
 let DS=null;
 const dsDays=(a,b)=>Math.round((new Date(b+"T12:00:00Z")-new Date(a+"T12:00:00Z"))/864e5);
 const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
@@ -1230,13 +1230,12 @@ async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});
  const row=edit&&DS.rows.find(r=>r.id===edit);if(row)dsForm(row);else if(edit)say("No se ha encontrado la petición (puede estar quitada)")}
 function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
  if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
- const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
- app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
-  dsCampTable()+'<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
+ const tabs=[["panel","Panel"],["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
+ app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"||dsView.tab==="panel"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
+  '<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
  $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
- if($("#dsNew"))$("#dsNew").onclick=()=>dsForm(null);
- if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()};
- if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="campanas")dsCampaigns();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
+ if($("#dsNew"))$("#dsNew").onclick=()=>{if(dsView.tab!=="peticiones"){dsView.tab="peticiones";dsRender()}dsForm(null)};
+ if(dsView.tab==="panel")dsPanel();else if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="campanas")dsCampaigns();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
 function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAlerts(d);
  const counts={};Object.values(per).forEach(ks=>ks.forEach(k=>counts[k]=(counts[k]||0)+1));
  let rows=d.rows.slice();
@@ -1535,6 +1534,33 @@ function dsCampEdit(){const st=JSON.parse(JSON.stringify(DS.settings)),list=st.c
   $("#dscBack").onclick=()=>dsCampaigns();
   $("#dscSave").onclick=async()=>{try{const r=await api("/api/diseno?settings=1",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:st})});DS.settings=r.settings;say("Campañas guardadas");dsCampaigns()}catch(e){say(e.message)}}};
  draw()}
+// ---- Panel: lo mismo que la pestaña PANEL de la hoja, lo primero que se ve al entrar en Diseño
+const dsInk=hex=>{const h=String(hex||"#888").replace("#",""),n=parseInt(h.length===3?h.split("").map(x=>x+x).join(""):h,16),r=n>>16&255,g=n>>8&255,b=n&255;return (r*299+g*587+b*114)/1000>150?"#161616":"#ffffff"};
+function dsPanel(){const d=DS,st=d.settings,t=d.today,rows=d.rows,open=rows.filter(r=>DS_OPEN.includes(r.status)),late=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline<t,soon=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline>=t&&dsDays(t,r.deadline)<=st.soonDays;
+ const avg=list=>list.length?Math.round(list.reduce((a,r)=>a+Number(r.progress||0),0)/list.length):null;
+ if(!rows.length){$("#dsBody").innerHTML='<section class="dsp-empty"><h2>Aquí va la información de la hoja</h2><p>Todavía no se ha subido la hoja «ABONOTEATRO Y LA ESTACION». Cuando se suba, este panel muestra lo mismo que la pestaña PANEL: peticiones totales, abiertas, vencidas, por persona y por espacio, y todas las tareas pendientes y hechas.</p>'+(d.canSettings?'<div class="actions-row"><button type="button" class="primary" id="dspPick">Subir el Excel de la hoja</button><input type="file" id="dspFile" accept=".xlsx" hidden></div><p class="muted">En la hoja: Archivo › Descargar › Microsoft Excel (.xlsx). Lo que ya esté no se duplica.</p><div id="dsImp"></div>':'<p class="muted">Tienen que subirla Fernando o Celia.</p>')+'</section>'+dsCampTable();
+  if($("#dspPick")){$("#dspPick").onclick=()=>$("#dspFile").click();$("#dspFile").onchange=async e=>{await dsImportFile(e.target.files[0]);const go=$("#dsImpGo");if(go){const prev=go.onclick;go.onclick=async()=>{await prev();dsRender()}}}}
+  if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()};return}
+ const people=[...new Set([...st.people.map(p=>p.name),...rows.map(r=>r.requester).filter(Boolean)])].filter(n=>rows.some(r=>r.requester===n)||st.people.some(p=>p.name===n));
+ const companies=[...new Set([...st.companies.map(c=>c.name),...rows.map(r=>r.company).filter(Boolean)])].filter(n=>rows.some(r=>r.company===n));
+ const pct=(a,b)=>b?Math.round(100*a/b)+" %":"";
+ if(rows.some(r=>!r.requester))people.push("");if(rows.some(r=>!r.company))companies.push("");
+ const name=(color,n,key,val)=>n?'<th><button type="button" class="dsp-tag" data-dspgo="'+key+'" data-v="'+esc(val)+'" style="background:'+color+';color:'+dsInk(color)+'">'+esc(n)+'</button></th>':'<th><span class="dsp-tag" style="cursor:default;color:var(--muted)">Sin indicar</span></th>';
+ const perRows=people.map(n=>{const l=rows.filter(r=>(r.requester||"")===n),e=l.filter(r=>r.status==="entregado").length;return [n,l.length,e,l.filter(r=>DS_OPEN.includes(r.status)).length,l.filter(late).length,l.filter(soon).length,pct(e,l.length)]}).sort((a,b)=>b[1]-a[1]);
+ const coRows=companies.map(n=>{const l=rows.filter(r=>(r.company||"")===n),o=l.filter(r=>DS_OPEN.includes(r.status));return [n,l.length,l.filter(r=>r.status==="entregado").length,o.length,o.length?avg(o)+" %":""]}).sort((a,b)=>b[1]-a[1]);
+ const sum=(list,i)=>list.reduce((a,r)=>a+r[i],0);
+ const kpi=(v,l,c)=>'<div class="dsp-kpi'+(c?' '+c:'')+'"><span>'+l+'</span><b>'+v+'</b></div>';
+ $("#dsBody").innerHTML='<section class="dsp"><div class="dsp-title"><h2>Panel de diseño · Abonoteatro y La Estación</h2><small>Actualizado: ahora</small></div>'+
+  '<div class="dsp-kpis">'+kpi(rows.length,"Peticiones totales")+kpi(open.length,"Abiertas")+kpi(open.filter(late).length,"Vencidas",open.some(late)?"hot":"")+kpi((avg(open)??0)+" %","Avance medio")+'</div>'+
+  '<div class="dsp-grid"><div><h3>Peticiones por persona</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Persona</th><th>Peticiones</th><th>Entregadas</th><th>Abiertas</th><th>Vencidas</th><th>Vencen en '+st.soonDays+' días</th><th>% entregado</th></tr></thead><tbody>'+
+   perRows.map(r=>'<tr>'+name(dsColor(st.people,r[0]),r[0],"who",r[0])+r.slice(1).map((v,i)=>'<td'+(i===3&&v?' class="hot"':'')+'>'+v+'</td>').join("")+'</tr>').join("")+
+   '<tr class="tot"><th>Total</th><td>'+sum(perRows,1)+'</td><td>'+sum(perRows,2)+'</td><td>'+sum(perRows,3)+'</td><td>'+sum(perRows,4)+'</td><td>'+sum(perRows,5)+'</td><td></td></tr></tbody></table></div></div>'+
+  '<div><h3>Creatividades por espacio</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Espacio / empresa</th><th>Creatividades</th><th>Entregadas</th><th>Abiertas</th><th>Avance medio</th></tr></thead><tbody>'+
+   coRows.map(r=>'<tr>'+name(dsColor(st.companies,r[0]),r[0],"company",r[0])+r.slice(1).map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+
+   '<tr class="tot"><th>Total</th><td>'+sum(coRows,1)+'</td><td>'+sum(coRows,2)+'</td><td>'+sum(coRows,3)+'</td><td></td></tr></tbody></table></div></div></div>'+
+  '<div class="dsp-links"><button type="button" class="primary" data-dspgo="state" data-v="abiertas">Ver las '+open.length+' tareas pendientes</button><button type="button" data-dspgo="state" data-v="entregado">Ver las tareas hechas</button></div></section>'+dsCampTable();
+ $$("[data-dspgo]").forEach(b=>b.onclick=()=>{const k=b.dataset.dspgo,v=b.dataset.v;Object.assign(dsView,{who:"",company:"",alert:"",q:"",state:"abiertas"});if(k==="who")dsView.who=v;else if(k==="company")dsView.company=v;else dsView.state=v;if(k!=="state")dsView.state="todas";dsView.tab="peticiones";dsRender();window.scrollTo({top:0,behavior:"smooth"})});
+ if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()}}
 // ===================== IMPORTAR =====================
 // Añade de una vez datos preparados fuera de la app (por ejemplo, por Claude a partir de una tabla
 // pegada en el chat). Llega en el enlace #importar?d=<datos> o se pega en el cuadro. Siempre se
@@ -2086,7 +2112,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v125";
+const YC_VERSION="yellow-control-v126";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
