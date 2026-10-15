@@ -11,9 +11,11 @@ export type Actor = {
 
 const ROLE_ACCESS: Record<string, { read: string[]; write: string[] }> = {
   admin: { read: ["*"], write: ["*"] },
-  gestion: { read: ["dashboard","carteleria","calendario","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","archivo","avisos","meta"], write: ["carteleria","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","avisos","meta"] },
+  gestion: { read: ["dashboard","carteleria","calendario","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","archivo","avisos","meta","diseno"], write: ["carteleria","radio","publicidad","taxis","intercambiadores","hometicket","revistas","hitos","avisos","meta","diseno"] },
   carteleria: { read: ["dashboard","carteleria"], write: ["carteleria"] },
-  consulta: { read: ["dashboard","carteleria","calendario","hitos","archivo"], write: [] },
+  consulta: { read: ["dashboard","carteleria","calendario","hitos","archivo","diseno"], write: ["diseno"] },
+  // Diseñadora: solo la sección Diseño (ve todas las peticiones y cambia situación, avance y comentarios)
+  diseno: { read: ["diseno"], write: ["diseno"] },
   // Proveedores: ninguna sección de la app; solo su portal (/api/proveedor filtra sus datos)
   proveedor: { read: [], write: [] },
 };

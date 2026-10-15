@@ -1156,3 +1156,27 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .av-row span,.av-user span{display:flex;flex-direction:column;gap:2px}.av-row small,.av-user small{opacity:.7;font-size:12px}
 .av-hour{display:flex;gap:10px;align-items:center;margin-top:14px}
 .av-user{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+
+/* Diseño */
+.ds-tabs .tv-tab{height:auto;padding:10px 16px;opacity:1;background:var(--panel2);color:var(--cream);font-weight:800}
+.ds-tabs .tv-tab.on{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.ds-glob p{margin:4px 0}
+.ds-alertbar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.ds-chip{border-radius:999px;padding:7px 12px;font-size:13px}
+.ds-chip.on{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.ds-chip.late{border-color:#c0392b}.ds-chip.warn{border-color:var(--yellow)}
+.ds-filters .actions-row{flex-wrap:wrap}.ds-mine{display:flex;gap:6px;align-items:center;font-size:13px}
+.ds-list{display:grid;gap:10px}
+.ds-item{margin:0}.ds-item.late{border-color:#c0392b}
+.ds-item h3{margin:8px 0 6px;font-size:16px;line-height:1.3}
+.ds-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ds-who,.ds-co{font-size:11px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 30%,transparent);border:1px solid var(--c)}
+.ds-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;opacity:.85}
+.ds-notes{margin:8px 0 0;font-size:13px}
+.ds-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.ds-bar{flex:1;min-width:80px;height:6px;border-radius:6px;background:var(--panel2);overflow:hidden}.ds-bar i{display:block;height:100%;background:var(--yellow)}
+.ds-urg{display:flex;gap:8px;align-items:center;align-self:end}
+.ds-set{display:flex;gap:8px;align-items:center;margin:0 0 8px;flex-wrap:wrap}.ds-set input:not([type=color]){flex:1;min-width:120px}.ds-set input[type=color]{width:44px;height:36px;padding:2px}
+.ds-filters select,.ds-actions select{width:auto;flex:0 0 auto;min-width:0}
+.ds-filters input#dsQ{width:auto}
+.ds-mine{white-space:nowrap}.ds-mine input{width:auto}

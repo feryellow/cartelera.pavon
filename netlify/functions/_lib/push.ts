@@ -6,12 +6,13 @@ import { controlStore } from "./store.ts";
 // en «Avisos», que solo ven Fer y Celia. Sin ajustes guardados: solo Fer, todos los tipos, a las 9.
 const env = (k: string) => (globalThis as any).Netlify?.env?.get(k) || (globalThis as any).process?.env?.[k] || "";
 
-export type PushType = "diario" | "urgente" | "proveedores" | "meta" | "prueba" | "manual";
+export type PushType = "diario" | "urgente" | "proveedores" | "meta" | "diseno" | "prueba" | "manual";
 export const PUSH_TYPES: { id: Exclude<PushType, "prueba" | "manual">; label: string; detail: string }[] = [
   { id: "diario", label: "Fechas del día", detail: "Cada mañana, lo que hay hoy en el Calendario" },
   { id: "urgente", label: "Urgente de cartelería y material", detail: "En el mismo aviso de la mañana, lo que vence hoy o mañana" },
   { id: "proveedores", label: "Proveedores", detail: "Cuando un proveedor pide material o escribe desde su portal" },
   { id: "meta", label: "Digital", detail: "Si falla la lectura automática de Meta" },
+  { id: "diseno", label: "Diseño", detail: "A quien pidió una pieza, el día laborable antes de su fecha límite" },
 ];
 export type PushSettings = { users: string[]; types: Record<string, boolean>; hour: number; holidays: string[]; updatedAt?: string; updatedBy?: string };
 
@@ -19,7 +20,7 @@ function defaults(): PushSettings {
   const v = env("PUSH_USERS");
   const users = (v ? v.split(",") : ["fernando@yellowmedia.es"]).map((x: string) => x.trim().toLowerCase()).filter(Boolean);
   // Festivos de partida (Madrid capital, lo que queda de 2026): se editan en «Avisos»
-  return { users, types: { diario: true, urgente: true, proveedores: true, meta: true }, hour: 9, holidays: ["2026-10-12", "2026-11-09", "2026-12-08", "2026-12-25"] };
+  return { users, types: { diario: true, urgente: true, proveedores: true, meta: true, diseno: true }, hour: 9, holidays: ["2026-10-12", "2026-11-09", "2026-12-08", "2026-12-25"] };
 }
 export async function getSettings(): Promise<PushSettings> {
   const s = await controlStore().get("push_settings", { type: "json" }) as PushSettings | null;
