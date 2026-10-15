@@ -9,11 +9,28 @@ import { clean, listDiseno, getDiseno, putDiseno, getSettings, saveSettings, OPE
 //   GET                      → peticiones, ajustes y tipos de pieza
 //   POST {row}               → nueva petición (sin fecha límite no entra)
 //   POST {bulk:[…]}          → importación de la hoja (solo Fer y Celia); no duplica
-//   PUT ?id=…  {row}         → cambia una petición (fechas de entrega y reaperturas se apuntan solas)
+//   PUT ?id=…  {row,reason}  → cambia una petición (fechas de entrega y reaperturas se apuntan solas; queda en su historial)
+//   PUT ?id=…&undo=1         → deshace el último cambio de esa petición
+//   POST {updates:[{id,row}]} → actualización en bloque (lo que pega la diseñadora, ya revisado)
 //   DELETE ?id=…             → la quita (recuperable)
 //   PUT ?settings=1 {settings} → personas, empresas y umbrales (solo Fer y Celia)
 const noStore = { "cache-control": "no-store, private" };
 const json = (d: unknown, status = 200) => Response.json(d, { status, headers: noStore });
+// Campos que quedan en el historial de cada petición (quién, cuándo, de qué a qué). Se guardan los 40 últimos.
+const TRACK = ["title", "requester", "company", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes"];
+function applyUpdate(before: any, r: any, actor: any, today: string, reason = "", undo = false) {
+  const now = new Date().toISOString();
+  const row: any = { ...before, ...r, id: before.id, updatedAt: now, updatedBy: actor.email };
+  if (r.status && r.status !== before.status) {
+    row.statusChangedAt = now;
+    const wasClosed = !OPEN.includes(before.status), isClosed = !OPEN.includes(r.status);
+    if (r.status === "entregado") { row.deliveredAt = r.deliveredAt || today; row.progress = 100; }
+    if (wasClosed && !isClosed) { if (!undo) row.reopenCount = (before.reopenCount || 0) + 1; row.deliveredAt = ""; }
+  }
+  const changes = TRACK.filter((f) => String(row[f] ?? "") !== String(before[f] ?? "")).map((f) => ({ f, from: before[f] ?? "", to: row[f] ?? "" }));
+  if (changes.length) row.history = [...(Array.isArray(before.history) ? before.history : []), { at: now, by: actor.email, changes, reason: reason.slice(0, 200), ...(undo ? { undo: true } : {}) }].slice(-40);
+  return row;
+}
 const key = (r: any) => [r.title, r.requester, r.requestDate].map((x) => String(x || "").toLowerCase().replace(/\s+/g, " ").trim()).join("|");
 
 export default async (req: Request) => {
@@ -49,6 +66,18 @@ export default async (req: Request) => {
     return json({ ok: true, added, skipped });
   }
 
+  if (req.method === "POST" && Array.isArray(body.updates)) {
+    const out: any[] = [], errors: string[] = [];
+    for (const u of body.updates.slice(0, 100)) {
+      const id = String(u?.id || ""); if (!/^[\w-]{8,60}$/.test(id)) continue;
+      const before = await getDiseno(id); if (!before || before.deletedAt) { errors.push(id); continue; }
+      const r = clean(u.row || {}); if (r.deadline === "") delete r.deadline;
+      const row = applyUpdate(before, r, actor, today, String(u.reason || "Actualización en bloque"));
+      await putDiseno(id, row); out.push(row);
+      await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row, note: "Actualización en bloque" }).catch(() => null);
+    }
+    return json({ rows: out, errors });
+  }
   if (req.method === "POST") {
     const r = clean(body.row || {});
     if (!r.title) return json({ error: "Describe qué hay que diseñar." }, 400);
@@ -70,16 +99,21 @@ export default async (req: Request) => {
   const id = url.searchParams.get("id") || ""; if (!/^[\w-]{8,60}$/.test(id)) return json({ error: "Falta la petición" }, 400);
   const before = await getDiseno(id); if (!before) return json({ error: "No encontrada" }, 404);
 
+  if (req.method === "PUT" && url.searchParams.get("undo")) {
+    const hist = Array.isArray(before.history) ? before.history : [];
+    const last = [...hist].reverse().find((h: any) => !h.undo && !h.undone);
+    if (!last) return json({ error: "No hay cambios que deshacer." }, 400);
+    const back: Record<string, any> = {}; for (const c of last.changes) back[c.f] = c.from ?? "";
+    const row = applyUpdate(before, back, actor, today, "Deshace el cambio de " + last.at.slice(0, 16).replace("T", " "), true);
+    last.undone = true;
+    await putDiseno(id, row);
+    await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row, note: "Deshacer" }).catch(() => null);
+    return json({ row });
+  }
   if (req.method === "PUT") {
-    const r = clean(body.row || {}), now = new Date().toISOString();
+    const r = clean(body.row || {});
     if (r.deadline === "" && before.deadline) return json({ error: "La fecha límite no se puede dejar vacía." }, 400);
-    const row: any = { ...before, ...r, id, updatedAt: now, updatedBy: actor.email };
-    if (r.status && r.status !== before.status) {
-      row.statusChangedAt = now;
-      const wasClosed = !OPEN.includes(before.status), isClosed = !OPEN.includes(r.status);
-      if (r.status === "entregado") { row.deliveredAt = r.deliveredAt || today; row.progress = 100; }
-      if (wasClosed && !isClosed) { row.reopenCount = (before.reopenCount || 0) + 1; row.deliveredAt = ""; }
-    }
+    const row = applyUpdate(before, r, actor, today, String(body.reason || ""));
     await putDiseno(id, row);
     await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row }).catch(() => null);
     return json({ row });

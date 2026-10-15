@@ -1219,12 +1219,13 @@ function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN
 const DS_ALERT={vencida:["Vencida","late"],pronto:["Vence pronto","warn"],sinfecha:["Sin fecha",""],estancada:["Sin cambios",""],parada:["Parada",""],antigua:["Más de 60 días",""],sintipo:["Sin tipo de pieza",""]};
 async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});dsRender()}
 function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
- const tabs=[["peticiones","Peticiones"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
+ if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
+ const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
  app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''))+
   '<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
- $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsRender()});
+ $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
  if($("#dsNew"))$("#dsNew").onclick=()=>dsForm(null);
- if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
+ if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
 function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAlerts(d);
  const counts={};Object.values(per).forEach(ks=>ks.forEach(k=>counts[k]=(counts[k]||0)+1));
  let rows=d.rows.slice();
@@ -1246,13 +1247,13 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
   '</div></section>'+
   '<p class="muted" style="margin:4px 2px 10px">'+rows.length+' peticiones</p>'+
   (rows.length?'<div class="ds-list">'+rows.map(r=>{const al=per[r.id]||[],left=r.deadline?dsDays(t,r.deadline):null;
-   return '<article class="card ds-item'+(al.includes("vencida")?' late':'')+'"><div class="ds-top"><span class="ds-who" style="--c:'+dsColor(st.people,r.requester)+'">'+esc(r.requester||"—")+'</span><span class="ds-co" style="--c:'+dsColor(st.companies,r.company)+'">'+esc(r.company||"—")+'</span>'+(r.pieceType?'<span class="badge">'+esc(r.pieceType)+'</span>':'')+(r.urgent?'<span class="badge late">Urgente</span>':'')+al.filter(k=>k!=="sintipo").map(k=>'<span class="badge '+DS_ALERT[k][1]+'">'+DS_ALERT[k][0]+'</span>').join("")+'</div>'+
+   return '<article class="card ds-item'+(al.includes("vencida")?' late':'')+'" data-dsid="'+r.id+'"><div class="ds-top"><span class="ds-who" style="--c:'+dsColor(st.people,r.requester)+'">'+esc(r.requester||"—")+'</span><span class="ds-co" style="--c:'+dsColor(st.companies,r.company)+'">'+esc(r.company||"—")+'</span>'+(r.pieceType?'<span class="badge">'+esc(r.pieceType)+'</span>':'')+(r.urgent?'<span class="badge late">Urgente</span>':'')+al.filter(k=>k!=="sintipo").map(k=>'<span class="badge '+DS_ALERT[k][1]+'">'+DS_ALERT[k][0]+'</span>').join("")+'</div>'+
     '<h3>'+esc(r.title)+'</h3>'+
-    '<div class="ds-meta"><span>Pedida '+(r.requestDate?fdate(r.requestDate):"—")+'</span><span><b>'+(r.deadline?'Para el '+fdate(r.deadline)+(DS_OPEN.includes(r.status)?' · '+(left<0?'vencida hace '+(-left)+' d':left===0?'hoy':'faltan '+left+' d'):''):'Sin fecha límite')+'</b></span>'+(r.deliveredAt?'<span>Entregada '+fdate(r.deliveredAt)+'</span>':'')+(r.reopenCount?'<span>Reabierta '+r.reopenCount+'</span>':'')+'</div>'+
+    '<div class="ds-meta"><button type="button" class="ds-date sm" data-dsdate="requestDate" title="Corregir fecha de solicitud">Pedida '+(r.requestDate?fdate(r.requestDate):"—")+'</button><button type="button" class="ds-date" data-dsdate="deadline" title="Cambiar fecha límite">'+(r.deadline?'Para el '+fdate(r.deadline):'Poner fecha límite')+'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>'+(r.deadline&&DS_OPEN.includes(r.status)?'<span>'+(left<0?'vencida hace '+(-left)+' d':left===0?'vence hoy':'faltan '+left+' d')+'</span>':'')+(r.deliveredAt?'<span>Entregada '+fdate(r.deliveredAt)+'</span>':'')+(r.reopenCount?'<span>Reabierta '+r.reopenCount+'</span>':'')+'</div>'+
     (r.designerNotes?'<p class="ds-notes"><b>Comentarios de diseño:</b> '+esc(r.designerNotes)+'</p>':'')+
     '<div class="ds-actions"><select data-dsst="'+r.id+'">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
     '<select data-dspr="'+r.id+'">'+[0,25,50,75,100].map(p=>'<option value="'+p+'"'+(Number(r.progress||0)===p?' selected':'')+'>'+p+' %</option>').join("")+'</select>'+
-    '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" data-dsed="'+r.id+'">Editar</button></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
+    '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" class="ghost" data-dshist>Historial'+((r.history||[]).length?' ('+r.history.length+')':'')+'</button><button type="button" data-dsed="'+r.id+'">Editar</button></div><div class="ds-edit"></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
  $$("[data-dsalert]").forEach(b=>b.onclick=()=>{dsView.alert=b.dataset.dsalert;if(dsView.alert)dsView.state="abiertas";dsList(isDesigner)});
  $("#dsState").onchange=e=>{dsView.state=e.target.value;dsList(isDesigner)};$("#dsWho").onchange=e=>{dsView.who=e.target.value;dsList(isDesigner)};$("#dsCo").onchange=e=>{dsView.company=e.target.value;dsList(isDesigner)};
  $("#dsQ").oninput=e=>{dsView.q=e.target.value;clearTimeout(dsList.t);dsList.t=setTimeout(()=>{dsList(isDesigner);const q=$("#dsQ");q.focus();q.setSelectionRange(q.value.length,q.value.length)},350)};
@@ -1260,7 +1261,9 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
  const save=async(id,patch)=>{try{const r=await api("/api/diseno?id="+id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row:patch})});const i=DS.rows.findIndex(x=>x.id===id);DS.rows[i]=r.row;say("Guardado");dsList(isDesigner)}catch(e){say(e.message)}};
  $$("[data-dsst]").forEach(s=>s.onchange=()=>save(s.dataset.dsst,{status:s.value}));
  $$("[data-dspr]").forEach(s=>s.onchange=()=>save(s.dataset.dspr,{progress:+s.value}));
- $$("[data-dsed]").forEach(b=>b.onclick=()=>dsForm(DS.rows.find(r=>r.id===b.dataset.dsed)))}
+ $$("[data-dsed]").forEach(b=>b.onclick=()=>dsForm(DS.rows.find(r=>r.id===b.dataset.dsed)));
+ $$("[data-dsdate]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsDateEditor(c,DS.rows.find(r=>r.id===c.dataset.dsid),b.dataset.dsdate,isDesigner)});
+ $$("[data-dshist]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsHistory(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)})}
 function dsForm(r){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me||"",status:"pendiente",progress:0};
  const people=[...new Set([...st.people.map(p=>p.name),r.requester].filter(Boolean))],companies=[...new Set([...st.companies.map(c=>c.name),r.company].filter(Boolean))];
  const opt=(list,val)=>list.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("");
@@ -1341,6 +1344,110 @@ async function dsImportFile(file){if(!file)return;const box=$("#dsImp");box.inne
   $("#dsImpGo").onclick=async()=>{const b=$("#dsImpGo");b.disabled=true;b.textContent="Importando…";try{let added=0,skipped=0;for(let i=0;i<out.length;i+=400){const r=await api("/api/diseno",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({bulk:out.slice(i,i+400)})});added+=r.added;skipped+=r.skipped}
    DS=await api("/api/diseno",{cache:"no-store"});box.innerHTML='<div class="notice" style="margin-top:12px">'+added+' peticiones importadas'+(skipped?' · '+skipped+' ya estaban (repetidas en la hoja o importadas antes)':'')+'.</div>'}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
  catch(e){box.innerHTML='<div class="notice">No se ha podido leer: '+esc(e.message)+'</div>'}}
+// ---- Actualizar avance: la diseñadora pega una línea por trabajo, la app la cruza con las peticiones abiertas,
+// enseña qué va a cambiar y no guarda nada hasta confirmar. Cada cambio queda en el historial de la petición.
+const DSN=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const DS_STOP=new Set("de del la las el los y a al en para con por un una unos unas que esta este ya lo le se su ok vale tb tambien".split(" "));
+const DS_KW=[[/\b(entregad[oa]s?|terminad[oa]s?|hech[oa]s?|acabad[oa]s?|enviad[oa]s?|finalizad[oa]s?)\b/,"entregado"],[/\b(en revision|revision|para revisar|a revisar)\b/,"en_revision"],[/\b(parad[oa]s?|bloquead[oa]s?|en espera)\b/,"parado"],[/\b(cancelad[oa]s?|anulad[oa]s?|no se hace)\b/,"cancelado"],[/\b(en proceso|empezad[oa]s?|haciendo(?:lo|la)?|empezando|en marcha)\b/,"en_proceso"],[/\b(pendientes?|sin empezar)\b/,"pendiente"]];
+const DS_MES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+const DS_FIELD={title:"título",requester:"quién pide",company:"empresa",pieceType:"tipo de pieza",requestDate:"fecha de solicitud",deadline:"fecha límite",status:"situación",progress:"avance",urgent:"urgente",designerNotes:"comentario de diseño",link:"enlace",notes:"notas"};
+const dsVal=(f,v)=>v===""||v==null?"vacío":f==="status"?dsLabel(v):f==="progress"?v+" %":/Date|deadline/.test(f)?fdate(v):f==="urgent"?(v?"sí":"no"):String(v).length>60?String(v).slice(0,58)+"…":String(v);
+function dsName(email){const p=(DS?.settings.people||[]).find(x=>x.email&&x.email===String(email||"").toLowerCase());if(p)return p.name.charAt(0)+p.name.slice(1).toLowerCase();const u=String(email||"").split("@")[0];return u?u.charAt(0).toUpperCase()+u.slice(1):"—"}
+function dsWhen(iso){const d=new Date(iso),t=new Date(),y=new Date(Date.now()-864e5),hm=d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});return d.toDateString()===t.toDateString()?"Hoy "+hm:d.toDateString()===y.toDateString()?"Ayer "+hm:d.toLocaleDateString("es-ES",{day:"numeric",month:"short"})+" "+hm}
+function dsIsoAdd(iso,n){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function dsParseLine(raw,today){let s=" "+DSN(raw).replace(/\s+/g," ").trim()+" ",comment="",o={};
+ // comentario: lo que va tras « - », « — », «: » o desde «esperando / falta…»
+ let m=/\s(?:-|—|–|:|\/\/)\s(.+)$/.exec(raw.replace(/\s+/g," "));if(m){comment=m[1].trim();s=" "+DSN(raw.slice(0,raw.indexOf(m[0]))).trim()+" "}
+ else{m=/\b(esperando|a la espera|falta|faltan|ojo|nota)\b.*$/.exec(s);if(m){const i=DSN(raw).indexOf(m[0].trim());comment=i>=0?raw.slice(i).trim():m[0].trim();s=s.slice(0,m.index)+" "}}
+ // fecha: «fecha 30/10», «para el 2/11», «hasta 15 noviembre»
+ m=/\b(?:nueva fecha|fecha limite|fecha|para el|para|hasta el|hasta|limite|entrega el|entrega)\s+(\d{1,2})(?:[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?|\s+(?:de\s+)?([a-z]+))/.exec(s);
+ if(m){const mo=m[2]?+m[2]:DS_MES[m[4]];if(mo&&mo<=12&&+m[1]>=1&&+m[1]<=31){let y=m[3]?(m[3].length===2?"20"+m[3]:m[3]):today.slice(0,4);let iso=y+"-"+String(mo).padStart(2,"0")+"-"+String(+m[1]).padStart(2,"0");if(!m[3]&&dsDays(iso,today)>150)iso=(+y+1)+iso.slice(4);o.deadline=iso;s=s.replace(m[0]," ")}}
+ m=/(\d{1,3})\s*%|\bal (\d{1,3})\b/.exec(s);if(m){o.progress=Math.min(100,Math.round(+(m[1]||m[2])/25)*25);s=s.replace(m[0]," ")}
+ for(const [re,st] of DS_KW){const k=re.exec(s);if(k){o.status=st;s=s.replace(k[0]," ");break}}
+ if(comment)o.designerNotes=comment;
+ const words=s.split(/[^a-z0-9ñ]+/).filter(w=>w.length>1&&!DS_STOP.has(w));
+ return {raw,o,words}}
+function dsMatch(words,rows){const tok=r=>DSN(r.title+" "+r.company+" "+(r.pieceType||"")).split(/[^a-z0-9ñ]+/).filter(w=>w.length>1&&!DS_STOP.has(w));
+ const hit=(w,list)=>list.some(t=>t===w||(w.length>=4&&t.length>=4&&(t.startsWith(w)||w.startsWith(t)))||(w.length>=5&&t.length>=5&&t.slice(0,5)===w.slice(0,5)));
+ if(!words.length)return [];
+ return rows.map(r=>{const tk=tok(r),n=words.filter(w=>hit(w,tk)).length,cov=tk.length?tk.filter(t=>hit(t,words)).length/tk.length:0;return {r,score:n/words.length+cov*.15}}).filter(x=>x.score>=.5).sort((a,b)=>b.score-a.score)}
+function dsPatch(row,o){const p={};
+ if(o.deadline&&o.deadline!==row.deadline)p.deadline=o.deadline;
+ if(o.designerNotes&&o.designerNotes!==row.designerNotes)p.designerNotes=o.designerNotes;
+ let st=o.status;if(!st&&o.progress===100)st="entregado";if(!st&&o.progress>0&&row.status==="pendiente")st="en_proceso";
+ if(st&&st!==row.status)p.status=st;
+ if(o.progress!=null&&o.progress!==Number(row.progress||0)&&p.status!=="entregado")p.progress=o.progress;
+ return p}
+const dsUView={text:"",lines:null,done:null};
+function dsUpdate(){const d=DS,t=d.today,open=d.rows.filter(r=>DS_OPEN.includes(r.status)).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
+ const wk=dsIsoAdd(t,7),since7=dsIsoAdd(t,-7);
+ const stat=(n,l,c)=>'<div class="dsu-stat'+(c?' '+c:'')+'"><b>'+n+'</b><span>'+l+'</span></div>';
+ const feed=d.rows.flatMap(r=>(r.history||[]).map(h=>({r,h}))).sort((a,b)=>b.h.at.localeCompare(a.h.at)).slice(0,12);
+ // Ejemplos con sus propias peticiones: solo las que se reconocen sin dudar con tres o cuatro palabras
+ const short=r=>{const w=r.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim().split(" ").filter(x=>x.length>1&&!DS_STOP.has(DSN(x)));for(const n of [2,3,4]){const k=w.slice(0,n),m=dsMatch(k.map(DSN),open);if(m.length&&m[0].r.id===r.id&&!(m[1]&&m[1].score>=m[0].score-.1))return k.join(" ")}return ""};
+ const tails=[" 50%"," entregado",x=>" en revisión fecha "+fdate(dsIsoAdd(x.deadline&&x.deadline>t?x.deadline:t,3)).slice(0,-5)," parado - esperando textos"],ex=[];
+ for(const r of open){if(ex.length>=4)break;const k=short(r);if(k){const tl=tails[ex.length];ex.push(k+(typeof tl==="function"?tl(r):tl))}}
+ $("#dsBody").innerHTML='<div class="dsu">'+
+  '<div class="dsu-stats">'+stat(open.filter(r=>r.status==="en_proceso"||r.status==="en_revision").length,"en marcha")+stat(open.filter(r=>r.status==="pendiente").length,"sin empezar")+stat(open.filter(r=>r.deadline&&r.deadline<=wk).length,"vencen en 7 días",open.some(r=>r.deadline&&r.deadline<t)?"hot":"")+stat(d.rows.filter(r=>r.deliveredAt&&r.deliveredAt>=since7).length,"entregadas esta semana","ok")+'</div>'+
+  '<div class="dsu-grid"><div class="dsu-main">'+
+   '<section class="dsu-box"><div class="dsu-steps"><div><i>1</i><b>Pega</b><span>Una línea por trabajo, como en un WhatsApp.</span></div><div><i>2</i><b>Revisa</b><span>La app te enseña qué va a cambiar.</span></div><div><i>3</i><b>Confirma</b><span>Hasta entonces no se guarda nada.</span></div></div>'+
+   '<textarea id="dsuText" rows="7" placeholder="cartel hombre de la mancha 50%\nlona pavón entregada\nflyer kulunka parado - esperando textos\nbanner civitatis en revisión fecha 30/10">'+esc(dsUView.text)+'</textarea>'+
+   (ex.length?'<div class="dsu-try"><span>Prueba con tus peticiones:</span>'+ex.map(e=>'<button type="button" class="dsu-ex" data-ex="'+esc(e)+'">'+esc(e)+'</button>').join("")+'</div>':'')+
+   '<div class="dsu-go"><button type="button" class="primary" id="dsuCheck">Revisar cambios</button>'+(dsUView.text?'<button type="button" class="ghost" id="dsuClear">Borrar</button>':'')+'</div></section>'+
+   '<div id="dsuPrev"></div>'+
+   '<details class="dsu-help"><summary>Qué entiende cada línea</summary><div class="dsu-legend">'+
+    '<div><b>Avance</b><span>25 %, 50 %, 75 %, 100 % o «al 50». Con 100 % y sin más, se da por entregada.</span></div>'+
+    '<div><b>Situación</b><span>en proceso, en revisión, parado, entregado, cancelado, pendiente.</span></div>'+
+    '<div><b>Fecha límite</b><span>«fecha 30/10», «para el 2/11», «hasta 15 noviembre».</span></div>'+
+    '<div><b>Comentario</b><span>Después de un guion: «- falta el logo». También «esperando…» o «falta…».</span></div>'+
+    '<div><b>Qué trabajo es</b><span>Con dos o tres palabras del título basta. Si duda entre varias, te pregunta.</span></div></div></details>'+
+  '</div><aside class="dsu-side">'+
+   '<section class="dsu-box"><h3>Abiertas, por fecha</h3>'+(open.length?open.slice(0,10).map(r=>{const left=r.deadline?dsDays(t,r.deadline):null;return '<div class="dsu-prog"><div class="dsu-pt"><span class="dsu-dot" style="--c:'+dsColor(d.settings.companies,r.company)+'"></span><b>'+esc(r.title)+'</b><em class="'+(left!=null&&left<0?'late':left!=null&&left<=d.settings.soonDays?'soon':'')+'">'+(left==null?'sin fecha':left<0?'vencida':left===0?'hoy':fdate(r.deadline).slice(0,-5))+'</em></div><div class="dsu-bar"><i style="width:'+(r.progress||0)+'%"></i></div><small>'+dsLabel(r.status)+' · '+(r.progress||0)+' %</small></div>'}).join("")+(open.length>10?'<button type="button" class="ghost dsu-more" id="dsuAll">Ver las '+open.length+'</button>':''):'<p class="muted">Nada abierto.</p>')+'</section>'+
+   '<section class="dsu-box"><h3>Últimos avances</h3>'+(feed.length?feed.map(({r,h})=>'<div class="dsu-feed"><small>'+dsWhen(h.at)+' · '+esc(dsName(h.by))+(h.undo?' · deshecho':'')+'</small><b>'+esc(r.title)+'</b><span>'+h.changes.map(c=>esc(DS_FIELD[c.f]||c.f)+': '+esc(dsVal(c.f,c.from))+' → <em>'+esc(dsVal(c.f,c.to))+'</em>').join(" · ")+'</span></div>').join(""):'<p class="muted">Aquí aparecerá cada cambio: quién, cuándo y qué.</p>')+'</section>'+
+  '</aside></div></div>';
+ const ta=$("#dsuText");ta.oninput=()=>{dsUView.text=ta.value};
+ $$(".dsu-ex").forEach(b=>b.onclick=()=>{ta.value=(ta.value.trim()?ta.value.trim()+"\n":"")+b.dataset.ex;dsUView.text=ta.value;ta.focus()});
+ if($("#dsuClear"))$("#dsuClear").onclick=()=>{dsUView.text="";dsUView.lines=null;dsUpdate()};
+ if($("#dsuAll"))$("#dsuAll").onclick=()=>{dsView.tab="peticiones";dsRender()};
+ $("#dsuCheck").onclick=()=>{const lines=ta.value.split(/\n+/).map(x=>x.trim()).filter(Boolean);if(!lines.length){say("Pega al menos una línea");return}
+  dsUView.lines=lines.map(l=>{const p=dsParseLine(l,t),c=dsMatch(p.words,open),amb=c.length>1&&c[1].score>=c[0].score-.1;return {...p,cands:c.slice(0,5).map(x=>x.r.id),id:c.length&&!amb?c[0].r.id:"",amb}});
+  dsPreview()};
+ if(dsUView.lines)dsPreview();if(dsUView.done)dsDone()}
+function dsPreview(){const d=DS,open=d.rows.filter(r=>DS_OPEN.includes(r.status)).sort((a,b)=>a.title.localeCompare(b.title)),byId=id=>d.rows.find(r=>r.id===id);
+ const L=dsUView.lines,seen={};
+ const rowsHtml=L.map((l,i)=>{const r=l.id&&byId(l.id),p=r?dsPatch(r,l.o):{},n=Object.keys(p).length,dup=r&&seen[r.id];if(r)seen[r.id]=1;
+  const pill=!r?(l.amb?'<span class="dsu-pill warn">Elige cuál</span>':'<span class="dsu-pill bad">No la encuentro</span>'):dup?'<span class="dsu-pill warn">Repetida</span>':!n?'<span class="dsu-pill">Sin cambios</span>':p.deadline?'<span class="dsu-pill warn">Cambia la fecha</span>':'<span class="dsu-pill ok">Lista</span>';
+  const opts=(l.amb||!r?l.cands.map(byId).concat(open.filter(x=>!l.cands.includes(x.id))):[r].concat(open.filter(x=>x.id!==r.id)));
+  return '<div class="dsu-row'+(r&&n&&!dup?' ready':'')+'"><div class="dsu-said">«'+esc(l.raw)+'»</div>'+
+   '<div class="dsu-which"><select data-dsupick="'+i+'"><option value="">'+(l.amb?'¿Cuál de estas?':'Elige la petición…')+'</option>'+opts.map(x=>'<option value="'+x.id+'"'+(x.id===l.id?' selected':'')+'>'+esc(x.title.slice(0,70))+' · '+esc(x.company)+'</option>').join("")+'</select>'+(r?'<small>'+esc(r.company)+' · pedida por '+esc(r.requester)+'</small>':'')+'</div>'+
+   '<div class="dsu-chg">'+(r&&n?Object.entries(p).map(([f,v])=>'<div><small>'+esc(DS_FIELD[f])+'</small><s>'+esc(dsVal(f,r[f]??""))+'</s> → <b>'+esc(dsVal(f,v))+'</b></div>').join(""):r?'<small class="muted">No he entendido ningún cambio en esta línea.</small>':'')+'</div>'+pill+'</div>'}).join("");
+ const ready=L.filter((l,i)=>{const r=l.id&&byId(l.id);return r&&Object.keys(dsPatch(r,l.o)).length&&L.findIndex(x=>x.id===l.id)===i}).length;
+ $("#dsuPrev").innerHTML='<section class="dsu-box dsu-prev"><h3>Esto es lo que voy a cambiar</h3>'+rowsHtml+
+  '<div class="dsu-foot"><span>'+ready+' de '+L.length+' listas'+(ready<L.length?'. Las demás no se tocan si no eliges la petición.':'')+'</span><div><button type="button" class="ghost" id="dsuBack">Volver a editar</button><button type="button" class="primary" id="dsuSave"'+(ready?'':' disabled')+'>Confirmar '+ready+' cambio'+(ready===1?'':'s')+'</button></div></div></section>';
+ $$("[data-dsupick]").forEach(s=>s.onchange=()=>{const l=L[+s.dataset.dsupick];l.id=s.value;l.amb=false;dsPreview()});
+ $("#dsuBack").onclick=()=>{dsUView.lines=null;$("#dsuPrev").innerHTML="";$("#dsuText").focus()};
+ $("#dsuSave").onclick=async()=>{const b=$("#dsuSave");b.disabled=true;b.textContent="Guardando…";const used={},updates=[];
+  for(const l of L){const r=l.id&&byId(l.id);if(!r||used[r.id])continue;const p=dsPatch(r,l.o);if(!Object.keys(p).length)continue;used[r.id]=1;updates.push({id:r.id,row:p,reason:"Pegado: "+l.raw.slice(0,150)})}
+  try{const res=await api("/api/diseno",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({updates})});DS=await api("/api/diseno",{cache:"no-store"});
+   dsUView.done=res.rows.map(r=>r.id);dsUView.lines=null;dsUView.text="";dsUpdate()}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
+function dsDone(){const ids=dsUView.done;dsUView.done=null;const rows=ids.map(id=>DS.rows.find(r=>r.id===id)).filter(Boolean);
+ $("#dsuPrev").innerHTML='<section class="dsu-box dsu-ok"><h3>Hecho: '+rows.length+' petici'+(rows.length===1?'ón actualizada':'ones actualizadas')+'</h3>'+rows.map(r=>'<div class="dsu-okrow"><b>'+esc(r.title)+'</b><span>'+dsLabel(r.status)+' · '+(r.progress||0)+' %'+(r.deadline?' · para el '+fdate(r.deadline):'')+'</span><button type="button" class="ghost" data-dsuundo="'+r.id+'">Deshacer</button></div>').join("")+'<p class="muted">Cada cambio queda en el historial de su petición.</p></section>';
+ $$("[data-dsuundo]").forEach(b=>b.onclick=async()=>{try{const r=await api("/api/diseno?id="+b.dataset.dsuundo+"&undo=1",{method:"PUT",headers:{"content-type":"application/json"},body:"{}"});DS.rows[DS.rows.findIndex(x=>x.id===r.row.id)]=r.row;b.closest(".dsu-okrow").classList.add("undone");b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Deshecho"}));say("Deshecho")}catch(e){say(e.message)}})}
+// Cambiar una fecha desde la tarjeta, con atajos y motivo; y ver el historial con «Deshacer último cambio»
+function dsDateEditor(card,r,f,isDesigner){const box=card.querySelector(".ds-edit");if(box.dataset.open===f){box.innerHTML="";box.dataset.open="";return}box.dataset.open=f;
+ const cur=r[f]||DS.today,fri=(()=>{const d=new Date(cur+"T12:00:00Z"),k=(5-d.getUTCDay()+7)%7||7;return dsIsoAdd(cur,k)})(),mon=(()=>{const d=new Date(cur+"T12:00:00Z"),k=(1-d.getUTCDay()+7)%7||7;return dsIsoAdd(cur,k)})();
+ box.innerHTML='<div class="ds-datebox"><b>'+(f==="deadline"?"Cambiar fecha límite":"Corregir fecha de solicitud")+'</b>'+(f==="deadline"?'<div class="ds-quick">'+[["+1 día",dsIsoAdd(cur,1)],["+1 semana",dsIsoAdd(cur,7)],["Viernes "+fdate(fri).slice(0,-5),fri],["Lunes "+fdate(mon).slice(0,-5),mon]].map(([l,v])=>'<button type="button" data-q="'+v+'">'+l+'</button>').join("")+'</div>':'')+
+  '<div class="ds-daterow"><input type="date" value="'+esc(r[f]||"")+'"><input class="ds-why" placeholder="Motivo (opcional): se anotó mal, lo piden para antes…"></div><div class="actions-row"><button type="button" class="primary ds-dsave">Guardar</button><button type="button" class="ghost ds-dcancel">Cancelar</button></div></div>';
+ const inp=box.querySelector("input[type=date]");box.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.q;box.querySelectorAll("[data-q]").forEach(x=>x.classList.toggle("on",x===b))});
+ box.querySelector(".ds-dcancel").onclick=()=>{box.innerHTML="";box.dataset.open=""};
+ box.querySelector(".ds-dsave").onclick=async()=>{if(!inp.value){say("Elige una fecha");return}if(inp.value===r[f]){box.innerHTML="";box.dataset.open="";return}
+  try{const res=await api("/api/diseno?id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row:{[f]:inp.value},reason:box.querySelector(".ds-why").value})});DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say("Fecha cambiada a "+fdate(inp.value));dsList(isDesigner)}catch(e){say(e.message)}}}
+function dsHistory(card,r,isDesigner){const box=card.querySelector(".ds-edit");if(box.dataset.open==="hist"){box.innerHTML="";box.dataset.open="";return}box.dataset.open="hist";
+ const h=(r.history||[]).slice().reverse(),canUndo=h.some(x=>!x.undo&&!x.undone);
+ box.innerHTML='<div class="ds-hist">'+(h.length?h.map(x=>'<div><small>'+dsWhen(x.at)+' · '+esc(dsName(x.by))+(x.undone?' · deshecho':'')+'</small><span>'+x.changes.map(c=>esc(DS_FIELD[c.f]||c.f)+': '+esc(dsVal(c.f,c.from))+' → <b>'+esc(dsVal(c.f,c.to))+'</b>').join(" · ")+(x.reason?' <em>('+esc(x.reason)+')</em>':'')+'</span></div>').join(""):'<p class="muted">Sin cambios registrados todavía'+(r.imported?' (viene de la hoja)':'')+'.</p>')+
+  '<p class="muted ds-hist-orig">Creada '+(r.createdAt?dsWhen(r.createdAt):"—")+(r.createdBy?' · '+esc(dsName(r.createdBy)):'')+(r.imported?' · importada de la hoja':'')+'</p>'+
+  (canUndo?'<button type="button" class="ghost ds-undo">Deshacer último cambio</button>':'')+'</div>';
+ if(box.querySelector(".ds-undo"))box.querySelector(".ds-undo").onclick=async()=>{try{const res=await api("/api/diseno?id="+r.id+"&undo=1",{method:"PUT",headers:{"content-type":"application/json"},body:"{}"});DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say("Deshecho");dsList(isDesigner)}catch(e){say(e.message)}}}
 // ===================== IMPORTAR =====================
 // Añade de una vez datos preparados fuera de la app (por ejemplo, por Claude a partir de una tabla
 // pegada en el chat). Llega en el enlace #importar?d=<datos> o se pega en el cuadro. Siempre se
@@ -1891,7 +1998,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v118";
+const YC_VERSION="yellow-control-v119";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
