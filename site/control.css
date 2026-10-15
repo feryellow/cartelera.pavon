@@ -1249,3 +1249,21 @@ body[data-role-mode="proveedor"] .back-home{display:none}
 .ds-mailprev{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-height:420px;overflow-y:auto}
 @media (max-width:640px){.ds-sheet{align-items:flex-end;padding:0}.ds-sheet-box{border-radius:20px 20px 0 0;max-height:94vh}}
 .ds-sheet-box>*{flex-shrink:0}.ds-mailprev iframe{display:block;width:100%;height:420px;border:0;background:#f5f3ee}
+/* Revistas: meses cerrados; al tocar el mes se abre */
+button.mag-label{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;font:400 18px/1.1 var(--display);text-transform:uppercase;color:var(--cream);padding:6px 0}
+button.mag-label svg{flex:none;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;transition:transform .2s}
+.mag-month.open button.mag-label svg{transform:rotate(180deg)}
+.mag-sum{all:unset;box-sizing:border-box;cursor:pointer;grid-column:2/-1;align-self:center;font-size:13px;color:var(--muted);padding:6px 0}
+.mag-sum.warn{color:var(--yellow)}
+:root[data-theme="light"] .mag-sum.warn{color:#7a5f00}
+.mag-month:not(.open)>.mag-cover,.mag-month:not(.open)>.mag-extra{display:none}
+.mag-month.open>.mag-sum{display:none}
+.mag-month:not(.open){padding:10px 0;align-items:center}
+.mag-month.current:not(.open){padding:10px 6px}
+.mag-month.open .mag-label{align-self:start}
+@media(max-width:700px){.mag-sum{grid-column:1/-1;padding-top:0}}
+/* Diseño: logo de Porompompom sobre amarillo suave; el velo oscuro solo abajo para que se lea el texto */
+.home-tile[href="#diseno"]::before{background:linear-gradient(to top,rgba(10,10,10,.9) 0%,rgba(10,10,10,.35) 38%,transparent 62%)}
+body[data-route="diseno"] .page-banner.has-photo{background-position:right center}
+body[data-route="diseno"] .page-banner::before{background:linear-gradient(to right,rgba(10,10,10,.9) 0%,rgba(10,10,10,.6) 38%,transparent 62%)}
+@media(max-width:700px){body[data-route="diseno"] .page-banner.has-photo{background-position:left center}body[data-route="diseno"] .page-banner::before{background:linear-gradient(to top,rgba(10,10,10,.9),rgba(10,10,10,.45) 70%,transparent)}}
