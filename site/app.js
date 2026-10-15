@@ -83,28 +83,12 @@ function foldDashboard(){const mob=matchMedia("(max-width:700px)").matches;let s
   sec.classList.add("dash-fold");const fold=key in st?st[key]:mob;sec.classList.toggle("folded",fold);t.setAttribute("role","button");t.tabIndex=0;t.setAttribute("aria-expanded",String(!fold));
   const tog=()=>{const f=!sec.classList.contains("folded");sec.classList.toggle("folded",f);t.setAttribute("aria-expanded",String(!f));st[key]=f;try{localStorage.setItem("yc-fold",JSON.stringify(st))}catch{}};
   t.onclick=e=>{if(e.target.closest("a,button"))return;tog()};t.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tog()}}})}
-async function dashboard(){
- const d=await api("/api/control?module=dashboard");
- let provReq=[];if(roles().some(r=>r==="admin"||r==="gestion")){try{provReq=(await api("/api/proveedor?solicitudes=1")).requests||[]}catch{}}
- const all=(d.carteleria||[]).filter(x=>x.next);
- const today=new Date();today.setHours(0,0,0,0);
- const alerts=all.map(x=>{const dt=new Date(x.next+"T00:00:00");const days=Math.round((dt-today)/86400000);return {...x,days}}).filter(x=>x.days<=7).sort((a,b)=>a.days-b.days);
- const next=all.slice().sort((a,b)=>String(a.next).localeCompare(String(b.next))).slice(0,8);
- const alertHtml=alerts.length?alerts.slice(0,8).map(x=>{
-   const label=x.days<0?"Vencido "+Math.abs(x.days)+" d":x.days===0?"HOY":"D-"+x.days;
-   return '<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span class="badge '+(x.days<0?"warn":"")+'">'+label+'</span><span>'+fdate(x.next)+'</span></div></div></div>';
- }).join(""):'<div class="notice">No hay avisos de cartelería en los próximos 7 días.</div>';
- app.innerHTML=homeHeader(alerts,d)+'<div id="pushCard"></div>'+homeTiles(d,alerts)+(provReq.length?'<section class="card prov-req" style="margin-bottom:14px"><div class="section-title"><div><small class="section-kicker">Proveedores</small><h2>Material que os piden</h2></div><span class="badge late">'+provReq.length+'</span></div><ul class="st-list">'+provReq.map(r=>'<li class="'+(r.days!==null&&r.days<=1?"falta":"")+'"><b>'+esc(r.providerName)+' · '+esc(r.itemTitle)+'</b><span>'+esc(r.itemDetail)+' · '+(r.deadline?(r.days<0?"vencido el "+fdate(r.deadline):r.days===0?"hoy es el último día":"quedan "+r.days+" días (hasta el "+fdate(r.deadline)+")"):"sin fecha límite")+'</span><span>«'+esc(String(r.message).slice(0,160))+'»</span></li>').join("")+'</ul></section>':'')+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Material que requiere atención</h2><span class="badge warn">'+(d.attention||[]).length+'</span></div><div class="list attention-list">'+((d.attention||[]).length?(d.attention||[]).map(x=>'<div class="item '+(x.overdue?"overdue":"")+'"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"pendiente")+'</span><span>Entrega: '+fdate(x.deliveryDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material pendiente con fecha límite registrada.</div>')+'</div></section><section class="card"><div class="section-title"><h2>Material activo ahora</h2><span class="badge ok">'+(d.currentMaterial||[]).length+'</span></div><div class="list">'+((d.currentMaterial||[]).length?(d.currentMaterial||[]).map(x=>'<div class="item"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"sin indicar")+'</span><span>Fin: '+fdate(x.endDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material activo registrado.</div>')+'</div></section></div>'+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Avisos y vencimientos</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+alertHtml+'</div>'+
- '<div class="section-title" style="margin-top:20px"><h2>Próximos cambios</h2></div><div class="list">'+
- (next.length?next.map(x=>'<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span>'+fdate(x.next)+'</span></div></div></div>').join(""):'<div class="notice">No hay fechas de cambio registradas.</div>')+
- '</div></section><section class="card"><div class="section-title"><h2>Últimas modificaciones</h2></div><div class="list">'+
- ((d.latest||[]).length?d.latest.map(a=>'<div class="item"><div><h3>'+esc(modLabel(a.module))+" · "+esc(actLabel(a.action))+'</h3><div class="item-meta"><span>'+esc(a.actor?.email||"")+'</span><span>'+new Date(a.at).toLocaleString("es-ES")+'</span></div></div></div>').join(""):'<div class="notice">Todavía no hay histórico.</div>')+
- '</div></section></div>';
- foldDashboard();limitLists("#app .dash-fold .list")
-}
-
+// Inicio: centro de control (módulo aparte, /modules/home.js), alimentado por el Status Engine
+async function dashboard(){const M=await loadModule("home");await M.render(ycCtx())}
+// Módulos que viven en su propio archivo (/modules/<nombre>.js). Reciben lo común de la app por contexto.
+async function loadModule(name){window.YCModules=window.YCModules||{};if(!window.YCModules[name])await new Promise((res,rej)=>{const s=document.createElement("script");s.src="/modules/"+name+".js?v="+encodeURIComponent(YC_VERSION);s.onload=res;s.onerror=()=>rej(new Error("No se ha podido cargar "+name));document.head.appendChild(s)});return window.YCModules[name]}
+function ycCtx(){return {api,esc,pageHead,say,sayUndo,app,$,$$,state,roles,canRoute,headers,blobUrl,hydrateMedia,fdate,homeTiles,modLabel,who:ycWho}}
+function ycWho(email){const e=String(email||"");if(!e||e==="Yellow Control")return "Yellow Control";const u=e.split("@")[0].split(/[._-]/)[0];return u.charAt(0).toUpperCase()+u.slice(1)}
 function homeHeader(alerts,d={}){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
  const aviso=first?'<a class="home-alert'+(first.days<0?' late':'')+'" href="#carteleria"><small>'+(first.days<0?'Fuera de plazo':'Urgente')+' · Cartelería<em>'+(first.days<0?'+'+Math.abs(first.days)+' d':first.days===0?'HOY':'D-'+first.days)+'</em></small><b>'+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+'</b><span>'+(first.days<0?"Vencido hace "+Math.abs(first.days)+(Math.abs(first.days)===1?" día":" días"):first.days===0?"Cambio hoy":"Cambio en "+first.days+(first.days===1?" día":" días"))+' · '+fdate(first.next)+'</span></a>':"";
  return '<div class="home-hero"><div class="home-hello"><small class="home-kicker">Panel general · Yellow Media</small><h1>'+greet+(state.actor?.name?', '+esc(String(state.actor.name).trim().split(/\s+/)[0]):'')+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+'</p></div>'+homeKpis(d)+'</div>'+aviso}
@@ -134,7 +118,7 @@ function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 // Divide una asignación de radio en bloques de lunes a domingo, cortando también en el cambio de mes,
 // y reparte las cuñas planificadas y emitidas en proporción a los días (redondeo por restos mayores).
 function radioSplit(data){
- const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ const iso=YCDate.isoOf;
  const parts=[];let d=new Date(data.startDate+"T12:00:00");const end=new Date(data.endDate+"T12:00:00");
  while(d<=end){const s=new Date(d);let e=new Date(d);while(true){const n=new Date(e);n.setDate(n.getDate()+1);if(n>end||n.getDay()===1||n.getMonth()!==e.getMonth())break;e=n}
   parts.push({s:iso(s),e:iso(e),days:Math.round((e-s)/864e5)+1});d=new Date(e);d.setDate(d.getDate()+1)}
@@ -271,7 +255,7 @@ async function radio(){
  const au=$("#radioAudios");if(au)au.addEventListener("toggle",async()=>{if(!au.open)return;for(const el of $$("[data-lazy-asset]",au)){el.dataset.asset=el.dataset.lazyAsset;el.removeAttribute("data-lazy-asset")}await hydrateMedia("radio")});
  if(legacy.length)await hydrateMedia("radio")
 }
-function localToday(){return new Date().toLocaleDateString("sv")}
+function localToday(){return YCDate.todayMadrid()}
 function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
 function radioItems(rows){return radioAssignments(rows,{lines:[]})}
 function radioForm(r={},selectedContract=null,selectedMonth=""){
@@ -1203,12 +1187,12 @@ const DS_STATUS=[["pendiente","Pendiente"],["en_proceso","En proceso"],["en_revi
 const DS_OPEN=["pendiente","en_proceso","en_revision","parado"];
 const dsView={tab:"panel",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
 let DS=null;
-const dsDays=(a,b)=>Math.round((new Date(b+"T12:00:00Z")-new Date(a+"T12:00:00Z"))/864e5);
+const dsDays=YCDate.daysBetween;
 const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
 // Las empresas que son espacios del calendario llevan su mismo color; el resto (personas, otras empresas), el de Ajustes
 const DS_VENUE={"ABONOTEATRO":"Abono Teatro","ABONO TEATRO":"Abono Teatro","LA ESTACION":"Gran Teatro CaixaBank Príncipe Pío","LA ESTACIÓN":"Gran Teatro CaixaBank Príncipe Pío","PRINCIPE PIO":"Gran Teatro CaixaBank Príncipe Pío","PAVON":"Gran Teatro Pavón","PAVÓN":"Gran Teatro Pavón","CASTILLO":"Gran Castillo de Pedraza","PEDRAZA":"Gran Castillo de Pedraza","SERRANO":"Teatro Serrano","SOHO CITY":"Soho City Madrid","SOHO":"Soho City Madrid","ARLEQUIN":"Teatro Arlequín","ARLEQUÍN":"Teatro Arlequín"};
 const dsColor=(list,name)=>{const v=DS_VENUE[String(name||"").toUpperCase()],vs=v&&VENUE_STYLE[v];if(vs)return document.documentElement.dataset.theme==="light"?vs.bg:vs.dark;return (list.find(x=>x.name===name)||{}).color||"#888"};
-function dsWeek(iso){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10)}
+const dsWeek=iso=>YCDate.week(iso).first;
 function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN.includes(r.status)),per={},glob=[];
  const add=(r,k)=>{(per[r.id]=per[r.id]||[]).push(k)};
  for(const r of open){
@@ -1337,7 +1321,7 @@ function dsSettings(){const d=DS,st=JSON.parse(JSON.stringify(d.settings));
 async function dsImportFile(file){if(!file)return;const box=$("#dsImp");box.innerHTML='<p class="muted">Leyendo…</p>';
  try{await loadXLSX();const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
   const N=s=>String(s??"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z0-9]+/g," ").trim();
-  const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const iso=YCDate.isoOf;
   const MES={ENERO:1,FEBRERO:2,MARZO:3,ABRIL:4,MAYO:5,JUNIO:6,JULIO:7,AGOSTO:8,SEPTIEMBRE:9,OCTUBRE:10,NOVIEMBRE:11,DICIEMBRE:12};
   const date=(v,ref)=>{if(v instanceof Date&&!isNaN(v))return iso(new Date(v.getTime()+12*36e5));const s=String(v??"").trim();let m=/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/.exec(s);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")}
    m=/^(\d{1,2})\s+(?:DE\s+)?([A-Z]+)/.exec(N(s));if(m&&MES[m[2]]){const y=(ref||"").slice(0,4)||String(new Date().getFullYear());return y+"-"+String(MES[m[2]]).padStart(2,"0")+"-"+m[1].padStart(2,"0")}return ""};
@@ -1368,7 +1352,7 @@ const DS_FIELD={cancelReason:"motivo",title:"título",requester:"quién pide",co
 const dsVal=(f,v)=>v===""||v==null?"vacío":f==="status"?dsLabel(v):f==="progress"?v+" %":/Date|deadline/.test(f)?fdate(v):f==="urgent"?(v?"sí":"no"):String(v).length>60?String(v).slice(0,58)+"…":String(v);
 function dsName(email){const p=(DS?.settings.people||[]).find(x=>x.email&&x.email===String(email||"").toLowerCase());if(p)return p.name.charAt(0)+p.name.slice(1).toLowerCase();const u=String(email||"").split("@")[0];return u?u.charAt(0).toUpperCase()+u.slice(1):"—"}
 function dsWhen(iso){const d=new Date(iso),t=new Date(),y=new Date(Date.now()-864e5),hm=d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});return d.toDateString()===t.toDateString()?"Hoy "+hm:d.toDateString()===y.toDateString()?"Ayer "+hm:d.toLocaleDateString("es-ES",{day:"numeric",month:"short"})+" "+hm}
-function dsIsoAdd(iso,n){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+const dsIsoAdd=YCDate.addDays;
 function dsParseLine(raw,today){let s=" "+DSN(raw).replace(/\s+/g," ").trim()+" ",comment="",o={};
  // comentario: lo que va tras « - », « — », «: » o desde «esperando / falta…»
  let m=/\s(?:-|—|–|:|\/\/)\s(.+)$/.exec(raw.replace(/\s+/g," "));if(m){comment=m[1].trim();s=" "+DSN(raw.slice(0,raw.indexOf(m[0]))).trim()+" "}
@@ -1505,7 +1489,7 @@ async function dsNotify(ids){if(!ids.length)return;const el=document.createEleme
 const DS_MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DS_CGEN=new Set("creatividad creatividades cambio general final nueva dia campana campanas para teatro teatros web redes".split(" "));
 function dsCampMatch(c,year){const keys=DSN(c.dates||c.creative).split(/[^a-z0-9ñ]+/).filter(w=>w.length>=4&&!DS_STOP.has(w)&&!DS_CGEN.has(w));if(!keys.length)return [];const has=(title,k)=>DSN(title).split(/[^a-z0-9ñ]+/).some(w=>w===k||w===k+"s"||w===k+"es");
- const from=new Date(year,c.month-1,1);from.setMonth(from.getMonth()-3);const fromIso=from.toISOString().slice(0,10),toIso=year+"-"+String(c.month).padStart(2,"0")+"-31";
+ const from=new Date(year,c.month-1,1);from.setMonth(from.getMonth()-3);const fromIso=YCDate.isoOf(from),toIso=year+"-"+String(c.month).padStart(2,"0")+"-31";
  return DS.rows.filter(r=>{const ref=r.deadline||r.deliveredAt||r.requestDate||"";return r.status!=="cancelado"&&ref>=fromIso&&ref<=toIso}).filter(r=>(!c.company||r.company===c.company)&&keys.some(k=>has(r.title,k)))}
 function dsCampTitle(c){return c.creative?c.creative+(c.dates?" ("+c.dates+")":""):"Creatividad "+c.dates}
 // La tabla de la hoja («CALENDARIO CAMPAÑAS»), tal cual, arriba del todo en Diseño: se ve nada más entrar
@@ -1672,7 +1656,7 @@ function txRadio(text,lines,existing){const low=txLow(text),warn=[],items=[],use
   let all=0,wk=0;for(let x=new Date(s);x<=e;x.setUTCDate(x.getUTCDate()+1)){all++;if(x.getUTCDay()%6)wk++}
   weeks.push({s:s.toISOString().slice(0,10),e:e.toISOString().slice(0,10),all,wk});d=new Date(e);d.setUTCDate(d.getUTCDate()+1)}}
  const share=(total,w)=>{const tot=w.reduce((a,b)=>a+b,0);if(!tot||!total)return w.map(()=>0);const raw=w.map(x=>total*x/tot),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){base[i]++;left--}});return base};
- const today=new Date().toISOString().slice(0,10),status=range[1]<today?"finalizado":"activo";
+ const today=YCDate.todayMadrid(),status=range[1]<today?"finalizado":"activo";
  for(const q of reqs){const months=[...new Set(weeks.map(w=>w.s.slice(0,7)))];
   for(const mo of months){const ws=weeks.filter(w=>w.s.slice(0,7)===mo),wt=ws.map(w=>q.wd?w.wk:w.all);
    const asked=q.per==="day"?wt.reduce((a,b)=>a+b,0)*q.n:q.per==="week"?ws.length*q.n:Math.round(q.n*wt.reduce((a,b)=>a+b,0)/weeks.reduce((a,w)=>a+(q.wd?w.wk:w.all),0));
@@ -1810,7 +1794,7 @@ const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aa
 const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["diseno","Diseño"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
 const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
 let calCursor=new Date(),calEvents=[],calWeekOffset=0,calView=calLS.get("yc-cal-view","semana"),calMods=new Set(),calVenue="";
-const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const isoOf=YCDate.isoOf;
 const evTag=e=>e.kind==="hito"?e.action:(KIND_LABEL[e.kind]||e.action);
 const calCanHito=()=>roles().some(r=>r==="admin"||r==="gestion");
 const calFiltered=(mods=calMods)=>calEvents.filter(e=>(!mods.size||mods.has(e.moduleKey))&&(!calVenue||e.venue===calVenue));
@@ -2112,7 +2096,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v127";
+const YC_VERSION="yellow-control-v128";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
@@ -2144,7 +2128,7 @@ async function avisosPage(){
   '<label>Para<select id="avTo"><option value="">Todo el equipo con la app y los avisos activados ('+Object.keys(d.devices).length+(Object.keys(d.devices).length===1?' persona':' personas')+')</option>'+Object.keys(d.devices).sort().map(u=>'<option value="'+esc(u)+'">'+esc(u)+'</option>').join("")+'</select></label>'+
   '</div><div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="avSend">Enviar aviso</button></div></section>';
  const users=[...st.users],hol=[...(st.holidays||[])];
- const drawHol=()=>{const today=new Date().toISOString().slice(0,10),up=hol.filter(x=>x>=today).sort();$("#avHol").innerHTML=up.length?up.map(h=>'<div class="av-user"><span><b>'+esc(new Date(h+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+'</b></span><button type="button" class="ghost" data-hrm="'+h+'">Quitar</button></div>').join(""):'<p class="muted">No hay festivos apuntados.</p>';
+ const drawHol=()=>{const today=YCDate.todayMadrid(),up=hol.filter(x=>x>=today).sort();$("#avHol").innerHTML=up.length?up.map(h=>'<div class="av-user"><span><b>'+esc(new Date(h+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+'</b></span><button type="button" class="ghost" data-hrm="'+h+'">Quitar</button></div>').join(""):'<p class="muted">No hay festivos apuntados.</p>';
   $$("[data-hrm]").forEach(b=>b.onclick=()=>{hol.splice(hol.indexOf(b.dataset.hrm),1);drawHol()})};
  drawHol();
  $("#avHolAdd").onclick=()=>{const v=$("#avHolNew").value;if(!v){say("Elige una fecha");return}if(!hol.includes(v))hol.push(v);$("#avHolNew").value="";drawHol()};
