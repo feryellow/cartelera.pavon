@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { controlStore } from "./_lib/store.ts";
-import { sendPavonMail } from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 
 function parseDataUrl(v:string){
   const m=v.match(/^data:image\/png;base64,(.+)$/);
@@ -18,7 +18,7 @@ export default async(req:Request)=>{
   const venue=page.startsWith("arlequin")?"Teatro Arlequín":"Gran Teatro Pavón",short=venue==="Teatro Arlequín"?"Arlequin":"Pavon";
   const subject=`${venue==="Teatro Arlequín"?"Arlequín":"Pavón"} · actualización de cartelería · ${page}`;
   const html=`<div style="font-family:Arial,sans-serif"><h2>${venue} · Cartelería</h2><p>Se ha confirmado una actualización en <strong>${page}</strong>.</p><p>Fecha: ${new Date().toLocaleString("es-ES",{timeZone:"Europe/Madrid"})}</p><p>Actualizado por: ${auth.actor!.email}</p></div>`;
-  const result=await sendPavonMail({subject,html,attachments:png?[{filename:`${short}_${page.replace(/[^a-z0-9_-]+/gi,"_")}.png`,content:png}]:[]});
+  const result=await notifyEmail({ kind: "envío de página", subject,html,attachments:png?[{filename:`${short}_${page.replace(/[^a-z0-9_-]+/gi,"_")}.png`,content:png}]:[]});
   if(!result.sent){
     const id=crypto.randomUUID();
     await controlStore().setJSON(`outbox_${id}`,{id,createdAt:new Date().toISOString(),page,subject,reason:result.reason||"send_failed",retryable:true});

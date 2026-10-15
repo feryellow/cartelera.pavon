@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { requireAccess, can } from "./_lib/auth.ts";
-import { appendAudit, listAudit } from "./_lib/audit.ts";
+import { appendAudit, listAudit, latestAudit, recordHistory } from "./_lib/audit.ts";
 import { carteleriaStore } from "./_lib/store.ts";
 import { normalizeDate, madridToday } from "./_lib/dates.ts";
 import { validateRadio } from "./_lib/radio.ts";
@@ -17,9 +17,16 @@ export default async (req: Request) => {
       const auth = await requireAccess(req,"archivo",false); if(auth.response) return auth.response;
       return json({ rows: await listAudit(Number(url.searchParams.get("limit") || 100)) });
     }
+    if (moduleName === "history") {
+      // Historial de un registro: quién lo creó, quién lo cambió, qué campo, valor anterior y nuevo
+      const auth = await requireAccess(req,"dashboard",false); if(auth.response) return auth.response;
+      const id = url.searchParams.get("id") || ""; if (!/^[\w:.-]{1,160}$/.test(id)) return json({error:"Falta el registro"},400);
+      const rows = (await recordHistory(id)).filter((r:any)=>!r.module || can(auth.actor, r.module==="hitos"?"hitos":r.module, false) || r.module==="avisos");
+      return json({ rows });
+    }
     if (moduleName === "dashboard") {
       const auth = await requireAccess(req,"dashboard",false); if(auth.response) return auth.response;
-      const [stateRaw, latest] = await Promise.all([carteleriaStore().get("state",{type:"json"}), listAudit(8)]);
+      const [stateRaw, latest] = await Promise.all([carteleriaStore().get("state",{type:"json"}), latestAudit(8)]);
       const state = stateRaw as any || {schedule:{},updatedAt:null};
       const schedule = state.schedule || {};
       const today = madridToday();

@@ -4,7 +4,8 @@ import { appendAudit } from "./_lib/audit.ts";
 import { assetStore, carteleriaStore, controlStore } from "./_lib/store.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { SLOT_NAMES, slotVenue } from "./_lib/calendar.ts";
-import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
+import {mailRecipients} from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 import { renderMontaje, montajeTitle } from "./_lib/montaje-mail.ts";
 import { getContacts } from "./_lib/contacts.ts";
 
@@ -57,7 +58,7 @@ export default async (req: Request) => {
   const appUrl = (Netlify.env.get("URL") || "https://yellow-control.netlify.app").replace(/\/$/, "");
   const rcp = mailRecipients();
   const html = renderMontaje({ date, by: auth.actor!.email, note, items, appUrl, devRecipient: rcp.live ? "" : rcp.to[0], intendedTo: to, intendedCc: cc, venue });
-  const result: any = await sendPavonMail({ subject: `Montaje realizado · ${montajeTitle(items)} · ${venue}`, html, attachments, to, cc });
+  const result: any = await notifyEmail({ kind: "montaje",  subject: `Montaje realizado · ${montajeTitle(items)} · ${venue}`, html, attachments, to, cc });
 
   const record = { id, date, by: auth.actor!.email, note, slots: slots.map((s: any) => s.key), photos, to, cc, sent: !!result.sent, sentTo: result.to || [], createdAt: new Date().toISOString() };
   await controlStore().setJSON(`montaje_${id}`, record);

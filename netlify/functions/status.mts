@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { weekStatus, statusMail } from "./_lib/status.ts";
-import { sendPavonMail } from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { getContacts } from "./_lib/contacts.ts";
 
@@ -24,7 +24,7 @@ export default async (req: Request) => {
     const s = await weekStatus(week, url.origin), real = extra.length > 0, note = String(body?.note || "").slice(0, 3000);
     const html = statusMail(s, note, origin, !real);
     const subject = `${real ? "" : "[Prueba] "}Status de publicidad · ${s.label}${s.pending ? ` · ${s.pending} pendientes` : ""}`;
-    const r: any = await sendPavonMail({ subject, html, extra });
+    const r: any = await notifyEmail({ kind: "status semanal",  subject, html, extra });
     if (!r.sent) console.error("status mail", r.reason, r.status);
     await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `status-${s.first}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Status semanal enviado a ${extra.join(", ")}` : "Status semanal (prueba)" });
     return Response.json({ sent: !!r.sent, to: r.to || [], bcc: r.bcc || [], reason: r.sent ? "" : r.reason || "" });

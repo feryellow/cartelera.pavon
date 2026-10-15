@@ -3,7 +3,7 @@ import { sendPush } from "./_lib/push.ts";
 import { resolveActor } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { putRecord, getRecord, type RecordModule } from "./_lib/records.ts";
-import { sendPavonMail } from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { PROVIDERS, providerById, providerUsers, providerItems, saveRequest, listRequests, type Provider } from "./_lib/providers.ts";
 
@@ -69,7 +69,7 @@ export default async (req: Request) => {
 <tr><td style="padding:6px 0;color:#6b665d">Escribe</td><td style="padding:6px 0">${esc(from)}</td></tr></table>
 <div style="border-left:3px solid #FFD400;padding:6px 0 6px 12px;white-space:pre-line;font-size:15px">${esc(message)}</div>
 <p style="font-size:12px;color:#6b665d;margin:20px 0 0">Responde a este correo para contestar a ${esc(p.name)} · <a href="${origin}/#calendario" style="color:#111">ver en Yellow Control</a></p></div></body></html>`;
-    const r: any = await sendPavonMail({ subject: `Mensaje de proveedor · ${p.name}${general ? "" : " · " + it.title}`, html, to: TEAM, extra: TEAM.slice(1), replyTo: isProv ? actor.email : undefined });
+    const r: any = await notifyEmail({ kind: "proveedor",  subject: `Mensaje de proveedor · ${p.name}${general ? "" : " · " + it.title}`, html, to: TEAM, extra: TEAM.slice(1), replyTo: isProv ? actor.email : undefined });
     if (!r.sent) console.error("proveedor mail", r.reason);
     await sendPush("all", { title: `${p.name} ${general ? "os escribe" : "pide material"}`, body: (general ? "" : it.title + " · ") + message, url: "/#dashboard", tag: "proveedor" }, "proveedores").catch(() => null);
     // Aviso en el Calendario el día límite (o hoy, si no hay fecha)

@@ -17,8 +17,8 @@ function has(role){return roles().includes("admin")||roles().includes(role)}
 function isProveedor(){return roles().includes("proveedor")&&!roles().some(r=>r==="admin"||r==="gestion")}
 function isCarteleriaRole(){return roles().includes("carteleria")&&!roles().includes("admin")}
 function isDisenoRole(){return roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion")}
-function canRoute(route){if(isProveedor())return route==="proveedor";if(isDisenoRole())return route==="diseno";if(route==="diseno")return roles().some(r=>["admin","gestion","consulta"].includes(r));if(route==="proveedor")return roles().some(r=>r==="admin"||r==="gestion");if(route==="presupuesto")return true;if(route==="avisos")return !!state.budget;if(roles().includes("admin"))return true;if(isCarteleriaRole())return route==="dashboard"||route==="carteleria";if(route==="dashboard"||route==="calendario"||route==="carteleria"||route==="archivo"||route==="status")return true;if((route==="radio"||route==="television"||route==="taxis"||route==="intercambiadores"||route==="hometicket"||route==="revistas"||route==="meta"||route==="importar")&&roles().includes("gestion"))return true;return false}
-const ICON_PATHS={diseno:'<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',avisos:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',television:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 3l4 3 4-3M8 21h8"/>',importar:'<path d="M12 15V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14v5h16v-5"/>',meta:'<path d="M3 15.5c0-4 2-8.5 4.6-8.5 3.4 0 5.4 10 8.8 10 2 0 3.6-2 3.6-4.6 0-3.3-1.8-5.4-3.8-5.4-3.2 0-5.3 9-8.8 9C5 16 3 16.6 3 15.5z"/>',status:'<path d="M4 12l4 4 8-9"/><path d="M14 17h6M14 13h6"/>',presupuesto:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10h8M5 14h8"/>',dashboard:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',carteleria:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/>',hometicket:'<path d="M3 8a2 2 0 0 0 0 4 2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 0 0-4V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',radio:'<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="15.5" cy="14" r="3"/><path d="M7 12h3M7 16h3M6 8l11-4"/>',taxis:'<path d="M5 17V12l2-5h10l2 5v5M3 17h18v3H3zM9 4h6"/><circle cx="7.5" cy="14" r="1"/><circle cx="16.5" cy="14" r="1"/>',intercambiadores:'<rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21l1-3M16 21l-1-3"/>',revistas:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M18 8h2v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/>',archivo:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',admin:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'};
+function canRoute(route){if(isProveedor())return route==="proveedor";if(isDisenoRole())return route==="diseno";if(route==="diseno")return roles().some(r=>["admin","gestion","consulta"].includes(r));if(route==="proveedor")return roles().some(r=>r==="admin"||r==="gestion");if(route==="presupuesto")return true;if(route==="avisos")return !!state.budget;if(route==="salud")return roles().includes("admin");if(roles().includes("admin"))return true;if(isCarteleriaRole())return route==="dashboard"||route==="carteleria";if(route==="dashboard"||route==="calendario"||route==="carteleria"||route==="archivo"||route==="status")return true;if((route==="radio"||route==="television"||route==="taxis"||route==="intercambiadores"||route==="hometicket"||route==="revistas"||route==="meta"||route==="importar")&&roles().includes("gestion"))return true;return false}
+const ICON_PATHS={salud:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',diseno:'<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',avisos:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',television:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 3l4 3 4-3M8 21h8"/>',importar:'<path d="M12 15V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14v5h16v-5"/>',meta:'<path d="M3 15.5c0-4 2-8.5 4.6-8.5 3.4 0 5.4 10 8.8 10 2 0 3.6-2 3.6-4.6 0-3.3-1.8-5.4-3.8-5.4-3.2 0-5.3 9-8.8 9C5 16 3 16.6 3 15.5z"/>',status:'<path d="M4 12l4 4 8-9"/><path d="M14 17h6M14 13h6"/>',presupuesto:'<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M5 10h8M5 14h8"/>',dashboard:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',carteleria:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/>',hometicket:'<path d="M3 8a2 2 0 0 0 0 4 2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 0 0-4V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',radio:'<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="15.5" cy="14" r="3"/><path d="M7 12h3M7 16h3M6 8l11-4"/>',taxis:'<path d="M5 17V12l2-5h10l2 5v5M3 17h18v3H3zM9 4h6"/><circle cx="7.5" cy="14" r="1"/><circle cx="16.5" cy="14" r="1"/>',intercambiadores:'<rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21l1-3M16 21l-1-3"/>',revistas:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M18 8h2v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/>',archivo:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',admin:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'};
 // Fotos de las tarjetas de Inicio y cabeceras. Para cambiar una foto, sustituye el archivo en /assets/tiles/ (formato 4:3, JPG).
 const ROUTE_PHOTOS={diseno:"/assets/tiles/diseno.webp",television:"/assets/tiles/television.webp",meta:"/assets/tiles/digital.webp",status:"/assets/tiles/status.webp",carteleria:"/assets/tiles/carteleria.webp",revistas:"/assets/tiles/revistas.webp",calendario:"/assets/tiles/calendario.webp",hometicket:"/assets/tiles/hometicket.webp",radio:"/assets/tiles/radio.webp",taxis:"/assets/tiles/taxis.webp",intercambiadores:"/assets/tiles/intercambiadores.webp",archivo:"/assets/tiles/archivo.webp",admin:"/assets/tiles/usuarios.webp"};
 function icon(route,cls="nav-ico"){return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[route]||"")+'</svg>'}
@@ -31,9 +31,32 @@ function actLabel(a){return ACTION_LABELS[a]||a||""}
 function prettyKey(k=""){const cs=CART_SLOTS.find(x=>x.key===k);if(cs)return (k.startsWith("arlequin__")?"Arlequín · ":"")+cs.name;const t=String(k).replaceAll("__"," · ").replaceAll("_"," ").trim();return t.charAt(0).toUpperCase()+t.slice(1)}
 function openFormCard(){setTimeout(()=>{const c=$('[id$="FormCard"]');if(!c)return;c.classList.add("open");if(matchMedia("(max-width:700px)").matches)c.scrollIntoView({behavior:"smooth",block:"start"})},0)}
 document.addEventListener("click",e=>{const t=e.target.closest("#newCampaign,#newRadio,#newHT,#newRevista,[data-edit-campaign],[data-edit-radio],[data-edit-ht],[data-edit-revista],[data-add-revista]");if(t)openFormCard();const c=e.target.closest("#cancelCampaign,#cancelRadio,#cancelHT,#cancelRevista");if(c)setTimeout(()=>{const f=$('[id$="FormCard"]');f&&f.classList.remove("open")},0)});
-function applyNav(){document.body.dataset.route=state.route;document.body.dataset.roleMode=isProveedor()?"proveedor":isCarteleriaRole()?"carteleria":"";$$("#mainNav [data-route]").forEach(a=>{const r=a.dataset.route,locked=!canRoute(r);a.classList.toggle("active",r===state.route);a.classList.toggle("locked",locked);a.setAttribute("aria-disabled",locked?"true":"false");if(locked){a.removeAttribute("href");a.tabIndex=-1}else{a.setAttribute("href",a.dataset.href||("#"+r));a.removeAttribute("tabindex")}});$("#accountName").textContent=state.actor?.email||"";const na=$("#navAccountName");if(na){na.textContent=state.actor?.email||"—";const av=$(".account-avatar");if(av)av.textContent=(state.actor?.email||"Y").charAt(0).toUpperCase()}const act=$("#mainNav a.active");if(act&&matchMedia("(max-width:980px)").matches)act.scrollIntoView({inline:"center",block:"nearest"})}
+// Historial de un registro (quién lo creó, quién lo cambió, qué campo, valor anterior y nuevo, fecha y hora)
+function attachHistory(sel,rec){setTimeout(()=>{const f=$(sel);if(!f||!rec||!rec.id||f.querySelector(".yc-hist"))return;const box=document.createElement("details");box.className="yc-hist wide";box.innerHTML='<summary>Historial de este registro</summary><div class="yc-hist-body"><p class="muted">Cargando…</p></div>';f.appendChild(box);
+ box.addEventListener("toggle",async()=>{if(!box.open||box.dataset.loaded)return;box.dataset.loaded="1";const body=box.querySelector(".yc-hist-body");try{const d=await api("/api/control?module=history&id="+encodeURIComponent(rec.id));const rows=d.rows||[];
+  const made=rec.createdAt?'<li><b>'+esc(new Date(rec.createdAt).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/Madrid"}).toUpperCase())+'</b> '+esc(ycWho(rec.createdBy))+' lo creó</li>':'';
+  body.innerHTML='<ul>'+rows.map(h=>'<li><b>'+esc(new Date(h.at).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/Madrid"}).toUpperCase())+'</b> '+esc(ycWho(h.who))+' '+esc(h.summary||h.action)+'</li>').join("")+(rows.some(h=>h.action==="create")?'':made)+'</ul>'+(rows.length?'':'<p class="muted">Los cambios se registran desde esta versión.</p>')}catch(e){body.innerHTML='<p class="muted">'+esc(e.message)+'</p>'}})},0)}
+// Navegación del móvil: barra inferior (Inicio · Calendario · Revisar · Medios · Más) y hojas con cada grupo.
+// Usa los mismos enlaces y permisos que el menú lateral.
+const NAV_GROUPS={revisar:{label:"Revisar",items:[["status","Publicidad"],["diseno","Diseño"],["carteleria","Cartelería"],["salud","Administración"]]},medios:{label:"Medios",items:[["radio"],["meta"],["intercambiadores"],["taxis"],["hometicket"],["revistas"],["television"]]},mas:{label:"Más",items:[["importar"],["archivo"],["avisos"],["presupuesto"],["admin"],["salud"]]}};
+const NAV_SVG={revisar:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',medios:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/>',mas:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'};
+function navVisible(r){const a=$('#mainNav [data-route="'+r+'"]');return a&&!a.hidden&&canRoute(r)}
+function navLabel(r){const a=$('#mainNav [data-route="'+r+'"] b');return a?a.textContent:r}
+function ycTabbar(){let bar=$("#ycTabbar");const single=isProveedor()||isDisenoRole()||isCarteleriaRole();if(single){if(bar)bar.remove();document.body.classList.remove("has-tabbar");return}
+ if(!bar){bar=document.createElement("nav");bar.id="ycTabbar";bar.className="yc-tabbar";bar.setAttribute("aria-label","Navegación");document.body.appendChild(bar);document.body.classList.add("has-tabbar")}
+ const grpOf=r=>Object.keys(NAV_GROUPS).find(g=>NAV_GROUPS[g].items.some(([x])=>x===r));const cur=state.route==="dashboard"?"dashboard":state.route==="calendario"?"calendario":grpOf(state.route);
+ const svg=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+ bar.innerHTML='<a href="#dashboard" class="'+(cur==="dashboard"?"on":"")+'">'+svg(ICON_PATHS.dashboard||'<path d="M3 11l9-7 9 7v9H3z"/>')+'<span>Inicio</span></a>'+(navVisible("calendario")?'<a href="#calendario" class="'+(cur==="calendario"?"on":"")+'">'+svg(ICON_PATHS.calendario||'<rect x="3" y="5" width="18" height="16" rx="2"/>')+'<span>Calendario</span></a>':'')+
+  Object.entries(NAV_GROUPS).filter(([,g])=>g.items.some(([r])=>navVisible(r))).map(([k,g])=>'<button type="button" data-sheet="'+k+'" class="'+(cur===k?"on":"")+'">'+svg(NAV_SVG[k])+'<span>'+g.label+'</span></button>').join("");
+ bar.querySelectorAll("[data-sheet]").forEach(b=>b.onclick=()=>ycNavSheet(b.dataset.sheet))}
+function ycNavSheet(k){const g=NAV_GROUPS[k];const el=document.createElement("div");el.className="ds-sheet yc-navsheet";
+ el.innerHTML='<div class="ds-sheet-box" role="dialog" aria-label="'+esc(g.label)+'"><button type="button" class="ghost ds-sheet-x" aria-label="Cerrar">×</button><h2>'+esc(g.label)+'</h2><div class="yc-navlist">'+g.items.filter(([r])=>navVisible(r)).map(([r,l])=>'<a href="#'+r+'" class="'+(state.route===r?"on":"")+'">'+icon(r)+'<b>'+esc(l||navLabel(r))+'</b><small>'+esc(($('#mainNav [data-route="'+r+'"] small')||{}).textContent||"")+'</small></a>').join("")+'</div>'+(k==="mas"?'<div class="actions-row"><button type="button" class="ghost" id="ycNavTheme">Cambiar tema</button><button type="button" class="ghost" id="ycNavOut">Salir</button></div>':'')+'</div>';
+ document.body.appendChild(el);document.body.classList.add("sheet-open");const close=()=>{el.remove();document.body.classList.remove("sheet-open")};
+ el.onclick=e=>{if(e.target===el||e.target.closest(".ds-sheet-x")||e.target.closest(".yc-navlist a"))close()};
+ if(k==="mas"){$("#ycNavTheme").onclick=()=>{close();$("#themeToggle")&&$("#themeToggle").click()};$("#ycNavOut").onclick=()=>{close();$("#logoutBtn").click()}}}
+function applyNav(){try{ycTabbar()}catch{};document.body.dataset.route=state.route;document.body.dataset.roleMode=isProveedor()?"proveedor":isCarteleriaRole()?"carteleria":"";$$("#mainNav [data-route]").forEach(a=>{const r=a.dataset.route,locked=!canRoute(r);a.classList.toggle("active",r===state.route);a.classList.toggle("locked",locked);a.setAttribute("aria-disabled",locked?"true":"false");if(locked){a.removeAttribute("href");a.tabIndex=-1}else{a.setAttribute("href",a.dataset.href||("#"+r));a.removeAttribute("tabindex")}});$("#accountName").textContent=state.actor?.email||"";const na=$("#navAccountName");if(na){na.textContent=state.actor?.email||"—";const av=$(".account-avatar");if(av)av.textContent=(state.actor?.email||"Y").charAt(0).toUpperCase()}const act=$("#mainNav a.active");if(act&&matchMedia("(max-width:980px)").matches)act.scrollIntoView({inline:"center",block:"nearest"})}
 async function authenticate(){
- try{const d=await api("/api/me",{cache:"no-store"});state.actor=d.actor;state.budget=!!d.budget;const bn=$('#mainNav [data-route="presupuesto"]');if(bn)bn.hidden=!state.budget;const an=$('#mainNav [data-route="avisos"]');if(an)an.hidden=!state.budget;gate.classList.add("hidden");applyNav();return true}
+ try{const d=await api("/api/me",{cache:"no-store"});state.actor=d.actor;YCPerm.set(d.access);state.budget=!!d.budget;const bn=$('#mainNav [data-route="presupuesto"]');if(bn)bn.hidden=!state.budget;const an=$('#mainNav [data-route="avisos"]');if(an)an.hidden=!state.budget;gate.classList.add("hidden");applyNav();return true}
  catch{gate.classList.remove("hidden");return false}
 }
 // Entrada: correo sin espacios ni mayúsculas (el móvil pone la primera en mayúscula), botón bloqueado mientras entra,
@@ -62,7 +85,7 @@ function pageHead(title,sub,actions="",photoOverride){const home="";const m=navM
 async function blobUrl(assetKey,moduleName){if(!assetKey)return null;if(state.assetUrls.has(assetKey))return state.assetUrls.get(assetKey);const r=await fetch("/api/asset?key="+encodeURIComponent(assetKey)+"&module="+moduleName,{headers:headers()});if(!r.ok)return null;const b=await r.blob(),u=URL.createObjectURL(b);state.assetUrls.set(assetKey,u);return u}
 function routeName(){return (location.hash||"#dashboard").slice(1).split("?")[0]||"dashboard"}
 async function route(){const q=new URLSearchParams(location.search);if(q.get("vista")){location.replace("/#carteleria?vista="+encodeURIComponent(q.get("vista")));return}const nextRoute=routeName();if(state.route==="carteleria"&&nextRoute!=="carteleria"&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Salir sin guardar?")){history.replaceState(null,"","#carteleria");return}if(nextRoute==="hometicket"&&state.route!=="hometicket")htView="";if((nextRoute==="taxis"||nextRoute==="intercambiadores")&&state.route!==nextRoute){campView="";campMonth=""}state.route=nextRoute;if(!canRoute(state.route))state.route=isProveedor()?"proveedor":isDisenoRole()?"diseno":"dashboard";applyNav();app.innerHTML='<div class="loading">Cargando…</div>';try{if(state.route==="dashboard"){await dashboard();pushCard()}else if(state.route==="radio")await radio();else if(state.route==="television")await television();else if(state.route==="avisos")await avisosPage();else if(state.route==="diseno")await diseno();else if(state.route==="taxis")await campaigns("taxis");else if(state.route==="intercambiadores")await campaigns("intercambiadores");else if(state.route==="hometicket")await homeTicket();else if(state.route==="revistas")await revistas();else if(state.route==="carteleria")await carteleria();else if(state.route==="calendario")await calendario();else if(state.route==="archivo")await archivo();else if(state.route==="proveedor")await proveedorPage();else if(state.route==="status")await statusPage();else if(state.route==="importar")await importar();else if(state.route==="meta")await loadMeta();else if(state.route==="presupuesto")await loadPresupuesto()
-else if(state.route==="admin")await admin();else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
+else if(state.route==="admin")await admin();else if(state.route==="salud")await (await loadModule("salud")).render(ycCtx());else await dashboard();openEditFromHash()}catch(e){app.innerHTML=pageHead("Error","")+ '<div class="card error">'+esc(e.message)+"</div>"}}
 window.addEventListener("hashchange",route);
 
 // Botones de cabecera: uno principal a la vista y el resto en «Más» (cuando hay más de dos)
@@ -83,28 +106,12 @@ function foldDashboard(){const mob=matchMedia("(max-width:700px)").matches;let s
   sec.classList.add("dash-fold");const fold=key in st?st[key]:mob;sec.classList.toggle("folded",fold);t.setAttribute("role","button");t.tabIndex=0;t.setAttribute("aria-expanded",String(!fold));
   const tog=()=>{const f=!sec.classList.contains("folded");sec.classList.toggle("folded",f);t.setAttribute("aria-expanded",String(!f));st[key]=f;try{localStorage.setItem("yc-fold",JSON.stringify(st))}catch{}};
   t.onclick=e=>{if(e.target.closest("a,button"))return;tog()};t.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tog()}}})}
-async function dashboard(){
- const d=await api("/api/control?module=dashboard");
- let provReq=[];if(roles().some(r=>r==="admin"||r==="gestion")){try{provReq=(await api("/api/proveedor?solicitudes=1")).requests||[]}catch{}}
- const all=(d.carteleria||[]).filter(x=>x.next);
- const today=new Date();today.setHours(0,0,0,0);
- const alerts=all.map(x=>{const dt=new Date(x.next+"T00:00:00");const days=Math.round((dt-today)/86400000);return {...x,days}}).filter(x=>x.days<=7).sort((a,b)=>a.days-b.days);
- const next=all.slice().sort((a,b)=>String(a.next).localeCompare(String(b.next))).slice(0,8);
- const alertHtml=alerts.length?alerts.slice(0,8).map(x=>{
-   const label=x.days<0?"Vencido "+Math.abs(x.days)+" d":x.days===0?"HOY":"D-"+x.days;
-   return '<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span class="badge '+(x.days<0?"warn":"")+'">'+label+'</span><span>'+fdate(x.next)+'</span></div></div></div>';
- }).join(""):'<div class="notice">No hay avisos de cartelería en los próximos 7 días.</div>';
- app.innerHTML=homeHeader(alerts,d)+'<div id="pushCard"></div>'+homeTiles(d,alerts)+(provReq.length?'<section class="card prov-req" style="margin-bottom:14px"><div class="section-title"><div><small class="section-kicker">Proveedores</small><h2>Material que os piden</h2></div><span class="badge late">'+provReq.length+'</span></div><ul class="st-list">'+provReq.map(r=>'<li class="'+(r.days!==null&&r.days<=1?"falta":"")+'"><b>'+esc(r.providerName)+' · '+esc(r.itemTitle)+'</b><span>'+esc(r.itemDetail)+' · '+(r.deadline?(r.days<0?"vencido el "+fdate(r.deadline):r.days===0?"hoy es el último día":"quedan "+r.days+" días (hasta el "+fdate(r.deadline)+")"):"sin fecha límite")+'</span><span>«'+esc(String(r.message).slice(0,160))+'»</span></li>').join("")+'</ul></section>':'')+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Material que requiere atención</h2><span class="badge warn">'+(d.attention||[]).length+'</span></div><div class="list attention-list">'+((d.attention||[]).length?(d.attention||[]).map(x=>'<div class="item '+(x.overdue?"overdue":"")+'"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"pendiente")+'</span><span>Entrega: '+fdate(x.deliveryDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material pendiente con fecha límite registrada.</div>')+'</div></section><section class="card"><div class="section-title"><h2>Material activo ahora</h2><span class="badge ok">'+(d.currentMaterial||[]).length+'</span></div><div class="list">'+((d.currentMaterial||[]).length?(d.currentMaterial||[]).map(x=>'<div class="item"><div><h3>'+esc(x.module)+' · '+esc(x.title)+'</h3><div class="item-meta"><span>'+esc(x.place||"")+'</span><span>'+esc(x.materialStatus||"sin indicar")+'</span><span>Fin: '+fdate(x.endDate)+'</span></div></div></div>').join(""):'<div class="notice">No hay material activo registrado.</div>')+'</div></section></div>'+
- '<div class="grid two-col"><section class="card"><div class="section-title"><h2>Avisos y vencimientos</h2><a class="btn" href="#calendario">Ver calendario</a></div><div class="list">'+alertHtml+'</div>'+
- '<div class="section-title" style="margin-top:20px"><h2>Próximos cambios</h2></div><div class="list">'+
- (next.length?next.map(x=>'<div class="item"><div><h3>'+esc((x.title?x.title+' · ':'')+prettyKey(x.key))+'</h3><div class="item-meta"><span>'+fdate(x.next)+'</span></div></div></div>').join(""):'<div class="notice">No hay fechas de cambio registradas.</div>')+
- '</div></section><section class="card"><div class="section-title"><h2>Últimas modificaciones</h2></div><div class="list">'+
- ((d.latest||[]).length?d.latest.map(a=>'<div class="item"><div><h3>'+esc(modLabel(a.module))+" · "+esc(actLabel(a.action))+'</h3><div class="item-meta"><span>'+esc(a.actor?.email||"")+'</span><span>'+new Date(a.at).toLocaleString("es-ES")+'</span></div></div></div>').join(""):'<div class="notice">Todavía no hay histórico.</div>')+
- '</div></section></div>';
- foldDashboard();limitLists("#app .dash-fold .list")
-}
-
+// Inicio: centro de control (módulo aparte, /modules/home.js), alimentado por el Status Engine
+async function dashboard(){const M=await loadModule("home");await M.render(ycCtx())}
+// Módulos que viven en su propio archivo (/modules/<nombre>.js). Reciben lo común de la app por contexto.
+async function loadModule(name){window.YCModules=window.YCModules||{};if(!window.YCModules[name])await new Promise((res,rej)=>{const s=document.createElement("script");s.src="/modules/"+name+".js?v="+encodeURIComponent(YC_VERSION);s.onload=res;s.onerror=()=>rej(new Error("No se ha podido cargar "+name));document.head.appendChild(s)});return window.YCModules[name]}
+function ycCtx(){return {api,esc,pageHead,say,sayUndo,app,$,$$,state,roles,canRoute,headers,blobUrl,hydrateMedia,fdate,homeTiles,modLabel,who:ycWho,VENUE_STYLE,loadXLSX}}
+function ycWho(email){const e=String(email||"");if(!e||e==="Yellow Control")return "Yellow Control";const u=e.split("@")[0].split(/[._-]/)[0];return u.charAt(0).toUpperCase()+u.slice(1)}
 function homeHeader(alerts,d={}){const h=new Date().getHours(),greet=h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";const date=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});const first=alerts[0];
  const aviso=first?'<a class="home-alert'+(first.days<0?' late':'')+'" href="#carteleria"><small>'+(first.days<0?'Fuera de plazo':'Urgente')+' · Cartelería<em>'+(first.days<0?'+'+Math.abs(first.days)+' d':first.days===0?'HOY':'D-'+first.days)+'</em></small><b>'+esc((first.title?first.title+' · ':'')+prettyKey(first.key))+'</b><span>'+(first.days<0?"Vencido hace "+Math.abs(first.days)+(Math.abs(first.days)===1?" día":" días"):first.days===0?"Cambio hoy":"Cambio en "+first.days+(first.days===1?" día":" días"))+' · '+fdate(first.next)+'</span></a>':"";
  return '<div class="home-hero"><div class="home-hello"><small class="home-kicker">Panel general · Yellow Media</small><h1>'+greet+(state.actor?.name?', '+esc(String(state.actor.name).trim().split(/\s+/)[0]):'')+'</h1><p>'+esc(date.charAt(0).toUpperCase()+date.slice(1))+'</p></div>'+homeKpis(d)+'</div>'+aviso}
@@ -134,7 +141,7 @@ function radioNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 // Divide una asignación de radio en bloques de lunes a domingo, cortando también en el cambio de mes,
 // y reparte las cuñas planificadas y emitidas en proporción a los días (redondeo por restos mayores).
 function radioSplit(data){
- const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ const iso=YCDate.isoOf;
  const parts=[];let d=new Date(data.startDate+"T12:00:00");const end=new Date(data.endDate+"T12:00:00");
  while(d<=end){const s=new Date(d);let e=new Date(d);while(true){const n=new Date(e);n.setDate(n.getDate()+1);if(n>end||n.getDay()===1||n.getMonth()!==e.getMonth())break;e=n}
   parts.push({s:iso(s),e:iso(e),days:Math.round((e-s)/864e5)+1});d=new Date(e);d.setDate(d.getDate()+1)}
@@ -271,7 +278,7 @@ async function radio(){
  const au=$("#radioAudios");if(au)au.addEventListener("toggle",async()=>{if(!au.open)return;for(const el of $$("[data-lazy-asset]",au)){el.dataset.asset=el.dataset.lazyAsset;el.removeAttribute("data-lazy-asset")}await hydrateMedia("radio")});
  if(legacy.length)await hydrateMedia("radio")
 }
-function localToday(){return new Date().toLocaleDateString("sv")}
+function localToday(){return YCDate.todayMadrid()}
 function activeNow(r){const t=localToday();return !r.deletedAt&&(r.status||"").toLowerCase()!=="finalizado"&&(!r.startDate||r.startDate<=t)&&(!r.endDate||r.endDate>=t)}
 function radioItems(rows){return radioAssignments(rows,{lines:[]})}
 function radioForm(r={},selectedContract=null,selectedMonth=""){
@@ -312,7 +319,7 @@ function bindRadio(rows,selectedContract,selectedMonth){
  $$("[data-del-radio]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta asignación?"))return;const _u="/api/control?module=radio&id="+b.dataset.delRadio;await api(_u,{method:"DELETE"});sayUndo("Asignación quitada",_u,()=>radio());radio()});
  bindRadioForm(null,rows,selectedContract,selectedMonth)
 }
-function bindRadioForm(existing,rows,selectedContract,selectedMonth){
+function bindRadioForm(existing,rows,selectedContract,selectedMonth){attachHistory("#radioForm",existing);
  const f=$("#radioForm");if(!f)return;
  const rebuild=(seed={})=>{const c=seed.contractId?radioContract(seed.contractId):null;$("#radioFormCard").innerHTML=radioForm(seed,c,seed.inventoryMonth||selectedMonth);bindRadioForm(existing,rows,c,seed.inventoryMonth||selectedMonth)};
  const refreshLineInfo=()=>{
@@ -394,7 +401,7 @@ const isVideo=r=>/\.(mp4|mov|m4v|webm)$/i.test(r.assetName||"")||/^video\//.test
 function campaignItems(rows,moduleName){return rows.length?rows.map(r=>'<div class="item"><div><h3>'+esc(r.spectacle||r.campaignName||"Campaña")+'</h3><div class="item-meta">'+(r.venue?'<span class="badge">'+esc(r.venue)+'</span>':'')+'<span>'+esc(r.location||r.support||"")+'</span><span>'+esc(r.provider||"")+'</span><span>'+fdate(r.startDate)+' → '+fdate(r.endDate)+'</span>'+statusBadge(r.status)+'</div><div class="media-preview'+(isVideo(r)?' media-video':'')+'" data-asset="'+esc(r.assetKey||"")+'" data-module="'+moduleName+'" data-kind="'+(isVideo(r)?'video':'image')+'"'+(r.posterKey?' data-poster="'+esc(r.posterKey)+'"':'')+'></div></div><div class="item-actions"><button data-edit-campaign="'+r.id+'">Editar</button><button class="danger" data-del-campaign="'+r.id+'">Quitar</button></div></div>').join(""):'<div class="notice">No hay campañas registradas.</div>'}
 function campaignForm(moduleName,r={}){const cfg=CAMPAIGN_CONFIG[moduleName];return '<div class="section-title"><h2>'+(r.id?"Editar campaña":"Nueva campaña")+'</h2></div><form id="campaignForm" class="form-grid">'+venueSelect(r.venue)+input("spectacle","Espectáculo / campaña",r.spectacle)+input("campaignName","Nombre interno",r.campaignName)+[["support","Soporte / formato"],["location",cfg.location],["provider",cfg.provider],["format","Pieza / formato"]].filter(([n])=>!(cfg.hide||[]).includes(n)).map(([n,l])=>input(n,l,r[n])).join("")+input("startDate","Inicio",r.startDate,"date")+input("endDate","Fin",r.endDate,"date")+input("deliveryDate","Fecha límite material",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto",r.contact)+selectStatus(r.status)+'<label class="wide">Creatividad (imagen, vídeo o PDF)'+(r.assetName?' · actual: '+esc(r.assetName):'')+'<input id="campaignAsset" type="file" accept="image/*,video/*,application/pdf"></label><label class="wide">Portada del vídeo (imagen; la usa el resumen mensual)'+(r.posterKey?' · ya tiene':'')+'<input id="campaignPoster" type="file" accept="image/*"></label><label class="wide">Condiciones / acuerdo<textarea name="agreement">'+esc(r.agreement||"")+'</textarea></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelCampaign">Limpiar</button></div></form>'}
 function bindCampaignRows(rows,moduleName){$$("[data-edit-campaign]").forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===b.dataset.editCampaign);if(!r)return;const box=$("#campaignFormCard");box.className="card camp-form";box.innerHTML=campaignForm(moduleName,r);bindCampaignForm(r,moduleName);box.scrollIntoView({behavior:"smooth",block:"start"})});$$("[data-del-campaign]").forEach(b=>b.onclick=async()=>{if(!confirm("¿Quitar esta campaña?"))return;const _u="/api/control?module="+moduleName+"&id="+b.dataset.delCampaign;await api(_u,{method:"DELETE"});sayUndo("Campaña quitada",_u,()=>campaigns(moduleName));campaigns(moduleName)})}
-function bindCampaignForm(existing,moduleName){const f=$("#campaignForm");if(!f)return;$("#cancelCampaign").onclick=()=>{const box=$("#campaignFormCard");box.className="";box.innerHTML=""};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#campaignAsset")?.files?.[0],poster=$("#campaignPoster")?.files?.[0];try{const assetKey=await uploadAsset(file,moduleName,existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(poster){data.posterKey=await uploadAsset(poster,moduleName);data.posterName=poster.name}if(existing?.id)await api("/api/control?module="+moduleName+"&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module="+moduleName,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Campaña guardada");campaigns(moduleName)}catch(err){say(err.message)}}}
+function bindCampaignForm(existing,moduleName){attachHistory("#campaignForm",existing);const f=$("#campaignForm");if(!f)return;$("#cancelCampaign").onclick=()=>{const box=$("#campaignFormCard");box.className="";box.innerHTML=""};f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#campaignAsset")?.files?.[0],poster=$("#campaignPoster")?.files?.[0];try{const assetKey=await uploadAsset(file,moduleName,existing?.assetKey);if(assetKey){data.assetKey=assetKey;data.assetName=file?.name||existing?.assetName||""}if(poster){data.posterKey=await uploadAsset(poster,moduleName);data.posterName=poster.name}if(existing?.id)await api("/api/control?module="+moduleName+"&id="+existing.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(data)});else await api("/api/control?module="+moduleName,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});say("Campaña guardada");campaigns(moduleName)}catch(err){say(err.message)}}}
 
 /* ===== HOME TICKET · por teatro + mes + composición PNG ===== */
 const HOME_TICKET_SPACES=["Gran Teatro Pavón","Gran Teatro CaixaBank Príncipe Pío","Teatro Serrano","Teatro Arlequín","Gran Castillo de Pedraza","Abono Teatro"];
@@ -577,7 +584,7 @@ function htForm(r={},selectedMonth=htMonth){
   '<div class="wide actions-row"><button class="primary" type="submit">Guardar</button>'+(r.id?'<button type="button" class="danger" data-del-ht="'+r.id+'">Quitar</button>':'')+'</div></form>'
 }
 function htSaving(f,on){const b=f.querySelector('button[type="submit"]');if(b){b.disabled=on;b.textContent=on?"Guardando…":"Guardar"}}
-function bindHTForm(existing,selectedMonth){
+function bindHTForm(existing,selectedMonth){attachHistory("#htForm",existing);
  const f=$("#htForm");if(!f)return;$("#cancelHT").onclick=()=>{f.closest(".ht-panel").innerHTML=""};
  const del=f.querySelector("[data-del-ht]");if(del)del.onclick=async()=>{if(!confirm("¿Quitar esta pieza?"))return;const _u="/api/control?module=hometicket&id="+del.dataset.delHt;await api(_u,{method:"DELETE"});await htRefreshComposite(existing.venue,existing.month||htRowMonth(existing)||selectedMonth).catch(()=>{});sayUndo("Pieza quitada",_u,()=>homeTicket());homeTicket()};
  f.onsubmit=async e=>{e.preventDefault();if(f.dataset.busy)return;f.dataset.busy="1";htSaving(f,true);const data=formObject(f),file=$("#htAsset")?.files?.[0];
@@ -671,7 +678,7 @@ function magSheet(r,openForm){
 function revistaForm(r={}){const monthOpts=[];const now=new Date();for(let i=-1;i<=12;i++){const m=monthKey(new Date(now.getFullYear(),now.getMonth()+i,1));monthOpts.push(m)}if(r.month&&!monthOpts.includes(r.month))monthOpts.unshift(r.month);
  const xg=isXchg(r)&&(r.id||r.deal==="intercambio");
  return '<div class="section-title"><h2>'+(r.id?(xg?"Editar intercambio":"Editar página"):(xg?"Nuevo intercambio":"Nueva página"))+'</h2></div><form id="revistaForm" class="form-grid">'+venueSelect(r.venue)+'<label>Revista<select name="magazine" id="revMag">'+MAGAZINES.map(x=>'<option value="'+esc(x)+'" '+(!xg&&x===r.magazine?"selected":"")+'>'+esc(magName(x))+'</option>').join("")+'<option value="__otra" '+(xg?"selected":"")+'>Otra revista (intercambio)</option></select></label><label id="revOtherBox" style="'+(xg?'':'display:none')+'">Nombre de la revista<input name="otherMagazine" value="'+esc(xg?(r.magazine||""):"")+'" placeholder="Ej.: Madrid Teatro"></label><label>Mes<select name="month">'+monthOpts.map(m=>'<option value="'+m+'" '+(m===(r.month||monthKey(now))?"selected":"")+'>'+esc(monthLabel(m))+'</option>').join("")+'</select></label>'+input("spectacle","Espectáculo anunciado",r.spectacle)+input("deliveryDate","Cierre de edición (fecha límite del material)",r.deliveryDate,"date")+materialStatusSelect(r.materialStatus)+input("contact","Contacto de la revista",r.contact)+'<label class="wide">Cartel / página<input id="revistaAsset" type="file" accept="image/*,application/pdf"></label><label class="wide">Observaciones<textarea name="notes">'+esc(r.notes||"")+'</textarea></label><div class="wide actions-row"><button class="primary" type="submit">Guardar</button><button type="button" id="cancelRevista">Limpiar</button></div></form>'}
-function bindRevistaForm(existing,rows=[]){const f=$("#revistaForm");if(!f)return;
+function bindRevistaForm(existing,rows=[]){attachHistory("#revistaForm",existing);const f=$("#revistaForm");if(!f)return;
  const ms=$("#revMag"),ob=$("#revOtherBox");if(ms&&ob)ms.onchange=()=>{const on=ms.value==="__otra";ob.style.display=on?"":"none";if(on)ob.querySelector("input").focus()};$("#cancelRevista").onclick=()=>{$("#revistasFormCard").innerHTML=revistaForm();bindRevistaForm(null,rows)};
  f.onsubmit=async e=>{e.preventDefault();const data=formObject(f),file=$("#revistaAsset")?.files?.[0];Object.assign(data,monthRange(data.month));data.status="activo";
   if(data.magazine==="__otra"){const n=String(data.otherMagazine||"").trim();if(!n){say("Escribe el nombre de la revista");return}data.magazine=n;data.deal="intercambio"}else data.deal="acuerdo";delete data.otherMagazine;
@@ -1195,346 +1202,8 @@ async function television(){
   '<div class="tv-grid">'+blocks+money+sec("Por cerrar","Pendiente",list(d.pending))+contact+'</div>'+plan;
  $$("[data-tv]").forEach(b=>b.onclick=()=>{tvSel=b.dataset.tv;television()});
 }
-// ===================== DISEÑO (peticiones a la diseñadora) =====================
-// Sustituye a la hoja «ABONOTEATRO Y LA ESTACION». Reglas: sin fecha límite no entra; cupo de urgentes;
-// límite de piezas en proceso; avisos al móvil el día laborable antes de cada fecha (a quien la pidió).
-// Los indicadores son del proceso, no de personas.
-const DS_STATUS=[["pendiente","Pendiente"],["en_proceso","En proceso"],["en_revision","En revisión"],["parado","Parado"],["entregado","Entregado"],["cancelado","Cancelado"]];
-const DS_OPEN=["pendiente","en_proceso","en_revision","parado"];
-const dsView={tab:"peticiones",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
-let DS=null;
-const dsDays=(a,b)=>Math.round((new Date(b+"T12:00:00Z")-new Date(a+"T12:00:00Z"))/864e5);
-const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
-// Las empresas que son espacios del calendario llevan su mismo color; el resto (personas, otras empresas), el de Ajustes
-const DS_VENUE={"ABONOTEATRO":"Abono Teatro","ABONO TEATRO":"Abono Teatro","LA ESTACION":"Gran Teatro CaixaBank Príncipe Pío","LA ESTACIÓN":"Gran Teatro CaixaBank Príncipe Pío","PRINCIPE PIO":"Gran Teatro CaixaBank Príncipe Pío","PAVON":"Gran Teatro Pavón","PAVÓN":"Gran Teatro Pavón","CASTILLO":"Gran Castillo de Pedraza","PEDRAZA":"Gran Castillo de Pedraza","SERRANO":"Teatro Serrano","SOHO CITY":"Soho City Madrid","SOHO":"Soho City Madrid","ARLEQUIN":"Teatro Arlequín","ARLEQUÍN":"Teatro Arlequín"};
-const dsColor=(list,name)=>{const v=DS_VENUE[String(name||"").toUpperCase()],vs=v&&VENUE_STYLE[v];if(vs)return document.documentElement.dataset.theme==="light"?vs.bg:vs.dark;return (list.find(x=>x.name===name)||{}).color||"#888"};
-function dsWeek(iso){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10)}
-function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN.includes(r.status)),per={},glob=[];
- const add=(r,k)=>{(per[r.id]=per[r.id]||[]).push(k)};
- for(const r of open){
-  if(!r.deadline)add(r,"sinfecha");else if(r.deadline<t)add(r,"vencida");else if(dsDays(t,r.deadline)<=st.soonDays)add(r,"pronto");
-  const since=(r.statusChangedAt||r.updatedAt||r.createdAt||"").slice(0,10);if(since&&dsDays(since,t)>st.stallDays&&!r.imported)add(r,"estancada");
-  if(r.status==="parado")add(r,"parada");
-  if(r.requestDate&&dsDays(r.requestDate,t)>60)add(r,"antigua");
-  if(!r.pieceType)add(r,"sintipo")}
- const weeks={};for(const r of open)if(r.deadline&&r.deadline>=t&&dsDays(t,r.deadline)<=42){const w=dsWeek(r.deadline);weeks[w]=(weeks[w]||0)+1}
- for(const [w,n] of Object.entries(weeks))if(n>=st.peakPerWeek)glob.push({k:"pico",txt:"Pico de carga: "+n+" piezas vencen la semana del "+fdate(w)+". Conviene adelantar o repartir."});
- const wip=open.filter(r=>r.status==="en_proceso").length;if(wip>st.wipLimit)glob.push({k:"sobrecarga",txt:wip+" piezas en proceso a la vez (el límite es "+st.wipLimit+"). Mejor cerrar antes de empezar otras."});
- const urg=open.filter(r=>r.urgent).length;if(urg>st.urgentQuota)glob.push({k:"urgentes",txt:urg+" urgentes abiertas (el cupo es "+st.urgentQuota+"). Si todo es urgente, nada lo es."});
- return {per,glob}}
-const DS_ALERT={vencida:["Vencida","late"],pronto:["Vence pronto","warn"],sinfecha:["Sin fecha",""],estancada:["Sin cambios",""],parada:["Parada",""],antigua:["Más de 60 días",""],sintipo:["Sin tipo de pieza",""]};
-async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});
- // Desde el calendario principal: #diseno?edit=<id> abre la petición; #diseno?tab=campanas abre las campañas del año
- const q=new URLSearchParams(location.hash.split("?")[1]||""),edit=q.get("edit"),tab=q.get("tab");if(edit||tab){history.replaceState(null,"",location.hash.split("?")[0]);dsView.picked=1}
- if(tab)dsView.tab=tab;else if(edit)dsView.tab="peticiones";dsRender();
- const row=edit&&DS.rows.find(r=>r.id===edit);if(row)dsForm(row);else if(edit)say("No se ha encontrado la petición (puede estar quitada)")}
-function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
- if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
- const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
- app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
-  dsCampTable()+'<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
- $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
- if($("#dsNew"))$("#dsNew").onclick=()=>dsForm(null);
- if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()};
- if(dsView.tab==="indicadores")dsIndicators();else if(dsView.tab==="avance")dsUpdate();else if(dsView.tab==="campanas")dsCampaigns();else if(dsView.tab==="ajustes")dsSettings();else dsList(isDesigner)}
-function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAlerts(d);
- const counts={};Object.values(per).forEach(ks=>ks.forEach(k=>counts[k]=(counts[k]||0)+1));
- let rows=d.rows.slice();
- if(dsView.state==="abiertas")rows=rows.filter(r=>DS_OPEN.includes(r.status));else if(dsView.state!=="todas")rows=rows.filter(r=>r.status===dsView.state);
- if(dsView.mine&&d.me)rows=rows.filter(r=>r.requester===d.me);
- if(dsView.who)rows=rows.filter(r=>r.requester===dsView.who);
- if(dsView.company)rows=rows.filter(r=>r.company===dsView.company);
- if(dsView.alert)rows=rows.filter(r=>(per[r.id]||[]).includes(dsView.alert));
- if(dsView.q){const q=dsView.q.toLowerCase();rows=rows.filter(r=>(r.title+" "+(r.designerNotes||"")+" "+(r.notes||"")).toLowerCase().includes(q))}
- rows.sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999")||String(b.requestDate||"").localeCompare(String(a.requestDate||"")));
- const people=[...new Set([...st.people.map(p=>p.name),...d.rows.map(r=>r.requester).filter(Boolean)])],companies=[...new Set([...st.companies.map(c=>c.name),...d.rows.map(r=>r.company).filter(Boolean)])];
- const sel=(id,val,opts,first)=>'<select id="'+id+'"><option value="">'+first+'</option>'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("")+'</select>';
- const tm=+t.slice(5,7),ty=+t.slice(0,4),campDue=(st.campaigns||[]).filter(c=>c.month===tm||c.month===tm%12+1).filter(c=>!dsCampMatch(c,c.month>=tm?ty:ty+1).length);
- $("#dsBody").innerHTML=(campDue.length?'<button type="button" class="ds-campnote" id="dsCampGo"><b>Campañas por pedir</b> '+campDue.map(c=>esc(DS_MONTHS[c.month-1]+': '+(c.creative||c.dates))).join(' · ')+'<span>Ver campañas del año</span></button>':'')+(glob.length?'<section class="card ds-glob">'+glob.map(g=>'<p><b>'+esc(g.txt.split(":")[0])+'</b>'+esc(g.txt.slice(g.txt.indexOf(":")))+'</p>').join("")+'</section>':'')+
-  '<div class="ds-alertbar">'+Object.entries(DS_ALERT).filter(([k])=>counts[k]).map(([k,[l,c]])=>'<button type="button" class="ds-chip '+c+(dsView.alert===k?' on':'')+'" data-dsalert="'+k+'">'+l+' <b>'+counts[k]+'</b></button>').join("")+(dsView.alert?'<button type="button" class="ds-chip" data-dsalert="">Quitar filtro</button>':'')+'</div>'+
-  '<section class="card ds-filters"><div class="actions-row">'+
-   '<select id="dsState">'+[["abiertas","Abiertas"],["entregado","Entregadas"],["cancelado","Canceladas"],["todas","Todas"]].map(([v,l])=>'<option value="'+v+'"'+(dsView.state===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
-   sel("dsWho",dsView.who,people,"Todas las personas")+sel("dsCo",dsView.company,companies,"Todas las empresas")+
-   '<input id="dsQ" placeholder="Buscar" value="'+esc(dsView.q)+'" style="flex:1;min-width:140px">'+(d.me?'<label class="ds-mine"><input type="checkbox" id="dsMine"'+(dsView.mine?' checked':'')+'> Solo las mías</label>':'')+
-  '</div></section>'+
-  '<p class="muted" style="margin:4px 2px 10px">'+rows.length+' peticiones</p>'+
-  (rows.length?'<div class="ds-list">'+rows.map(r=>{const al=per[r.id]||[],left=r.deadline?dsDays(t,r.deadline):null;
-   return '<article class="card ds-item'+(al.includes("vencida")?' late':'')+'" data-dsid="'+r.id+'"><div class="ds-top"><span class="ds-who" style="--c:'+dsColor(st.people,r.requester)+'">'+esc(r.requester||"—")+'</span><span class="ds-co" style="--c:'+dsColor(st.companies,r.company)+'">'+esc(r.company||"—")+'</span>'+(r.pieceType?'<span class="badge">'+esc(r.pieceType)+'</span>':'')+(r.urgent?'<span class="badge late">Urgente</span>':'')+al.filter(k=>k!=="sintipo").map(k=>'<span class="badge '+DS_ALERT[k][1]+'">'+DS_ALERT[k][0]+'</span>').join("")+'</div>'+
-    '<h3>'+esc(r.title)+'</h3>'+
-    '<div class="ds-meta"><button type="button" class="ds-date sm" data-dsdate="requestDate" title="Corregir fecha de solicitud">Pedida '+(r.requestDate?fdate(r.requestDate):"—")+'</button><button type="button" class="ds-date" data-dsdate="deadline" title="Cambiar fecha límite">'+(r.deadline?'Para el '+fdate(r.deadline):'Poner fecha límite')+'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>'+(r.deadline&&DS_OPEN.includes(r.status)?'<span>'+(left<0?'vencida hace '+(-left)+' d':left===0?'vence hoy':'faltan '+left+' d')+'</span>':'')+(r.deliveredAt?'<span>Entregada '+fdate(r.deliveredAt)+'</span>':'')+(r.reopenCount?'<span>Reabierta '+r.reopenCount+'</span>':'')+'</div>'+
-    (r.status==="cancelado"&&r.cancelReason?'<p class="ds-notes"><b>Cancelada:</b> '+esc(r.cancelReason)+'</p>':'')+(r.designerNotes?'<p class="ds-notes"><b>Comentarios de diseño:</b> '+esc(r.designerNotes)+'</p>':'')+
-    '<div class="ds-actions"><select data-dsst="'+r.id+'">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
-    '<select data-dspr="'+r.id+'">'+[0,25,50,75,100].map(p=>'<option value="'+p+'"'+(Number(r.progress||0)===p?' selected':'')+'>'+p+' %</option>').join("")+'</select>'+
-    '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" class="ghost" data-dsnot>Avisar</button><button type="button" class="ghost" data-dscan>'+(DS_OPEN.includes(r.status)?'Cancelar o borrar':'Borrar')+'</button><button type="button" class="ghost" data-dshist>Historial'+((r.history||[]).length?' ('+r.history.length+')':'')+'</button><button type="button" data-dsed="'+r.id+'">Editar</button></div><div class="ds-edit"></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
- if($("#dsCampGo"))$("#dsCampGo").onclick=()=>{dsView.tab="campanas";dsRender()};
- $$("[data-dsalert]").forEach(b=>b.onclick=()=>{dsView.alert=b.dataset.dsalert;if(dsView.alert)dsView.state="abiertas";dsList(isDesigner)});
- $("#dsState").onchange=e=>{dsView.state=e.target.value;dsList(isDesigner)};$("#dsWho").onchange=e=>{dsView.who=e.target.value;dsList(isDesigner)};$("#dsCo").onchange=e=>{dsView.company=e.target.value;dsList(isDesigner)};
- $("#dsQ").oninput=e=>{dsView.q=e.target.value;clearTimeout(dsList.t);dsList.t=setTimeout(()=>{dsList(isDesigner);const q=$("#dsQ");q.focus();q.setSelectionRange(q.value.length,q.value.length)},350)};
- if($("#dsMine"))$("#dsMine").onchange=e=>{dsView.mine=e.target.checked;dsList(isDesigner)};
- const save=async(id,patch)=>{try{const r=await api("/api/diseno?id="+id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row:patch})});const i=DS.rows.findIndex(x=>x.id===id);DS.rows[i]=r.row;say("Guardado");dsList(isDesigner)}catch(e){say(e.message)}};
- $$("[data-dsst]").forEach(s=>s.onchange=()=>save(s.dataset.dsst,{status:s.value}));
- $$("[data-dspr]").forEach(s=>s.onchange=()=>save(s.dataset.dspr,{progress:+s.value}));
- $$("[data-dsed]").forEach(b=>b.onclick=()=>dsForm(DS.rows.find(r=>r.id===b.dataset.dsed)));
- $$("[data-dsdate]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsDateEditor(c,DS.rows.find(r=>r.id===c.dataset.dsid),b.dataset.dsdate,isDesigner)});
- $$("[data-dshist]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsHistory(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
- $$("[data-dscan]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsCancel(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
- $$("[data-dsnot]").forEach(b=>b.onclick=()=>dsNotify([b.closest("[data-dsid]").dataset.dsid]))}
-function dsForm(r,preset){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me||"",status:"pendiente",progress:0,...(preset||{})};
- const people=[...new Set([...st.people.map(p=>p.name),r.requester].filter(Boolean))],companies=[...new Set([...st.companies.map(c=>c.name),r.company].filter(Boolean))];
- const opt=(list,val)=>list.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("");
- $("#dsBody").innerHTML='<section class="card"><div class="section-title"><div><small class="section-kicker">'+(isNew?"Nueva":"Editar")+'</small><h2>Petición de diseño</h2></div></div><form id="dsF" class="form-grid">'+
-  '<label class="wide">Qué hay que diseñar<textarea name="title" rows="2" required>'+esc(r.title||"")+'</textarea></label>'+
-  '<label>Quién lo pide<select name="requester" required><option value="">Elige…</option>'+opt(people,r.requester)+'</select></label>'+
-  '<label>Empresa o espacio<select name="company" required><option value="">Elige…</option>'+opt(companies,r.company)+'</select></label>'+
-  '<label>Tipo de pieza<select name="pieceType"><option value="">Elige…</option>'+opt(d.pieceTypes,r.pieceType)+'</select></label>'+
-  '<label>Fecha límite<input type="date" name="deadline" value="'+esc(r.deadline||"")+'" required></label>'+
-  '<label>Situación<select name="status">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select></label>'+
-  '<label>Avance<select name="progress">'+[0,25,50,75,100].map(p=>'<option value="'+p+'"'+(Number(r.progress||0)===p?' selected':'')+'>'+p+' %</option>').join("")+'</select></label>'+
-  '<label class="ds-urg"><input type="checkbox" name="urgent"'+(r.urgent?' checked':'')+'> Urgente</label>'+
-  '<label class="wide">Enlace al material (Dropbox, Drive…)<input name="link" type="url" value="'+esc(r.link||"")+'" placeholder="https://"></label>'+
-  '<label class="wide">Comentarios de diseño<textarea name="designerNotes" rows="2">'+esc(r.designerNotes||"")+'</textarea></label>'+
-  '<label class="wide">Notas de quien pide (medidas, textos, referencias)<textarea name="notes" rows="3">'+esc(r.notes||"")+'</textarea></label>'+
-  '<div class="wide actions-row"><button type="submit" class="primary">'+(isNew?"Enviar petición":"Guardar")+'</button><button type="button" id="dsBack">Volver</button>'+(isNew?'':'<button type="button" class="danger" id="dsDel">Quitar</button>')+'</div></form>'+
-  '<p class="muted" style="margin-top:10px">Sin fecha límite no entra: así se puede avisar y priorizar. El aviso al móvil llega a quien la pide el día laborable antes.</p></section>';
- $("#dsBack").onclick=()=>dsRender();
- if($("#dsDel"))$("#dsDel").onclick=async()=>{if(!confirm("¿Quitar esta petición?"))return;try{await api("/api/diseno?id="+r.id,{method:"DELETE"});DS.rows=DS.rows.filter(x=>x.id!==r.id);say("Petición quitada");dsRender()}catch(e){say(e.message)}};
- $("#dsF").onsubmit=async e=>{e.preventDefault();const f=e.target,row={title:f.title.value,requester:f.requester.value,company:f.company.value,pieceType:f.pieceType.value,deadline:f.deadline.value,status:f.status.value,progress:+f.progress.value,urgent:f.urgent.checked,link:f.link.value,designerNotes:f.designerNotes.value,notes:f.notes.value};
-  const send=async(force)=>api(isNew?"/api/diseno":"/api/diseno?id="+r.id,{method:isNew?"POST":"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row,forceUrgent:force})});
-  try{let res;try{res=await send(false)}catch(err){if(/cupo/.test(err.message)&&confirm(err.message+"\n\n¿La marcas urgente igualmente?"))res=await send(true);else throw err}
-   if(isNew)DS.rows.push(res.row);else DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say(isNew?"Petición enviada":"Guardado");dsRender()}catch(err){say(err.message)}}}
-function dsIndicators(){const d=DS,t=d.today,rows=d.rows,open=rows.filter(r=>DS_OPEN.includes(r.status)),since=n=>{const x=new Date(t+"T12:00:00Z");x.setUTCDate(x.getUTCDate()-n);return x.toISOString().slice(0,10)};
- const done=rows.filter(r=>r.status==="entregado"&&r.deliveredAt&&r.requestDate),lead=done.map(r=>dsDays(r.requestDate,r.deliveredAt)).filter(n=>n>=0).sort((a,b)=>a-b);
- const med=lead.length?lead[Math.floor(lead.length/2)]:null,avg=lead.length?Math.round(lead.reduce((a,b)=>a+b,0)/lead.length):null;
- const onTime=done.filter(r=>r.deadline),pct=onTime.length?Math.round(100*onTime.filter(r=>r.deliveredAt<=r.deadline).length/onTime.length):null;
- const ages=open.filter(r=>r.requestDate).map(r=>dsDays(r.requestDate,t)),ageAvg=ages.length?Math.round(ages.reduce((a,b)=>a+b,0)/ages.length):null;
- const in30=rows.filter(r=>!r.imported&&(r.requestDate||"")>=since(30)).length,out30=rows.filter(r=>r.deliveredAt&&r.deliveredAt>=since(30)).length;
- const pctOf=(n,tot)=>tot?Math.round(100*n/tot):0,noDate=open.filter(r=>!r.deadline).length,noType=open.filter(r=>!r.pieceType).length;
- const kpi=(v,l)=>'<div class="tv-kpi"><b>'+(v==null?"—":v)+'</b><span>'+esc(l)+'</span></div>';
- const group=(key)=>{const m={};rows.forEach(r=>{const k=r[key]||"—";m[k]=m[k]||{t:0,o:0};m[k].t++;if(DS_OPEN.includes(r.status))m[k].o++});return Object.entries(m).sort((a,b)=>b[1].t-a[1].t)};
- const table=(title,list)=>'<section class="card"><div class="section-title"><div><h2>'+title+'</h2></div></div><div class="table-wrap"><table class="tv-table"><thead><tr><th></th><th class="num">Total</th><th class="num">% del total</th><th class="num">Abiertas</th></tr></thead><tbody>'+list.map(([k,v])=>'<tr><td>'+esc(k)+'</td><td class="num">'+v.t+'</td><td class="num">'+pctOf(v.t,rows.length)+' %</td><td class="num">'+v.o+'</td></tr>').join("")+'</tbody></table></div></section>';
- const weeks=[];for(let i=7;i>=0;i--){const w=dsWeek(since(i*7));weeks.push(w)}
- const flow=weeks.map(w=>{const e=new Date(w+"T12:00:00Z");e.setUTCDate(e.getUTCDate()+6);const we=e.toISOString().slice(0,10);return [w,rows.filter(r=>!r.imported&&r.requestDate>=w&&r.requestDate<=we).length,rows.filter(r=>r.deliveredAt&&r.deliveredAt>=w&&r.deliveredAt<=we).length]});
- $("#dsBody").innerHTML='<section class="card"><div class="tv-kpis">'+kpi(open.length,"abiertas")+kpi(in30,"entradas (30 días)")+kpi(out30,"entregadas (30 días)")+kpi(avg==null?null:avg+" d","plazo medio")+kpi(med==null?null:med+" d","plazo mediano")+kpi(pct==null?null:pct+" %","entregadas a tiempo")+kpi(ageAvg==null?null:ageAvg+" d","edad media de las abiertas")+kpi(rows.reduce((a,r)=>a+(r.reopenCount||0),0),"reaperturas")+'</div>'+
-  '<p class="muted" style="margin:12px 0 0">Calidad del dato: '+noDate+' de '+open.length+' abiertas sin fecha límite ('+pctOf(noDate,open.length)+' %) y '+noType+' sin tipo de pieza ('+pctOf(noType,open.length)+' %). El plazo y las entregas a tiempo se miden desde que se usa esta sección: el histórico de la hoja no tenía fecha de entrega. Son indicadores del proceso, no de personas.</p></section>'+
-  '<section class="card"><div class="section-title"><div><small class="section-kicker">Últimas 8 semanas</small><h2>Entradas y entregas</h2></div></div><div class="table-wrap"><table class="tv-table"><thead><tr><th>Semana del</th><th class="num">Entran</th><th class="num">Se entregan</th></tr></thead><tbody>'+flow.map(([w,i,o])=>'<tr><td>'+fdate(w)+'</td><td class="num">'+i+'</td><td class="num">'+o+'</td></tr>').join("")+'</tbody></table></div></section>'+
-  '<div class="tv-grid">'+table("Peticiones por persona",group("requester"))+table("Creatividades por empresa",group("company"))+table("Por tipo de pieza",group("pieceType"))+'</div>'}
-function dsSettings(){const d=DS,st=JSON.parse(JSON.stringify(d.settings));
- const rowP=(p,i)=>'<div class="ds-set"><input value="'+esc(p.name)+'" data-pn="'+i+'" placeholder="NOMBRE"><input value="'+esc(p.email)+'" data-pe="'+i+'" type="email" placeholder="correo para el aviso"><input type="color" value="'+esc(p.color)+'" data-pc="'+i+'"><button type="button" class="ghost" data-prm="'+i+'">Quitar</button></div>';
- const rowC=(c,i)=>'<div class="ds-set"><input value="'+esc(c.name)+'" data-cn="'+i+'">'+(DS_VENUE[c.name]?'<span class="ds-vcol" style="--c:'+dsColor([],c.name)+'">Color del calendario</span>':'<input type="color" value="'+esc(c.color)+'" data-cc="'+i+'">')+'<button type="button" class="ghost" data-crm="'+i+'">Quitar</button></div>';
- const num=(k,l)=>'<label>'+l+'<input type="number" min="1" data-num="'+k+'" value="'+st[k]+'"></label>';
- const draw=()=>{$("#dsBody").innerHTML='<div class="tv-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Quién pide</small><h2>Personas</h2></div></div>'+st.people.map(rowP).join("")+'<button type="button" id="dsAddP">Añadir persona</button><p class="muted">El correo tiene que ser el de su usuario de Yellow Control para que le llegue el aviso del día antes.</p></section>'+
-  '<section class="card"><div class="section-title"><div><small class="section-kicker">Para quién</small><h2>Empresas y espacios</h2></div></div>'+st.companies.map(rowC).join("")+'<button type="button" id="dsAddC">Añadir empresa</button></section>'+
-  '<section class="card"><div class="section-title"><div><small class="section-kicker">Valores de partida, a revisar con el uso</small><h2>Umbrales</h2></div></div><div class="form-grid">'+num("soonDays","Avisar de «vence pronto» con (días)")+num("stallDays","«Sin cambios» tras (días)")+num("wipLimit","Máximo en proceso a la vez")+num("urgentQuota","Cupo de urgentes abiertas")+num("peakPerWeek","Pico: vencimientos en una semana")+'</div></section></div>'+
-  '<section class="card" style="margin-bottom:14px"><div class="section-title"><div><small class="section-kicker">Desde avisos@yellowmedia.es</small><h2>Avisos por correo de diseño</h2></div></div><label class="ds-mine"><input type="checkbox" id="dsMailLive"'+(st.mailLive?' checked':'')+'> Activados: llegan a quien pidió la pieza (y en copia a quien avisa, si lo marca)</label><p class="muted">Apagado, todos los avisos llegan solo a fernando@yellowmedia.es con el destinatario real en el asunto, para probar.</p></section>'+'<div class="actions-row" style="margin:0 0 14px"><button type="button" class="primary" id="dsSaveSet">Guardar ajustes</button></div>'+
-  '<section class="card"><div class="section-title"><div><small class="section-kicker">Una vez</small><h2>Importar la hoja de Google</h2></div></div><p>En la hoja «ABONOTEATRO Y LA ESTACION», Archivo › Descargar › Microsoft Excel (.xlsx), y súbelo aquí. Se leen las pestañas de tareas pendientes (también colectivos) y de tareas hechas. Lo que ya esté no se duplica.</p><div class="actions-row"><button type="button" class="primary" id="dsPick">Subir el Excel de la hoja</button><input type="file" id="dsFile" accept=".xlsx" hidden></div><div id="dsImp"></div></section>';
-  $$("[data-pn]").forEach(x=>x.oninput=()=>st.people[x.dataset.pn].name=x.value.toUpperCase());$$("[data-pe]").forEach(x=>x.oninput=()=>st.people[x.dataset.pe].email=x.value);$$("[data-pc]").forEach(x=>x.oninput=()=>st.people[x.dataset.pc].color=x.value);
-  $$("[data-cn]").forEach(x=>x.oninput=()=>st.companies[x.dataset.cn].name=x.value.toUpperCase());$$("[data-cc]").forEach(x=>x.oninput=()=>st.companies[x.dataset.cc].color=x.value);
-  $$("[data-prm]").forEach(b=>b.onclick=()=>{st.people.splice(+b.dataset.prm,1);draw()});$$("[data-crm]").forEach(b=>b.onclick=()=>{st.companies.splice(+b.dataset.crm,1);draw()});
-  $("#dsAddP").onclick=()=>{st.people.push({name:"",email:"",color:"#cccccc"});draw()};$("#dsAddC").onclick=()=>{st.companies.push({name:"",color:"#cccccc"});draw()};
-  $$("[data-num]").forEach(x=>x.oninput=()=>st[x.dataset.num]=+x.value);$("#dsMailLive").onchange=e=>st.mailLive=e.target.checked;
-  $("#dsSaveSet").onclick=async()=>{try{const r=await api("/api/diseno?settings=1",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:st})});DS.settings=r.settings;say("Ajustes guardados")}catch(e){say(e.message)}};
-  $("#dsPick").onclick=()=>$("#dsFile").click();$("#dsFile").onchange=e=>dsImportFile(e.target.files[0])};
- draw()}
-async function dsImportFile(file){if(!file)return;const box=$("#dsImp");box.innerHTML='<p class="muted">Leyendo…</p>';
- try{await loadXLSX();const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
-  const N=s=>String(s??"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z0-9]+/g," ").trim();
-  const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const MES={ENERO:1,FEBRERO:2,MARZO:3,ABRIL:4,MAYO:5,JUNIO:6,JULIO:7,AGOSTO:8,SEPTIEMBRE:9,OCTUBRE:10,NOVIEMBRE:11,DICIEMBRE:12};
-  const date=(v,ref)=>{if(v instanceof Date&&!isNaN(v))return iso(new Date(v.getTime()+12*36e5));const s=String(v??"").trim();let m=/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/.exec(s);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")}
-   m=/^(\d{1,2})\s+(?:DE\s+)?([A-Z]+)/.exec(N(s));if(m&&MES[m[2]]){const y=(ref||"").slice(0,4)||String(new Date().getFullYear());return y+"-"+String(MES[m[2]]).padStart(2,"0")+"-"+m[1].padStart(2,"0")}return ""};
-  const status=(s,sent)=>{const x=N(s);if(sent||/ENTREGAD|HECHO|ENVIAD/.test(x))return "entregado";if(/CANCEL/.test(x))return "cancelado";if(/PROCESO/.test(x))return "en_proceso";if(/REVISION/.test(x))return "en_revision";if(/PARAD/.test(x))return "parado";return "pendiente"};
-  const out=[],by={};
-  for(const name of wb.SheetNames){const n=N(name);const kind=n.startsWith("TAREAS HECHAS")?"hechas":n.startsWith("TAREAS PENDIENTES")?"pendientes":null;if(!kind)continue;
-   const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:""});const h=(rows[0]||[]).map(N),col=k=>h.indexOf(k);
-   const c={who:col("QUIEN PIDE"),co:col("EMPRESA"),req:col("FECHA SOLICITUD"),title:col("DISENO"),dl:col("FECHA LIMITE"),sit:col("SITUACION"),sent:col("ENVIADO"),com:col("COMENTARIOS CRIS"),pri:col("PRIORIDAD"),av:col("AVANCE"),del:col("FECHA ENTREGA")};
-   if(c.title<0)continue;by[name]=0;
-   for(const r of rows.slice(1)){const title=String(r[c.title]??"").trim();if(!title||N(title)==="PRUEBA")continue;
-    const requestDate=c.req>=0?date(r[c.req]):"",dlRaw=c.dl>=0?r[c.dl]:"",urgent=/URGENT/.test(N(dlRaw))||(c.pri>=0&&/URGENT|ALTA/.test(N(r[c.pri])));
-    const sent=c.sent>=0&&r[c.sent]!==""&&r[c.sent]!==false,st=kind==="hechas"?"entregado":status(c.sit>=0?r[c.sit]:"",sent);
-    let av=c.av>=0?r[c.av]:"";av=typeof av==="number"?(av<=1?av*100:av):parseInt(String(av))||0;
-    out.push({title,requester:N(c.who>=0?r[c.who]:"").replace(/ /g," "),company:String(c.co>=0?r[c.co]:"").trim().toUpperCase(),requestDate,deadline:date(dlRaw,requestDate),status:st,progress:st==="entregado"?100:av,urgent,designerNotes:c.com>=0?String(r[c.com]??"").trim():"",deliveredAt:c.del>=0?date(r[c.del]):""});by[name]++}}
-  if(!out.length){box.innerHTML='<div class="notice">No encuentro las pestañas de tareas en ese Excel.</div>';return}
-  const open=out.filter(r=>DS_OPEN.includes(r.status)).length;
-  box.innerHTML='<div class="notice" style="text-align:left;margin-top:12px">'+Object.entries(by).map(([k,v])=>esc(k)+': '+v).join(" · ")+'<br><b>'+out.length+' peticiones</b>: '+open+' abiertas y '+(out.length-open)+' entregadas o canceladas.</div><div class="actions-row" style="margin-top:10px"><button type="button" class="primary" id="dsImpGo">Importar '+out.length+' peticiones</button></div>';
-  $("#dsImpGo").onclick=async()=>{const b=$("#dsImpGo");b.disabled=true;b.textContent="Importando…";try{let added=0,skipped=0;for(let i=0;i<out.length;i+=400){const r=await api("/api/diseno",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({bulk:out.slice(i,i+400)})});added+=r.added;skipped+=r.skipped}
-   DS=await api("/api/diseno",{cache:"no-store"});box.innerHTML='<div class="notice" style="margin-top:12px">'+added+' peticiones importadas'+(skipped?' · '+skipped+' ya estaban (repetidas en la hoja o importadas antes)':'')+'.</div>'}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
- catch(e){box.innerHTML='<div class="notice">No se ha podido leer: '+esc(e.message)+'</div>'}}
-// ---- Actualizar avance: la diseñadora pega una línea por trabajo, la app la cruza con las peticiones abiertas,
-// enseña qué va a cambiar y no guarda nada hasta confirmar. Cada cambio queda en el historial de la petición.
-const DSN=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-const DS_STOP=new Set("de del la las el los y a al en para con por un una unos unas que esta este ya lo le se su ok vale tb tambien".split(" "));
-const DS_KW=[[/\b(entregad[oa]s?|terminad[oa]s?|hech[oa]s?|acabad[oa]s?|enviad[oa]s?|finalizad[oa]s?)\b/,"entregado"],[/\b(en revision|revision|para revisar|a revisar)\b/,"en_revision"],[/\b(parad[oa]s?|bloquead[oa]s?|en espera)\b/,"parado"],[/\b(cancelad[oa]s?|anulad[oa]s?|no se hace|ya no hace falta|no hace falta|ya se ha conseguido|se ha conseguido|conseguid[oa]s?|pedid[oa] por otro lado|por otro lado)\b/,"cancelado"],[/\b(en proceso|empezad[oa]s?|haciendo(?:lo|la)?|empezando|en marcha)\b/,"en_proceso"],[/\b(pendientes?|sin empezar)\b/,"pendiente"]];
-const DS_MES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
-const DS_FIELD={cancelReason:"motivo",title:"título",requester:"quién pide",company:"empresa",pieceType:"tipo de pieza",requestDate:"fecha de solicitud",deadline:"fecha límite",status:"situación",progress:"avance",urgent:"urgente",designerNotes:"comentario de diseño",link:"enlace",notes:"notas"};
-const dsVal=(f,v)=>v===""||v==null?"vacío":f==="status"?dsLabel(v):f==="progress"?v+" %":/Date|deadline/.test(f)?fdate(v):f==="urgent"?(v?"sí":"no"):String(v).length>60?String(v).slice(0,58)+"…":String(v);
-function dsName(email){const p=(DS?.settings.people||[]).find(x=>x.email&&x.email===String(email||"").toLowerCase());if(p)return p.name.charAt(0)+p.name.slice(1).toLowerCase();const u=String(email||"").split("@")[0];return u?u.charAt(0).toUpperCase()+u.slice(1):"—"}
-function dsWhen(iso){const d=new Date(iso),t=new Date(),y=new Date(Date.now()-864e5),hm=d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});return d.toDateString()===t.toDateString()?"Hoy "+hm:d.toDateString()===y.toDateString()?"Ayer "+hm:d.toLocaleDateString("es-ES",{day:"numeric",month:"short"})+" "+hm}
-function dsIsoAdd(iso,n){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
-function dsParseLine(raw,today){let s=" "+DSN(raw).replace(/\s+/g," ").trim()+" ",comment="",o={};
- // comentario: lo que va tras « - », « — », «: » o desde «esperando / falta…»
- let m=/\s(?:-|—|–|:|\/\/)\s(.+)$/.exec(raw.replace(/\s+/g," "));if(m){comment=m[1].trim();s=" "+DSN(raw.slice(0,raw.indexOf(m[0]))).trim()+" "}
- else{m=/(?<!hace )\b(esperando|a la espera|falta|faltan|ojo|nota)\b.*$/.exec(s);if(m){const i=DSN(raw).indexOf(m[0].trim());comment=i>=0?raw.slice(i).trim():m[0].trim();s=s.slice(0,m.index)+" "}}
- // fecha: «fecha 30/10», «para el 2/11», «hasta 15 noviembre»
- m=/\b(?:nueva fecha|fecha limite|fecha|para el|para|hasta el|hasta|limite|entrega el|entrega)\s+(\d{1,2})(?:[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?|\s+(?:de\s+)?([a-z]+))/.exec(s);
- if(m){const mo=m[2]?+m[2]:DS_MES[m[4]];if(mo&&mo<=12&&+m[1]>=1&&+m[1]<=31){let y=m[3]?(m[3].length===2?"20"+m[3]:m[3]):today.slice(0,4);let iso=y+"-"+String(mo).padStart(2,"0")+"-"+String(+m[1]).padStart(2,"0");if(!m[3]&&dsDays(iso,today)>150)iso=(+y+1)+iso.slice(4);o.deadline=iso;s=s.replace(m[0]," ")}}
- m=/(\d{1,3})\s*%|\bal (\d{1,3})\b/.exec(s);if(m){o.progress=Math.min(100,Math.round(+(m[1]||m[2])/25)*25);s=s.replace(m[0]," ")}
- for(const [re,st] of DS_KW){const k=re.exec(s);if(k){o.status=st;if(st==="cancelado"&&!/^(cancelad|anulad)/.test(k[0]))o.cancelReason=k[0].charAt(0).toUpperCase()+k[0].slice(1);s=s.replace(k[0]," ");break}}
- if(comment)o.designerNotes=comment;
- const words=s.split(/[^a-z0-9ñ]+/).filter(w=>(w.length>1||/\d/.test(w))&&!DS_STOP.has(w));
- return {raw,o,words}}
-function dsMatch(words,rows){const tok=r=>DSN(r.title+" "+r.company+" "+(r.pieceType||"")).split(/[^a-z0-9ñ]+/).filter(w=>(w.length>1||/\d/.test(w))&&!DS_STOP.has(w));
- const hit=(w,list)=>list.some(t=>t===w||(w.length>=4&&t.length>=4&&(t.startsWith(w)||w.startsWith(t)))||(w.length>=5&&t.length>=5&&t.slice(0,5)===w.slice(0,5)));
- if(!words.length)return [];
- return rows.map(r=>{const tk=tok(r),n=words.filter(w=>hit(w,tk)).length,cov=tk.length?tk.filter(t=>hit(t,words)).length/tk.length:0;return {r,score:n/words.length+cov*.15}}).filter(x=>x.score>=.5).sort((a,b)=>b.score-a.score)}
-function dsPatch(row,o){const p={};
- if(o.deadline&&o.deadline!==row.deadline)p.deadline=o.deadline;
- const canc=(o.status==="cancelado");if(canc&&(o.designerNotes||o.cancelReason))p.cancelReason=o.designerNotes||o.cancelReason;
- if(!canc&&o.designerNotes&&o.designerNotes!==row.designerNotes)p.designerNotes=o.designerNotes;
- let st=o.status;if(!st&&o.progress===100)st="entregado";if(!st&&o.progress>0&&row.status==="pendiente")st="en_proceso";
- if(st&&st!==row.status)p.status=st;
- if(o.progress!=null&&o.progress!==Number(row.progress||0)&&p.status!=="entregado")p.progress=o.progress;
- return p}
-const dsUView={text:"",lines:null,done:null};
-function dsUpdate(){const d=DS,t=d.today,open=d.rows.filter(r=>DS_OPEN.includes(r.status)).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
- const wk=dsIsoAdd(t,7),since7=dsIsoAdd(t,-7);
- const stat=(n,l,c)=>'<div class="dsu-stat'+(c?' '+c:'')+'"><b>'+n+'</b><span>'+l+'</span></div>';
- const feed=d.rows.flatMap(r=>(r.history||[]).map(h=>({r,h}))).sort((a,b)=>b.h.at.localeCompare(a.h.at)).slice(0,12);
- // Ejemplos con sus propias peticiones: solo las que se reconocen sin dudar con tres o cuatro palabras
- const short=r=>{const w=r.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim().split(" ").filter(x=>x.length>1&&!DS_STOP.has(DSN(x)));for(const n of [2,3,4]){const k=w.slice(0,n),m=dsMatch(k.map(DSN),open);if(m.length&&m[0].r.id===r.id&&!(m[1]&&m[1].score>=m[0].score-.1))return k.join(" ")}return ""};
- const tails=[" 50%"," entregado",x=>" en revisión fecha "+fdate(dsIsoAdd(x.deadline&&x.deadline>t?x.deadline:t,3)).slice(0,-5)," parado - esperando textos"],ex=[];
- for(const r of open){if(ex.length>=4)break;const k=short(r);if(k){const tl=tails[ex.length];ex.push(k+(typeof tl==="function"?tl(r):tl))}}
- $("#dsBody").innerHTML='<div class="dsu">'+
-  '<div class="dsu-stats">'+stat(open.filter(r=>r.status==="en_proceso"||r.status==="en_revision").length,"en marcha")+stat(open.filter(r=>r.status==="pendiente").length,"sin empezar")+stat(open.filter(r=>r.deadline&&r.deadline<=wk).length,"vencen en 7 días",open.some(r=>r.deadline&&r.deadline<t)?"hot":"")+stat(d.rows.filter(r=>r.deliveredAt&&r.deliveredAt>=since7).length,"entregadas esta semana","ok")+'</div>'+
-  '<div class="dsu-grid"><div class="dsu-main">'+
-   '<section class="dsu-box"><div class="dsu-steps"><div><i>1</i><b>Pega</b><span>Una línea por trabajo, como en un WhatsApp.</span></div><div><i>2</i><b>Revisa</b><span>La app te enseña qué va a cambiar.</span></div><div><i>3</i><b>Confirma</b><span>Hasta entonces no se guarda nada.</span></div></div>'+
-   '<textarea id="dsuText" rows="7" placeholder="cartel hombre de la mancha 50%\nlona pavón entregada\nflyer kulunka parado - esperando textos\nbanner civitatis en revisión fecha 30/10">'+esc(dsUView.text)+'</textarea>'+
-   (ex.length?'<div class="dsu-try"><span>Prueba con tus peticiones:</span>'+ex.map(e=>'<button type="button" class="dsu-ex" data-ex="'+esc(e)+'">'+esc(e)+'</button>').join("")+'</div>':'')+
-   '<div class="dsu-go"><button type="button" class="primary" id="dsuCheck">Revisar cambios</button>'+(dsUView.text?'<button type="button" class="ghost" id="dsuClear">Borrar</button>':'')+'</div></section>'+
-   '<div id="dsuPrev"></div>'+
-   '<details class="dsu-help"><summary>Qué entiende cada línea</summary><div class="dsu-legend">'+
-    '<div><b>Avance</b><span>25 %, 50 %, 75 %, 100 % o «al 50». Con 100 % y sin más, se da por entregada.</span></div>'+
-    '<div><b>Situación</b><span>en proceso, en revisión, parado, entregado, cancelado, pendiente.</span></div>'+
-    '<div><b>Fecha límite</b><span>«fecha 30/10», «para el 2/11», «hasta 15 noviembre».</span></div>'+
-    '<div><b>Comentario</b><span>Después de un guion: «- falta el logo». También «esperando…» o «falta…».</span></div><div><b>Ya no hace falta</b><span>«cancelado», «se ha pedido por otro lado», «ya se ha conseguido». Queda cancelada con ese motivo.</span></div>'+
-    '<div><b>Qué trabajo es</b><span>Con dos o tres palabras del título basta. Si duda entre varias, te pregunta.</span></div></div></details>'+
-  '</div><aside class="dsu-side">'+
-   '<section class="dsu-box"><h3>Abiertas, por fecha</h3>'+(open.length?open.slice(0,10).map(r=>{const left=r.deadline?dsDays(t,r.deadline):null;return '<div class="dsu-prog"><div class="dsu-pt"><span class="dsu-dot" style="--c:'+dsColor(d.settings.companies,r.company)+'"></span><b>'+esc(r.title)+'</b><em class="'+(left!=null&&left<0?'late':left!=null&&left<=d.settings.soonDays?'soon':'')+'">'+(left==null?'sin fecha':left<0?'vencida':left===0?'hoy':fdate(r.deadline).slice(0,-5))+'</em></div><div class="dsu-bar"><i style="width:'+(r.progress||0)+'%"></i></div><small>'+dsLabel(r.status)+' · '+(r.progress||0)+' %</small></div>'}).join("")+(open.length>10?'<button type="button" class="ghost dsu-more" id="dsuAll">Ver las '+open.length+'</button>':''):'<p class="muted">Nada abierto.</p>')+'</section>'+
-   '<section class="dsu-box"><h3>Últimos avances</h3>'+(feed.length?feed.map(({r,h})=>'<div class="dsu-feed"><small>'+dsWhen(h.at)+' · '+esc(dsName(h.by))+(h.undo?' · deshecho':'')+'</small><b>'+esc(r.title)+'</b><span>'+(h.changes.length?h.changes.map(c=>esc(DS_FIELD[c.f]||c.f)+': '+esc(dsVal(c.f,c.from))+' → <em>'+esc(dsVal(c.f,c.to))+'</em>').join(" · "):esc(h.reason||''))+'</span></div>').join(""):'<p class="muted">Aquí aparecerá cada cambio: quién, cuándo y qué.</p>')+'</section>'+
-  '</aside></div></div>';
- const ta=$("#dsuText");ta.oninput=()=>{dsUView.text=ta.value};
- $$(".dsu-ex").forEach(b=>b.onclick=()=>{ta.value=(ta.value.trim()?ta.value.trim()+"\n":"")+b.dataset.ex;dsUView.text=ta.value;ta.focus()});
- if($("#dsuClear"))$("#dsuClear").onclick=()=>{dsUView.text="";dsUView.lines=null;dsUpdate()};
- if($("#dsuAll"))$("#dsuAll").onclick=()=>{dsView.tab="peticiones";dsRender()};
- $("#dsuCheck").onclick=()=>{const lines=ta.value.split(/\n+/).map(x=>x.trim()).filter(Boolean);if(!lines.length){say("Pega al menos una línea");return}
-  dsUView.lines=lines.map(l=>{const p=dsParseLine(l,t),c=dsMatch(p.words,open),amb=c.length>1&&c[1].score>=c[0].score-.1;return {...p,cands:c.slice(0,5).map(x=>x.r.id),id:c.length&&!amb?c[0].r.id:"",amb}});
-  dsPreview()};
- if(dsUView.lines)dsPreview();if(dsUView.done)dsDone()}
-function dsPreview(){const d=DS,open=d.rows.filter(r=>DS_OPEN.includes(r.status)).sort((a,b)=>a.title.localeCompare(b.title)),byId=id=>d.rows.find(r=>r.id===id);
- const L=dsUView.lines,seen={};
- const rowsHtml=L.map((l,i)=>{const r=l.id&&byId(l.id),p=r?dsPatch(r,l.o):{},n=Object.keys(p).length,dup=r&&seen[r.id];if(r)seen[r.id]=1;
-  const pill=!r?(l.amb?'<span class="dsu-pill warn">Elige cuál</span>':'<span class="dsu-pill bad">No la encuentro</span>'):dup?'<span class="dsu-pill warn">Repetida</span>':!n?'<span class="dsu-pill">Sin cambios</span>':p.deadline?'<span class="dsu-pill warn">Cambia la fecha</span>':'<span class="dsu-pill ok">Lista</span>';
-  const opts=(l.amb||!r?l.cands.map(byId).concat(open.filter(x=>!l.cands.includes(x.id))):[r].concat(open.filter(x=>x.id!==r.id)));
-  return '<div class="dsu-row'+(r&&n&&!dup?' ready':'')+'"><div class="dsu-said">«'+esc(l.raw)+'»</div>'+
-   '<div class="dsu-which"><select data-dsupick="'+i+'"><option value="">'+(l.amb?'¿Cuál de estas?':'Elige la petición…')+'</option>'+opts.map(x=>'<option value="'+x.id+'"'+(x.id===l.id?' selected':'')+'>'+esc(x.title.slice(0,70))+' · '+esc(x.company)+'</option>').join("")+'</select>'+(r?'<small>'+esc(r.company)+' · pedida por '+esc(r.requester)+'</small>':'')+'</div>'+
-   '<div class="dsu-chg">'+(r&&n?Object.entries(p).map(([f,v])=>'<div><small>'+esc(DS_FIELD[f])+'</small><s>'+esc(dsVal(f,r[f]??""))+'</s> → <b>'+esc(dsVal(f,v))+'</b></div>').join(""):r?'<small class="muted">No he entendido ningún cambio en esta línea.</small>':'')+'</div>'+pill+'</div>'}).join("");
- const ready=L.filter((l,i)=>{const r=l.id&&byId(l.id);return r&&Object.keys(dsPatch(r,l.o)).length&&L.findIndex(x=>x.id===l.id)===i}).length;
- $("#dsuPrev").innerHTML='<section class="dsu-box dsu-prev"><h3>Esto es lo que voy a cambiar</h3>'+rowsHtml+
-  '<div class="dsu-foot"><span>'+ready+' de '+L.length+' listas'+(ready<L.length?'. Las demás no se tocan si no eliges la petición.':'')+'</span><div><button type="button" class="ghost" id="dsuBack">Volver a editar</button><button type="button" class="primary" id="dsuSave"'+(ready?'':' disabled')+'>Confirmar '+ready+' cambio'+(ready===1?'':'s')+'</button></div></div></section>';
- $$("[data-dsupick]").forEach(s=>s.onchange=()=>{const l=L[+s.dataset.dsupick];l.id=s.value;l.amb=false;dsPreview()});
- $("#dsuBack").onclick=()=>{dsUView.lines=null;$("#dsuPrev").innerHTML="";$("#dsuText").focus()};
- $("#dsuSave").onclick=async()=>{const b=$("#dsuSave");b.disabled=true;b.textContent="Guardando…";const used={},updates=[];
-  for(const l of L){const r=l.id&&byId(l.id);if(!r||used[r.id])continue;const p=dsPatch(r,l.o);if(!Object.keys(p).length)continue;used[r.id]=1;updates.push({id:r.id,row:p,reason:"Pegado: "+l.raw.slice(0,150)})}
-  try{const res=await api("/api/diseno",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({updates})});DS=await api("/api/diseno",{cache:"no-store"});
-   dsUView.done=res.rows.map(r=>r.id);dsUView.lines=null;dsUView.text="";dsUpdate()}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
-function dsDone(){const ids=dsUView.done;dsUView.done=null;const rows=ids.map(id=>DS.rows.find(r=>r.id===id)).filter(Boolean);
- $("#dsuPrev").innerHTML='<section class="dsu-box dsu-ok"><h3>Hecho: '+rows.length+' petici'+(rows.length===1?'ón actualizada':'ones actualizadas')+'</h3>'+rows.map(r=>'<div class="dsu-okrow"><b>'+esc(r.title)+'</b><span>'+dsLabel(r.status)+' · '+(r.progress||0)+' %'+(r.deadline?' · para el '+fdate(r.deadline):'')+'</span><button type="button" class="ghost" data-dsuundo="'+r.id+'">Deshacer</button></div>').join("")+'<div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="dsuMail">Avisar por correo a quien lo pidió</button></div><p class="muted">Cada cambio queda en el historial de su petición.</p></section>';
- $("#dsuMail").onclick=()=>dsNotify(ids);
- $$("[data-dsuundo]").forEach(b=>b.onclick=async()=>{try{const r=await api("/api/diseno?id="+b.dataset.dsuundo+"&undo=1",{method:"PUT",headers:{"content-type":"application/json"},body:"{}"});DS.rows[DS.rows.findIndex(x=>x.id===r.row.id)]=r.row;b.closest(".dsu-okrow").classList.add("undone");b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Deshecho"}));say("Deshecho")}catch(e){say(e.message)}})}
-// Cambiar una fecha desde la tarjeta, con atajos y motivo; y ver el historial con «Deshacer último cambio»
-function dsDateEditor(card,r,f,isDesigner){const box=card.querySelector(".ds-edit");if(box.dataset.open===f){box.innerHTML="";box.dataset.open="";return}box.dataset.open=f;
- const cur=r[f]||DS.today,fri=(()=>{const d=new Date(cur+"T12:00:00Z"),k=(5-d.getUTCDay()+7)%7||7;return dsIsoAdd(cur,k)})(),mon=(()=>{const d=new Date(cur+"T12:00:00Z"),k=(1-d.getUTCDay()+7)%7||7;return dsIsoAdd(cur,k)})();
- box.innerHTML='<div class="ds-datebox"><b>'+(f==="deadline"?"Cambiar fecha límite":"Corregir fecha de solicitud")+'</b>'+(f==="deadline"?'<div class="ds-quick">'+[["+1 día",dsIsoAdd(cur,1)],["+1 semana",dsIsoAdd(cur,7)],["Viernes "+fdate(fri).slice(0,-5),fri],["Lunes "+fdate(mon).slice(0,-5),mon]].map(([l,v])=>'<button type="button" data-q="'+v+'">'+l+'</button>').join("")+'</div>':'')+
-  '<div class="ds-daterow"><input type="date" value="'+esc(r[f]||"")+'"><input class="ds-why" placeholder="Motivo (opcional): se anotó mal, lo piden para antes…"></div><div class="actions-row"><button type="button" class="primary ds-dsave">Guardar</button><button type="button" class="ghost ds-dcancel">Cancelar</button></div></div>';
- const inp=box.querySelector("input[type=date]");box.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.q;box.querySelectorAll("[data-q]").forEach(x=>x.classList.toggle("on",x===b))});
- box.querySelector(".ds-dcancel").onclick=()=>{box.innerHTML="";box.dataset.open=""};
- box.querySelector(".ds-dsave").onclick=async()=>{if(!inp.value){say("Elige una fecha");return}if(inp.value===r[f]){box.innerHTML="";box.dataset.open="";return}
-  try{const res=await api("/api/diseno?id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row:{[f]:inp.value},reason:box.querySelector(".ds-why").value})});DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say("Fecha cambiada a "+fdate(inp.value));dsList(isDesigner)}catch(e){say(e.message)}}}
-function dsHistory(card,r,isDesigner){const box=card.querySelector(".ds-edit");if(box.dataset.open==="hist"){box.innerHTML="";box.dataset.open="";return}box.dataset.open="hist";
- const h=(r.history||[]).slice().reverse(),canUndo=h.some(x=>!x.undo&&!x.undone&&x.changes.length);
- box.innerHTML='<div class="ds-hist">'+(h.length?h.map(x=>'<div><small>'+dsWhen(x.at)+' · '+esc(dsName(x.by))+(x.undone?' · deshecho':'')+'</small><span>'+x.changes.map(c=>esc(DS_FIELD[c.f]||c.f)+': '+esc(dsVal(c.f,c.from))+' → <b>'+esc(dsVal(c.f,c.to))+'</b>').join(" · ")+(x.reason?(x.changes.length?' <em>('+esc(x.reason)+')</em>':esc(x.reason)):'')+'</span></div>').join(""):'<p class="muted">Sin cambios registrados todavía'+(r.imported?' (viene de la hoja)':'')+'.</p>')+
-  '<p class="muted ds-hist-orig">Creada '+(r.createdAt?dsWhen(r.createdAt):"—")+(r.createdBy?' · '+esc(dsName(r.createdBy)):'')+(r.imported?' · importada de la hoja':'')+'</p>'+
-  (canUndo?'<button type="button" class="ghost ds-undo">Deshacer último cambio</button>':'')+'</div>';
- if(box.querySelector(".ds-undo"))box.querySelector(".ds-undo").onclick=async()=>{try{const res=await api("/api/diseno?id="+r.id+"&undo=1",{method:"PUT",headers:{"content-type":"application/json"},body:"{}"});DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say("Deshecho");dsList(isDesigner)}catch(e){say(e.message)}}}
-// Cancelar (se pidió por otro lado, ya se consiguió…) o borrar del todo, desde la tarjeta
-function dsCancel(card,r,isDesigner){const box=card.querySelector(".ds-edit");if(box.dataset.open==="cancel"){box.innerHTML="";box.dataset.open="";return}box.dataset.open="cancel";
- const mail=(DS.settings.people.find(p=>p.name===r.requester)||{}).email;
- box.innerHTML='<div class="ds-datebox"><b>¿Ya no hace falta?</b><div class="ds-quick">'+["Se ha pedido por otro lado","Ya se ha conseguido","Ya no hace falta"].map(m=>'<button type="button" data-cr="'+esc(m)+'">'+m+'</button>').join("")+'</div>'+
-  '<input class="ds-why" placeholder="Otro motivo (opcional)">'+
-  (mail?'<label class="ds-mine"><input type="checkbox" class="ds-cmail"> Avisar por correo a '+esc(r.requester.charAt(0)+r.requester.slice(1).toLowerCase())+'</label>':'')+
-  '<div class="actions-row"><button type="button" class="primary ds-cgo">Cancelar la petición</button><button type="button" class="danger ds-cdel">Borrar del todo</button><button type="button" class="ghost ds-cback">Volver</button></div>'+
-  '<p class="muted" style="margin:0;font-size:12px">Cancelar la deja en el archivo con su motivo y cuenta en los indicadores. Borrar la quita de la lista (se puede recuperar justo después).</p></div>';
- const why=box.querySelector(".ds-why");box.querySelectorAll("[data-cr]").forEach(b=>b.onclick=()=>{why.value=b.dataset.cr;box.querySelectorAll("[data-cr]").forEach(x=>x.classList.toggle("on",x===b))});
- box.querySelector(".ds-cback").onclick=()=>{box.innerHTML="";box.dataset.open=""};
- box.querySelector(".ds-cgo").onclick=async()=>{const reason=why.value.trim();try{const res=await api("/api/diseno?id="+r.id,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row:{status:"cancelado",cancelReason:reason},reason:reason||"Cancelada"})});DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say("Petición cancelada");const m=box.querySelector(".ds-cmail");dsList(isDesigner);if(m&&m.checked)dsNotify([r.id])}catch(e){say(e.message)}};
- box.querySelector(".ds-cdel").onclick=async()=>{if(!confirm("¿Borrar «"+r.title.slice(0,60)+"»?"))return;const u="/api/diseno?id="+r.id;try{await api(u,{method:"DELETE"});DS.rows=DS.rows.filter(x=>x.id!==r.id);dsList(isDesigner);sayUndo("Petición borrada",u,async()=>{DS=await api("/api/diseno",{cache:"no-store"});dsList(isDesigner)})}catch(e){say(e.message)}}}
-// Aviso por correo a quien pidió cada pieza: siempre a esa persona, con copia opcional a quien avisa.
-// Sale de avisos@ y empieza por «Esto es un aviso. No respondas…». Se ve antes de enviar.
-async function dsNotify(ids){if(!ids.length)return;const el=document.createElement("div");el.className="ds-sheet";
- el.innerHTML='<div class="ds-sheet-box" role="dialog" aria-label="Avisar por correo"><button type="button" class="ghost ds-sheet-x" aria-label="Cerrar">×</button><h2>Avisar por correo</h2><p class="muted">Preparando…</p></div>';
- document.body.appendChild(el);document.body.classList.add("sheet-open");
- const close=()=>{el.remove();document.body.classList.remove("sheet-open")};el.onclick=e=>{if(e.target===el)close()};el.querySelector(".ds-sheet-x").onclick=close;
- const call=(extra)=>api("/api/diseno",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({notify:{ids,...extra}})});
- let pre;try{pre=await call({dryRun:true})}catch(e){el.querySelector("p").textContent=e.message;return}
- const me=state.actor?.email||"",ok=pre.results.filter(x=>!x.error),box=el.querySelector(".ds-sheet-box");
- box.innerHTML='<button type="button" class="ghost ds-sheet-x" aria-label="Cerrar">×</button><small class="section-kicker">Desde avisos@yellowmedia.es</small><h2>Avisar por correo</h2>'+
-  (pre.live?'':'<div class="ds-test">En pruebas: el correo llegará solo a fernando@yellowmedia.es hasta que se activen los avisos en Ajustes.</div>')+
-  '<div class="ds-rcpt">'+pre.results.map(x=>'<div class="'+(x.error?'off':'')+'"><b>'+esc(x.name.charAt(0)+x.name.slice(1).toLowerCase())+'</b><span>'+(x.error?esc(x.error):esc(x.email))+'</span><em>'+x.count+' petici'+(x.count===1?'ón':'ones')+'</em></div>').join("")+'</div>'+
-  '<label class="ds-mine"><input type="checkbox" id="dsnCc" checked> Ponerme en copia'+(me?' ('+esc(me)+')':'')+'</label>'+
-  '<label class="ds-msg">Mensaje (opcional)<textarea id="dsnMsg" rows="3" placeholder="Por ejemplo: te dejo el enlace con las dos versiones."></textarea></label>'+
-  '<details class="ds-prev"><summary>Ver cómo queda</summary><div id="dsnPrev"></div></details>'+
-  '<div class="actions-row"><button type="button" class="primary" id="dsnGo"'+(ok.length?'':' disabled')+'>Enviar '+(ok.length===1?'el aviso':ok.length+' avisos')+'</button><button type="button" class="ghost" id="dsnNo">Ahora no</button></div>';
- box.querySelector(".ds-sheet-x").onclick=close;$("#dsnNo").onclick=close;
- const prev=async()=>{const r=await call({dryRun:true,message:$("#dsnMsg").value});const f=r.results.find(x=>x.html);$("#dsnPrev").innerHTML=f?'<p class="muted" style="margin:8px 0">Asunto: <b>'+esc(f.subject)+'</b></p><div class="ds-mailprev"><iframe title="Vista previa del correo"></iframe></div>':'<p class="muted">No hay a quién enviarlo.</p>';const fr=$("#dsnPrev iframe");if(fr)fr.srcdoc='<!doctype html><meta charset="utf-8"><body style="margin:0">'+f.html};
- box.querySelector(".ds-prev").ontoggle=e=>{if(e.target.open)prev()};
- $("#dsnGo").onclick=async()=>{const b=$("#dsnGo");b.disabled=true;b.textContent="Enviando…";
-  try{const r=await call({ccMe:$("#dsnCc").checked,message:$("#dsnMsg").value});const sent=r.results.filter(x=>x.sent);
-   box.innerHTML='<button type="button" class="ghost ds-sheet-x" aria-label="Cerrar">×</button><h2>'+(sent.length?'Aviso enviado':'No se ha enviado')+'</h2><div class="ds-rcpt">'+r.results.map(x=>'<div class="'+(x.sent?'':'off')+'"><b>'+esc(x.name.charAt(0)+x.name.slice(1).toLowerCase())+'</b><span>'+(x.sent?(r.live?'Enviado a '+esc(x.email):'En pruebas: enviado a fernando@yellowmedia.es'):esc(x.error||"No enviado"))+'</span></div>').join("")+'</div><div class="actions-row"><button type="button" class="primary" id="dsnOk">Hecho</button></div>';
-   box.querySelector(".ds-sheet-x").onclick=close;$("#dsnOk").onclick=close;
-   DS=await api("/api/diseno",{cache:"no-store"})}catch(e){b.disabled=false;b.textContent="Reintentar";say(e.message)}}}
-// ---- Campañas del año (pestaña «CALENDARIO CAMPAÑAS» de la hoja): qué fechas y creatividades tocan cada mes,
-// si ya hay petición hecha y un botón para pedirla con los datos puestos. Fer y Celia pueden editarlo.
-const DS_MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DS_CGEN=new Set("creatividad creatividades cambio general final nueva dia campana campanas para teatro teatros web redes".split(" "));
-function dsCampMatch(c,year){const keys=DSN(c.dates||c.creative).split(/[^a-z0-9ñ]+/).filter(w=>w.length>=4&&!DS_STOP.has(w)&&!DS_CGEN.has(w));if(!keys.length)return [];const has=(title,k)=>DSN(title).split(/[^a-z0-9ñ]+/).some(w=>w===k||w===k+"s"||w===k+"es");
- const from=new Date(year,c.month-1,1);from.setMonth(from.getMonth()-3);const fromIso=from.toISOString().slice(0,10),toIso=year+"-"+String(c.month).padStart(2,"0")+"-31";
- return DS.rows.filter(r=>{const ref=r.deadline||r.deliveredAt||r.requestDate||"";return r.status!=="cancelado"&&ref>=fromIso&&ref<=toIso}).filter(r=>(!c.company||r.company===c.company)&&keys.some(k=>has(r.title,k)))}
-function dsCampTitle(c){return c.creative?c.creative+(c.dates?" ("+c.dates+")":""):"Creatividad "+c.dates}
-// La tabla de la hoja («CALENDARIO CAMPAÑAS»), tal cual, arriba del todo en Diseño: se ve nada más entrar
-function dsCampTable(){const st=DS.settings,list=st.campaigns||[],tm=+DS.today.slice(5,7),onlyAbt=list.every(c=>c.company==="ABONOTEATRO");
- const cell=(m,f)=>list.filter(c=>c.month===m&&c[f]).map(c=>esc(c[f])+(onlyAbt||f!=="dates"?'':' <i class="dst-co">'+esc(c.company)+'</i>')).join(" / ");
- return '<section class="dst"><div class="dst-head"><h2>'+(onlyAbt?'Campañas para Abonoteatro anuales':'Calendario de campañas')+'</h2>'+(DS.canSettings?'<button type="button" class="ghost" id="dstEdit">Editar</button>':'')+'</div><table><thead><tr><th>Mes</th><th>Campaña</th><th>Creatividad</th></tr></thead><tbody>'+
-  DS_MONTHS.map((n,i)=>'<tr'+(i+1===tm?' class="now"':'')+'><th>'+n+(i+1===tm?' <em>este mes</em>':'')+'</th><td>'+cell(i+1,"dates")+'</td><td>'+cell(i+1,"creative")+'</td></tr>').join("")+'</tbody></table></section>'}
-function dsCampaigns(){const d=DS,st=d.settings,list=st.campaigns||[],t=d.today,ty=+t.slice(0,4),tm=+t.slice(5,7);
- const order=Array.from({length:12},(_,i)=>((tm-1+i)%12)+1);
- const when=m=>{const diff=(m-tm+12)%12;return diff===0?"Este mes":diff===1?"El mes que viene":"Dentro de "+diff+" meses"};
- const yearOf=m=>m>=tm?ty:ty+1;
- $("#dsBody").innerHTML='<div class="dsc-head"><p class="muted">Campañas fijas de cada año. Empieza por el mes en curso. Si ya hay una petición que encaja, aparece; si no, se puede pedir desde aquí.</p>'+(d.canSettings?'<button type="button" class="ghost" id="dscEdit">Editar calendario</button>':'')+'</div>'+
-  '<div class="dsc-grid">'+order.map((m,i)=>{const items=list.filter(c=>c.month===m),soon=i<2;
-   return '<section class="dsc-month'+(soon?' soon':'')+(items.length?'':' empty')+'"><header><h3>'+DS_MONTHS[m-1]+'</h3><small>'+when(m)+(m<tm?' · '+(ty+1):'')+'</small></header>'+
-    (items.length?items.map(c=>{const hits=dsCampMatch(c,yearOf(m));return '<div class="dsc-item">'+(c.dates?'<b>'+esc(c.dates)+'</b>':'')+(c.creative?'<span>'+esc(c.creative)+'</span>':'')+'<div class="dsc-foot"><i class="ds-co" style="--c:'+dsColor(st.companies,c.company)+'">'+esc(c.company)+'</i>'+
-      (hits.length?hits.slice(0,2).map(r=>'<em class="dsc-hit '+(r.status==="entregado"?'ok':'')+'" title="'+esc(r.title)+'">'+(r.status==="entregado"?'Entregada':'Pedida')+' · '+esc(r.title.slice(0,40))+(r.title.length>40?'…':'')+'</em>').join(""):'<button type="button" class="'+(soon?'primary':'ghost')+' dsc-ask" data-camp="'+c.id+'" data-y="'+yearOf(m)+'">Pedir creatividad</button>')+'</div></div>'}).join(""):'<p class="muted">Sin campaña fija.</p>')+'</section>'}).join("")+'</div>';
- $$(".dsc-ask").forEach(b=>b.onclick=()=>{const c=list.find(x=>x.id===b.dataset.camp);dsView.tab="peticiones";dsRender();dsForm(null,{title:dsCampTitle(c),company:c.company,notes:"Campaña del año · "+DS_MONTHS[c.month-1]+" "+b.dataset.y+(c.dates?" · "+c.dates:"")})});
- if($("#dscEdit"))$("#dscEdit").onclick=dsCampEdit}
-function dsCampEdit(){const st=JSON.parse(JSON.stringify(DS.settings)),list=st.campaigns=st.campaigns||[];
- const draw=()=>{$("#dsBody").innerHTML='<section class="card"><div class="section-title"><div><small class="section-kicker">Fer y Celia</small><h2>Editar campañas del año</h2></div></div><div class="dsc-edit">'+
-  list.map((c,i)=>'<div class="dsc-row"><select data-cm="'+i+'">'+DS_MONTHS.map((n,k)=>'<option value="'+(k+1)+'"'+(c.month===k+1?' selected':'')+'>'+n+'</option>').join("")+'</select><input data-cd="'+i+'" value="'+esc(c.dates)+'" placeholder="Fechas (14 San Valentín…)"><input data-cc="'+i+'" value="'+esc(c.creative)+'" placeholder="Creatividad"><select data-co="'+i+'">'+st.companies.map(x=>'<option'+(x.name===c.company?' selected':'')+'>'+esc(x.name)+'</option>').join("")+'</select><button type="button" class="ghost" data-crm="'+i+'">Quitar</button></div>').join("")+
-  '</div><div class="actions-row" style="margin-top:12px"><button type="button" id="dscAdd">Añadir campaña</button><button type="button" class="primary" id="dscSave">Guardar</button><button type="button" class="ghost" id="dscBack">Volver</button></div></section>';
-  $$("[data-cm]").forEach(x=>x.onchange=()=>list[x.dataset.cm].month=+x.value);$$("[data-cd]").forEach(x=>x.oninput=()=>list[x.dataset.cd].dates=x.value);$$("[data-cc]").forEach(x=>x.oninput=()=>list[x.dataset.cc].creative=x.value);$$("[data-co]").forEach(x=>x.onchange=()=>list[x.dataset.co].company=x.value);
-  $$("[data-crm]").forEach(b=>b.onclick=()=>{list.splice(+b.dataset.crm,1);draw()});
-  $("#dscAdd").onclick=()=>{list.push({id:"c"+Date.now().toString(36),month:+DS.today.slice(5,7),dates:"",creative:"",company:"ABONOTEATRO"});list.sort((a,b)=>a.month-b.month);draw()};
-  $("#dscBack").onclick=()=>dsCampaigns();
-  $("#dscSave").onclick=async()=>{try{const r=await api("/api/diseno?settings=1",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({settings:st})});DS.settings=r.settings;say("Campañas guardadas");dsCampaigns()}catch(e){say(e.message)}}};
- draw()}
+// Diseño vive en /modules/diseno.js
+async function diseno(){const M=await loadModule("diseno");await M.render(ycCtx())}
 // ===================== IMPORTAR =====================
 // Añade de una vez datos preparados fuera de la app (por ejemplo, por Claude a partir de una tabla
 // pegada en el chat). Llega en el enlace #importar?d=<datos> o se pega en el cuadro. Siempre se
@@ -1646,7 +1315,7 @@ function txRadio(text,lines,existing){const low=txLow(text),warn=[],items=[],use
   let all=0,wk=0;for(let x=new Date(s);x<=e;x.setUTCDate(x.getUTCDate()+1)){all++;if(x.getUTCDay()%6)wk++}
   weeks.push({s:s.toISOString().slice(0,10),e:e.toISOString().slice(0,10),all,wk});d=new Date(e);d.setUTCDate(d.getUTCDate()+1)}}
  const share=(total,w)=>{const tot=w.reduce((a,b)=>a+b,0);if(!tot||!total)return w.map(()=>0);const raw=w.map(x=>total*x/tot),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){base[i]++;left--}});return base};
- const today=new Date().toISOString().slice(0,10),status=range[1]<today?"finalizado":"activo";
+ const today=YCDate.todayMadrid(),status=range[1]<today?"finalizado":"activo";
  for(const q of reqs){const months=[...new Set(weeks.map(w=>w.s.slice(0,7)))];
   for(const mo of months){const ws=weeks.filter(w=>w.s.slice(0,7)===mo),wt=ws.map(w=>q.wd?w.wk:w.all);
    const asked=q.per==="day"?wt.reduce((a,b)=>a+b,0)*q.n:q.per==="week"?ws.length*q.n:Math.round(q.n*wt.reduce((a,b)=>a+b,0)/weeks.reduce((a,w)=>a+(q.wd?w.wk:w.all),0));
@@ -1784,7 +1453,7 @@ const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aa
 const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["diseno","Diseño"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
 const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
 let calCursor=new Date(),calEvents=[],calWeekOffset=0,calView=calLS.get("yc-cal-view","semana"),calMods=new Set(),calVenue="";
-const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const isoOf=YCDate.isoOf;
 const evTag=e=>e.kind==="hito"?e.action:(KIND_LABEL[e.kind]||e.action);
 const calCanHito=()=>roles().some(r=>r==="admin"||r==="gestion");
 const calFiltered=(mods=calMods)=>calEvents.filter(e=>(!mods.size||mods.has(e.moduleKey))&&(!calVenue||e.venue===calVenue));
@@ -1881,7 +1550,7 @@ function openEditFromHash(){const p=new URLSearchParams(location.hash.split("?")
   if(item){item.classList.add("flash");setTimeout(()=>item.classList.remove("flash"),2600)}b.click();(item||b).scrollIntoView({behavior:"smooth",block:"center"})}
  else say("No se ha encontrado el registro (puede estar archivado)");
  history.replaceState(null,"",location.hash.split("?")[0])}
-function calHitoForm(r={}){
+function calHitoForm(r={}){setTimeout(()=>attachHistory("#hitoForm",r),0);
  const edit=calCanHito(),dis=edit?"":" disabled";
  calPanel('<div class="section-title"><div><small class="section-kicker">Hito de comunicación</small><h2>'+(r.id?esc(r.title||"Hito"):"Nuevo hito")+'</h2></div><button type="button" class="ghost" id="hitoClose">Cerrar</button></div>'+
   '<form id="hitoForm" class="form-grid"><label>Tipo<select name="type"'+dis+'>'+HITO_TYPES.map(t=>'<option'+(t===r.type?" selected":"")+'>'+t+'</option>').join("")+'</select></label>'+venueSelect(r.venue).replace("<select",'<select'+dis)+
@@ -2086,7 +1755,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v125";
+const YC_VERSION="yellow-control-v132";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
@@ -2118,7 +1787,7 @@ async function avisosPage(){
   '<label>Para<select id="avTo"><option value="">Todo el equipo con la app y los avisos activados ('+Object.keys(d.devices).length+(Object.keys(d.devices).length===1?' persona':' personas')+')</option>'+Object.keys(d.devices).sort().map(u=>'<option value="'+esc(u)+'">'+esc(u)+'</option>').join("")+'</select></label>'+
   '</div><div class="actions-row" style="margin-top:12px"><button type="button" class="primary" id="avSend">Enviar aviso</button></div></section>';
  const users=[...st.users],hol=[...(st.holidays||[])];
- const drawHol=()=>{const today=new Date().toISOString().slice(0,10),up=hol.filter(x=>x>=today).sort();$("#avHol").innerHTML=up.length?up.map(h=>'<div class="av-user"><span><b>'+esc(new Date(h+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+'</b></span><button type="button" class="ghost" data-hrm="'+h+'">Quitar</button></div>').join(""):'<p class="muted">No hay festivos apuntados.</p>';
+ const drawHol=()=>{const today=YCDate.todayMadrid(),up=hol.filter(x=>x>=today).sort();$("#avHol").innerHTML=up.length?up.map(h=>'<div class="av-user"><span><b>'+esc(new Date(h+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))+'</b></span><button type="button" class="ghost" data-hrm="'+h+'">Quitar</button></div>').join(""):'<p class="muted">No hay festivos apuntados.</p>';
   $$("[data-hrm]").forEach(b=>b.onclick=()=>{hol.splice(hol.indexOf(b.dataset.hrm),1);drawHol()})};
  drawHol();
  $("#avHolAdd").onclick=()=>{const v=$("#avHolNew").value;if(!v){say("Elige una fecha");return}if(!hol.includes(v))hol.push(v);$("#avHolNew").value="";drawHol()};
