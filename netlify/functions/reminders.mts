@@ -7,6 +7,7 @@ import { renderDigest } from "./_lib/digest.ts";
 import { collectEvents, SLOT_NAMES } from "./_lib/calendar.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { sendPush, getSettings } from "./_lib/push.ts";
+import { listDiseno, getSettings as disenoSettings, OPEN as DISENO_OPEN } from "./_lib/diseno.ts";
 
 type Alert={key:string,date:string,days:number,module:string,title:string,location:string,action:string,materialStatus?:string,kind?:string};
 type Current={module:string,title:string,location:string,materialStatus:string,endDate:string};
@@ -85,6 +86,23 @@ async function dailyPush(now:Date,alerts:Alert[],forced:boolean){
   if(!forced)await ns.setJSON(key,{at:new Date().toISOString(),...r});
 }
 
+// Diseño: aviso al móvil de quien pidió la pieza, una sola vez, el día laborable antes de la fecha límite
+// (un viernes avisa también de lo que vence el fin de semana y el lunes)
+async function disenoPush(now:Date,forced:boolean){
+  const day=madridToday(now),st=await getSettings(),hol=new Set(st.holidays||[]);
+  const work=(iso:string)=>{const d=new Date(iso+"T12:00:00Z").getUTCDay();return d!==0&&d!==6&&!hol.has(iso)};
+  if(!forced&&!work(day))return;
+  const next=new Date(day+"T12:00:00Z");do{next.setUTCDate(next.getUTCDate()+1)}while(!work(next.toISOString().slice(0,10)));
+  const until=next.toISOString().slice(0,10),ns=notificationStore(),people=(await disenoSettings()).people;
+  const due=(await listDiseno()).filter(r=>DISENO_OPEN.includes(r.status)&&r.deadline&&r.deadline>day&&r.deadline<=until);
+  const byPerson=new Map<string,any[]>();for(const r of due){const k=`diseno-${r.id}-${r.deadline}`;if(!forced&&(await ns.get(k,{type:"json"})))continue;byPerson.set(r.requester,[...(byPerson.get(r.requester)||[]),r])}
+  for(const [name,list] of byPerson){const email=people.find(p=>p.name===name)?.email;if(!email)continue;
+    const title=list.length===1?`Mañana vence: ${list[0].title}`.slice(0,80):`Mañana vencen ${list.length} piezas de diseño`;
+    const body=list.length===1?`${list[0].company} · avance ${list[0].progress||0} %`:list.slice(0,3).map(r=>r.title).join(" · ")+(list.length>3?` y ${list.length-3} más`:"");
+    await sendPush({only:[email]},{title,body,url:"/#diseno",tag:"diseno"},"diseno");
+    if(!forced)for(const r of list)await ns.setJSON(`diseno-${r.id}-${r.deadline}`,{at:new Date().toISOString()});}
+}
+
 export default async(req?:Request)=>{
   const now=new Date();
   // Se programa a las 07:00 y 08:00 UTC; solo actúa cuando en Madrid son las 9 (verano e invierno).
@@ -94,6 +112,7 @@ export default async(req?:Request)=>{
   if(!forced&&hour!==9&&hour!==pushHour){console.log(JSON.stringify({skipped:true,madridHour:hour}));return;}
   const {alerts,current,ends}=await collect(now);
   if(forced||hour===pushHour){try{await dailyPush(now,alerts,forced)}catch(e){console.error("push diario",String(e))}}
+  if(forced||hour===pushHour){try{await disenoPush(now,forced)}catch(e){console.error("push diseño",String(e))}}
   if(!forced&&hour!==9)return;
   const ns=notificationStore();
   const pending:Alert[]=[];
