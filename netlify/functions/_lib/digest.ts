@@ -11,6 +11,82 @@ const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => d0(iso).toLocaleDate
 const addDays = (iso: string, n: number) => { const d = d0(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+const HEADLINES = [
+  "Esta semana, de un vistazo",
+  "Así viene la semana",
+  "Esta semana, en claro",
+  "Agenda y pendientes de la semana",
+  "La semana, sin rodeos",
+  "Lo esencial de esta semana",
+  "Esta semana: qué toca ahora",
+  "En marcha esta semana",
+  "La semana que tenemos por delante",
+  "Esta semana: foco y fechas",
+  "Así avanza la semana",
+  "Esta semana, punto por punto",
+  "Agenda abierta para esta semana",
+  "Esta semana: lo próximo",
+  "Semana en curso",
+  "La semana, ordenada",
+  "Esta semana: fechas y campañas",
+  "El pulso de esta semana",
+  "Esta semana, bien visible",
+  "Lo que mueve esta semana",
+  "Semana en pantalla",
+  "Esta semana: próximos pasos",
+  "La agenda de esta semana",
+  "Así está la semana",
+  "Semana activa",
+  "Esta semana: lo que viene",
+  "El mapa de esta semana",
+  "Esta semana, en una mirada",
+  "Semana en curso: agenda y campañas",
+  "Esta semana: lo inmediato",
+  "Lo próximo, esta semana",
+  "Esta semana, sobre la mesa",
+  "Semana a la vista",
+  "Esta semana: agenda abierta",
+  "El ritmo de esta semana",
+  "Esta semana, en orden",
+  "Semana en foco",
+  "Esta semana: fechas clave",
+  "Así se mueve la semana",
+  "Esta semana, lo importante",
+  "Semana de trabajo, en claro",
+  "Esta semana: dónde estamos"
+];
+
+function dailyHeadline(day: string) {
+  const d = d0(day);
+  const ordinal = Math.floor(d.getTime() / 86400000);
+  return HEADLINES[Math.abs(ordinal) % HEADLINES.length];
+}
+
+function normalizeTitle(v: string) {
+  return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
+
+function thumbUrl(title: string, base: string) {
+  const t = normalizeTitle(title);
+  if (t.includes("PEGADOS")) return base + "/assets/campanas/pegados.jpg";
+  if (t.includes("101 DALMATAS") || t.includes("CRUELLA")) return base + "/assets/campanas/cruella-teaser.jpg";
+  if (t.includes("LOCURAS PARALELAS")) return base + "/assets/campanas/locuras-paralelas-octubre.jpg";
+  if (t.includes("EL IMITADOR")) return base + "/assets/campanas/el-imitador.jpg";
+  if (t.includes("BESTSELLER")) return base + "/assets/campanas/best-seller.jpg";
+  if (t.includes("EVA SORIANO")) return base + "/assets/campanas/eva-soriano-septiembre.jpg";
+  if (t.includes("PATRICIA DONN")) return base + "/assets/campanas/patricia-donn.jpg";
+  return "";
+}
+
+function thumbCell(a: DigestItem, base: string, w=58, h=76) {
+  const src = thumbUrl(a.title, base);
+  if (!src) return "";
+  return `<td width="${w+14}" valign="top" style="padding-right:14px;">
+    <img src="${e(src)}" width="${w}" height="${h}" alt="${e(a.title)}" style="display:block;width:${w}px;height:${h}px;object-fit:cover;border:0;background:#efede8;">
+  </td>`;
+}
+
+
 function range(day: string) {
   const end = addDays(day, 6), a = d0(day), b = d0(end);
   const sameMonth = a.getUTCMonth() === b.getUTCMonth();
@@ -28,27 +104,38 @@ function sectionHead(title: string) {
   </td></tr>`;
 }
 // Aviso: fecha · módulo / título en negrita / una línea de detalle, con la píldora de plazo a la derecha
-function alertRow(a: DigestItem, first: boolean) {
+function alertRow(a: DigestItem, first: boolean, base: string) {
   const detail = [a.action, a.location, a.materialStatus ? "material " + a.materialStatus : ""].filter(Boolean).join(" · ");
-  const title = a.link ? `<a href="${e(a.link)}" style="color:#111111; text-decoration:none;">${e(a.title)}</a>` : e(a.title);
-  return `<tr><td class="yw-pad" style="padding:${first ? "16px" : "14px"} 32px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"${first ? "" : ' style="border-top:1px solid #eeeeee;"'}><tr>
-      <td valign="top" style="padding-top:${first ? "0" : "14px"};">
-        <div style="font-size:10px; font-weight:bold; letter-spacing:0.03em; color:#777777;">${e(fmt(a.date, { weekday: "short", day: "numeric", month: "short" }).toUpperCase())} · ${e(a.module.toUpperCase())}</div>
-        <div style="font-size:15px; font-weight:800; color:#111111; margin-top:4px;">${title}</div>
-        <div style="font-size:13px; color:#444444; margin-top:4px;">${e(detail)}</div>
+  const title = a.link ? `<a href="${e(a.link)}" style="color:#111111;text-decoration:none;">${e(a.title)}</a>` : e(a.title);
+  const when = e(fmt(a.date,{weekday:"short",day:"numeric",month:"short"}).toUpperCase());
+  return `<tr><td class="yw-pad" style="padding:${first?"14px":"0"} 28px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #111111;"><tr>
+      ${thumbCell(a,base)}
+      <td valign="top" style="padding:14px 12px 14px 0;">
+        <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#555555;font-weight:700;">${when} · ${e(a.module.toUpperCase())}</div>
+        <div style="font-size:18px;line-height:21px;font-weight:800;color:#111111;margin-top:3px;">${title}</div>
+        <div style="font-size:12px;line-height:1.45;color:#444444;margin-top:5px;">${e(detail)}</div>
       </td>
-      <td valign="top" align="right" style="padding-left:12px; width:1%; padding-top:${first ? "0" : "14px"};">${pill(a)}</td>
+      <td width="118" valign="top" style="padding:8px 0 8px 8px;">
+        <div style="background:${Y};padding:12px;font-size:11px;line-height:1.35;color:#111111;font-weight:800;">${pill(a).replace(/<[^>]+>/g,"").trim()||"REVISAR"}</div>
+      </td>
     </tr></table>
   </td></tr>`;
 }
-// Agenda: <b>día · hora</b> · acción · título · lugar
-function agendaRow(a: DigestItem, first: boolean, lead: string) {
+
+function agendaRow(a: DigestItem, first: boolean, lead: string, base: string) {
   const action = a.title.toLowerCase().startsWith(String(a.action).toLowerCase()) ? "" : a.action;
-  const rest = [action, a.title, a.location, a.materialStatus ? "material " + a.materialStatus : ""].filter(Boolean).map(e).join(" · ");
-  const body = `<b>${e(lead)}</b> · ${rest}`;
-  return `<tr><td class="yw-pad" style="padding:${first ? "14px" : "10px"} 32px 0;">
-    <div style="font-size:13px; color:#111111; line-height:1.5;${first ? "" : " border-top:1px solid #eeeeee; padding-top:10px;"}">${a.link ? `<a href="${e(a.link)}" style="color:#111111; text-decoration:none;">${body}</a>` : body}</div>
+  const rest = [action,a.title,a.location,a.materialStatus ? "material "+a.materialStatus : ""].filter(Boolean).map(e).join(" · ");
+  const dateBlock = `<span style="background:${Y};padding:2px 5px;display:inline-block;font-size:12px;font-weight:800;color:#111111;">${e(lead)}</span>`;
+  const inner = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+    ${thumbCell(a,base,48,64)}
+    <td valign="top" style="font-size:13px;line-height:1.5;color:#111111;">
+      <div>${dateBlock}</div>
+      <div style="font-weight:700;margin-top:5px;">${rest}</div>
+    </td>
+  </tr></table>`;
+  return `<tr><td class="yw-pad" style="padding:${first?"14px":"10px"} 28px 0;">
+    <div style="${first?"":"border-top:1px solid #dddddd;padding-top:10px;"}">${a.link?`<a href="${e(a.link)}" style="color:#111111;text-decoration:none;">${inner}</a>`:inner}</div>
   </td></tr>`;
 }
 const emptyRow = (t: string) => `<tr><td class="yw-pad" style="padding:14px 32px 0;"><div style="font-size:13px; color:#777777;">${e(t)}</div></td></tr>`;
@@ -69,14 +156,14 @@ function quickRead(d: DigestInput) {
 export function renderDigest(d: DigestInput) {
   const base = (d.assetBase || d.appUrl).replace(/\/$/, "");
   const n = { p: d.pending.length, u: d.upcoming.length, c: d.currentTotal ?? d.current.length };
-  const title = n.p ? `${n.p} ${n.p === 1 ? "aviso requiere" : "avisos requieren"} atención` : "Semana sin avisos urgentes";
+  const title = dailyHeadline(d.day);
   const kpi = (v: number, label: string) => `<td width="33%" valign="top" class="yw-num-col" style="padding-right:10px;">
       <div style="font-size:26px; font-weight:800; color:#111111; line-height:1;">${v}</div>
       <div style="font-size:11px; color:#555555; margin-top:4px;">${e(label)}</div></td>`;
-  const pendingRows = n.p ? d.pending.map((a, i) => alertRow(a, i === 0)).join("") : emptyRow("Nada pendiente: no hay entregas ni cambios en los próximos días.");
-  const upcomingRows = n.u ? d.upcoming.map((a, i) => agendaRow(a, i === 0, cap(fmt(a.date, { weekday: "short", day: "numeric" })) + (a.time ? " · " + a.time : ""))).join("") : emptyRow("No hay fechas en los próximos siete días.");
-  const currentRows = d.current.length ? d.current.map((a, i) => agendaRow({ ...a, action: a.module }, i === 0, a.date ? "Hasta el " + fmt(a.date, { day: "numeric", month: "short" }) : "Sin fecha de fin")).join("") : emptyRow("No hay campañas activas registradas.");
-  const pre = `${title} · ${n.u} ${n.u === 1 ? "fecha" : "fechas"} esta semana · ${n.c} ${n.c === 1 ? "campaña activa" : "campañas activas"}`;
+  const pendingRows = n.p ? d.pending.map((a, i) => alertRow(a, i === 0, base)).join("") : emptyRow("Nada pendiente: no hay entregas ni cambios en los próximos días.");
+  const upcomingRows = n.u ? d.upcoming.map((a, i) => agendaRow(a, i === 0, cap(fmt(a.date, { weekday: "short", day: "numeric" })) + (a.time ? " · " + a.time : ""), base)).join("") : emptyRow("No hay fechas en los próximos siete días.");
+  const currentRows = d.current.length ? d.current.filter(a => String(a.materialStatus||"").toLowerCase() !== "al día").map((a, i) => agendaRow({ ...a, action: a.module }, i === 0, a.date ? "Hasta el " + fmt(a.date, { day: "numeric", month: "short" }) : "Sin fecha de fin", base)).join("") : "";
+  const pre = `${n.p} ${n.p === 1 ? "aviso" : "avisos"} · ${n.u} ${n.u === 1 ? "fecha" : "fechas"} esta semana · ${n.c} ${n.c === 1 ? "campaña activa" : "campañas activas"}`;
 
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
@@ -122,7 +209,7 @@ export function renderDigest(d: DigestInput) {
 
   <tr><td class="yw-pad" style="padding:20px 32px 0;">
     <div style="font-size:11px; font-weight:bold; letter-spacing:0.04em; color:#555555;">AVISOS DE MATERIAL Y CAMPAÑAS · ${e(fmt(d.day, { weekday: "long", day: "numeric", month: "long" }).toUpperCase())}</div>
-    <div class="yw-title" style="font-size:22px; font-weight:800; color:#111111; margin-top:6px; line-height:1.25;">${e(title)}</div>
+    <div class="yw-title" style="font-size:30px; font-weight:800; color:#111111; margin-top:6px; line-height:1.08;">${e(title)}</div>
   </td></tr>
 
   <tr><td class="yw-pad" style="padding:16px 32px 0;">
