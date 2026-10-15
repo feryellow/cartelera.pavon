@@ -6,7 +6,12 @@ import { FACADE_SLOTS, ARLEQUIN_SLOTS } from "./facade.ts";
 
 // Status de una semana (lunes a domingo): qué está programado y qué falta todavía, módulo a módulo.
 // Lo usa la sección Status y el correo «cómo va la semana».
-export type StatusItem = { state: "ok" | "falta" | "info"; title: string; detail: string };
+// Los campos opcionales (issue, sourceId, link, img…) los usa el Status Engine (engine.ts) para convertir cada
+// «falta» en una incidencia normalizada que apunta a su registro de origen.
+export type StatusItem = { state: "ok" | "falta" | "info"; title: string; detail: string; issue?: string; sourceId?: string; module?: string; link?: string; spectacle?: string; date?: string; time?: string; img?: { kind: "asset" | "cart"; key: string; module?: string } | null };
+const RECEIVED = ["recibido", "entregado", "listo"];
+const hasMaterial = (r: any) => Boolean(r.assetKey || r.posterKey || r.compositeAssetKey) || RECEIVED.includes(String(r.materialStatus || "").toLowerCase());
+const imgOf = (r: any, module: string) => (r.assetKey || r.posterKey || r.compositeAssetKey) ? { kind: "asset" as const, key: r.compositeAssetKey || r.posterKey || r.assetKey, module } : null;
 export type StatusSection = { key: string; name: string; state: "ok" | "falta" | "info"; summary: string; items: StatusItem[] };
 export type WeekStatus = { week: string; first: string; last: string; label: string; pending: number; sections: StatusSection[] };
 
@@ -58,7 +63,7 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
       const unit = u === "impresiones" ? "impresiones" : "cuñas";
       // Las impresiones digitales no se programan por semana: solo se informa
       if (unit === "impresiones") { rItems.push({ state: "info", title: `${short(c.venue)} · ${c.brand} digital`, detail: `${fmtN(cap)} impresiones esta semana${used >= 0.5 ? ` · asignadas ${fmtN(used)}` : ""}` }); continue; }
-      rItems.push({ state: left > 0 ? "falta" : "ok", title: `${short(c.venue)} · ${c.brand}`,
+      rItems.push({ state: left > 0 ? "falta" : "ok", title: `${short(c.venue)} · ${c.brand}`, issue: left > 0 ? `Faltan ${fmtN(left)} ${unit}` : undefined, sourceId: `${c.id}:${u}`, module: "radio", link: "#radio", spectacle: [...by.keys()].join(", "), date: first,
         detail: left > 0 ? `Faltan ${fmtN(left)} de ${fmtN(cap)} ${unit}${used >= 0.5 ? ` · asignadas ${fmtN(used)}: ${who}` : " · no hay nada asignado"}` : `${fmtN(used)} de ${fmtN(cap)} ${unit} asignadas · ${who}` });
     }
   }
@@ -70,9 +75,12 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     const rows = (await listRecords(m)).filter(overlaps).sort((a, b) => String(a.venue).localeCompare(String(b.venue)));
     const items: StatusItem[] = rows.map((r) => {
       const ends = r.endDate && r.endDate < last;
-      return { state: ends ? "falta" : "ok", title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate), ends ? `termina el ${fmt(r.endDate)}: falta lo que sigue` : ""].filter(Boolean).join(" · ") };
+      return { state: ends ? "falta" : "ok", title: r.spectacle || r.campaignName || "Campaña", detail: [short(r.venue), r.support, range(r.startDate, r.endDate), ends ? `termina el ${fmt(r.endDate)}: falta lo que sigue` : ""].filter(Boolean).join(" · "),
+        issue: ends ? "Termina sin relevo" : undefined, sourceId: r.id, module: m, link: `#${m}?edit=${r.id}`, spectacle: r.spectacle || "", date: ends ? r.endDate : r.startDate || "", img: imgOf(r, m) };
     });
-    if (!rows.length) items.push({ state: "falta", title: `Sin campaña de ${name.toLowerCase()}`, detail: "No hay nada programado esta semana" });
+    // Soporte activo con campaña asignada pero sin material
+    for (const r of rows.filter((r) => !hasMaterial(r))) items.push({ state: "falta", title: [r.spectacle || r.campaignName || "Campaña", r.location || r.support].filter(Boolean).join(" · "), detail: [short(r.venue), range(r.startDate, r.endDate), "sin material"].filter(Boolean).join(" · "), issue: "Falta material", sourceId: `${r.id}:material`, module: m, link: `#${m}?edit=${r.id}`, spectacle: r.spectacle || "", date: r.startDate || "" });
+    if (!rows.length) items.push({ state: "falta", title: `Sin campaña de ${name.toLowerCase()}`, detail: "No hay nada programado esta semana", issue: "Sin campaña", sourceId: `none`, module: m, link: `#${m}`, date: first });
     const f = items.filter((x) => x.state === "falta").length;
     sections.push({ key: m, name, state: f ? "falta" : "ok", summary: !rows.length ? "Falta programar" : f ? `${rows.length} activas · ${f} terminan antes del domingo` : `${rows.length} ${rows.length === 1 ? "campaña activa" : "campañas activas"}`, items });
   }
@@ -85,8 +93,10 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     const mine = ht.filter((r: any) => r.venue === v), pos = new Set(mine.map((r: any) => NAME[r.position] || r.position));
     const pieces = mine.map((r: any) => `${NAME[r.position] || r.position}: ${r.spectacle || "sin espectáculo"}`).join(" · ");
     const missing = pos.has("XL") ? [] : ["Superior", "Inferior"].filter((p) => !pos.has(p));
-    return { state: missing.length ? "falta" : "ok", title: short(v), detail: missing.length ? `Falta ${missing.join(" e ")}${pieces ? " · hay " + pieces : ""}` : pieces };
+    return { state: missing.length ? "falta" : "ok", title: short(v), detail: missing.length ? `Falta ${missing.join(" e ")}${pieces ? " · hay " + pieces : ""}` : pieces,
+      issue: missing.length ? `Falta ${missing.join(" e ")}` : undefined, sourceId: v, module: "hometicket", link: "#hometicket", spectacle: mine.map((r: any) => r.spectacle).filter(Boolean).join(", "), date: first, img: mine[0] ? imgOf(mine[0], "hometicket") : null };
   });
+  for (const r of ht.filter((r: any) => !hasMaterial(r))) hItems.push({ state: "falta", title: `${short(r.venue)} · ${NAME[r.position] || r.position || "posición"}`, detail: `${r.spectacle || "sin espectáculo"} · sin pieza subida`, issue: "Falta material", sourceId: `${r.id}:material`, module: "hometicket", link: `#hometicket?edit=${r.id}`, spectacle: r.spectacle || "", date: r.startDate || first });
   const hF = hItems.filter((x) => x.state === "falta").length;
   sections.push({ key: "hometicket", name: "Home Ticket", state: hF ? "falta" : "ok", summary: hF ? `${hF} ${hF === 1 ? "teatro incompleto" : "teatros incompletos"}` : "Completo en todos los teatros", items: hItems });
 
@@ -97,7 +107,9 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
   for (const m of months) for (const [k, nm] of AGREED) {
     const r = rev.find((x) => x.month === m && x.magazine === k && x.deal !== "intercambio");
     const ml = D(`${m}-15`).toLocaleDateString("es-ES", { month: "long", timeZone: "UTC" });
-    vItems.push({ state: r ? "ok" : "falta", title: `${nm} · ${ml}`, detail: r ? `${r.spectacle || "sin espectáculo"} · ${short(r.venue)}${r.materialStatus === "pendiente" ? " · material pendiente" : ""}` : "Falta decidir la página" });
+    const undecided = !r || !r.spectacle;
+    vItems.push({ state: undecided ? "falta" : "ok", title: `${nm} · ${ml}`, detail: r ? `${r.spectacle || "sin espectáculo"} · ${short(r.venue)}${r.materialStatus === "pendiente" ? " · material pendiente" : ""}` : "Falta decidir la página",
+      issue: undecided ? "Falta decidir página" : undefined, sourceId: r ? r.id : `${k}:${m}`, module: "revistas", link: r ? `#revistas?edit=${r.id}` : "#revistas", spectacle: r?.spectacle || "", date: `${m}-01`, img: r ? imgOf(r, "revistas") : null });
   }
   rev.filter((x) => x.deal === "intercambio" || !AGREED.some(([k]) => k === x.magazine)).forEach((r) => vItems.push({ state: "info", title: `${r.magazine} · intercambio`, detail: `${r.spectacle || ""} · ${short(r.venue)}` }));
   const vF = vItems.filter((x) => x.state === "falta").length;
@@ -111,8 +123,9 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     cItems.push({ state: "info", title: short(venue), detail: `${withImg} de ${slots.length} soportes con cartel` });
     for (const x of slots) {
       const v: any = st.schedule?.[x.key] || {}, nm = SLOT_NAMES[x.key] || x.key;
-      if (v.installDate && v.installDate >= first && v.installDate <= last) cItems.push({ state: v.status === "instalado" ? "ok" : "falta", title: `${nm} · ${v.title || "sin título"}`, detail: `Montaje el ${fmt(v.installDate)}${v.status ? " · " + v.status : ""}` });
-      if (v.removeDate && v.removeDate >= first && v.removeDate <= last) cItems.push({ state: v.next ? "ok" : "falta", title: `${nm} · ${v.title || "sin título"}`, detail: `Se retira el ${fmt(v.removeDate)}${v.next ? " · le sigue " + v.next : " · falta decidir qué va después"}` });
+      const cimg = st.slots?.[x.key]?.hasImage ? { kind: "cart" as const, key: x.key } : null;
+      if (v.installDate && v.installDate >= first && v.installDate <= last) cItems.push({ state: v.status === "instalado" ? "ok" : "falta", title: `${nm} · ${v.title || "sin título"}`, detail: `Montaje el ${fmt(v.installDate)}${v.status ? " · " + v.status : ""}`, issue: "Montaje pendiente", sourceId: `${x.key}:montaje`, module: "carteleria", link: `#carteleria?soporte=${x.key}`, spectacle: v.title || "", date: v.installDate, img: cimg });
+      if (v.removeDate && v.removeDate >= first && v.removeDate <= last) cItems.push({ state: v.next ? "ok" : "falta", title: `${nm} · ${v.title || "sin título"}`, detail: `Se retira el ${fmt(v.removeDate)}${v.next ? " · le sigue " + v.next : " · falta decidir qué va después"}`, issue: "Falta relevo", sourceId: `${x.key}:relevo`, module: "carteleria", link: `#carteleria?soporte=${x.key}`, spectacle: v.title || "", date: v.removeDate, img: cimg });
     }
   }
   const cF = cItems.filter((x) => x.state === "falta").length;

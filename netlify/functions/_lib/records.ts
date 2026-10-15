@@ -8,7 +8,17 @@ export function validModule(v: string | null): v is RecordModule {
   return MODULES.includes(v as RecordModule);
 }
 
+// Memoria muy corta (3 s) para que, dentro de una misma ejecución, el Status Engine, el calendario y el
+// status semanal no lean los mismos registros varias veces. Se invalida al guardar.
+const memo = new Map<string, { at: number; rows: any[] }>();
 export async function listRecords(moduleName: RecordModule, includeDeleted = false) {
+  const k = moduleName + (includeDeleted ? ":all" : ""), hit = memo.get(k);
+  if (hit && Date.now() - hit.at < 3000) return hit.rows.slice();
+  const rows = await readRecords(moduleName, includeDeleted);
+  memo.set(k, { at: Date.now(), rows });
+  return rows.slice();
+}
+async function readRecords(moduleName: RecordModule, includeDeleted: boolean) {
   const store = controlStore();
   const res = await store.list({ prefix: `record_${moduleName}_` });
   const rows: any[] = (await getManyJSON(store, res.blobs.map((b) => b.key))).filter((row: any) => includeDeleted || !row.deletedAt);
@@ -20,6 +30,7 @@ export async function getRecord(moduleName: RecordModule, id: string) {
 }
 
 export async function putRecord(moduleName: RecordModule, id: string, value: unknown) {
+  memo.delete(moduleName); memo.delete(moduleName + ":all");
   await controlStore().setJSON(`record_${moduleName}_${id}`, value);
 }
 
