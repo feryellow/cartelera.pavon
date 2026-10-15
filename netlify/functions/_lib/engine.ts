@@ -20,7 +20,8 @@ export type Issue = {
   issue: string;              // el problema en pocas palabras: «Faltan 8 cuñas», «Falta material»
   detail: string;
   spectacle: string;
-  date: string;               // YYYY-MM-DD (fecha relevante: inicio, entrega, retirada…)
+  date: string;               // YYYY-MM-DD (fecha relevante: inicio, entrega, retirada…); vacío si es de toda la semana
+  period: string;             // «Semana del 12 al 18 de octubre» cuando la incidencia es de la semana y no de un día
   time: string;               // HH:MM si existe
   thumbnail: { kind: "asset" | "cart"; key: string; module?: string } | null;
   fallback: string;           // imagen estática de la campaña si no hay miniatura propia
@@ -50,12 +51,14 @@ export async function collectIssues(opts: { origin: string; today?: string; sect
   const today = opts.today || madridToday();
   const allow = opts.sections || (() => true);
   const out = new Map<string, Issue>();
-  const add = (i: Omit<Issue, "id" | "sectionName" | "state" | "fallback"> & { id?: string }) => {
+  const add = (i: Omit<Issue, "id" | "sectionName" | "state" | "fallback" | "period"> & { id?: string; period?: string }) => {
     if (!allow(i.section)) return;
     const id = i.id || `${i.section}:${i.sourceId}`;
     const prev = out.get(id);
     if (prev && (prev.severity === "error" || i.severity === "warning")) return; // se queda la más grave
-    out.set(id, { ...i, id, sectionName: NAMES[i.section] || i.section, state: i.severity === "error" ? "FALTA" : "ATENCIÓN", fallback: fallbackImage(`${i.spectacle} ${i.title}`) });
+    const bare = (t: string) => t.toLowerCase().replace(/\b(la|el|los|las)\s/g, "").trim();
+    const detail = bare(i.detail) === bare(i.issue) ? "" : i.detail.startsWith(i.issue) ? i.detail.slice(i.issue.length).replace(/^\s*·\s*/, "") : i.detail;
+    out.set(id, { ...i, detail, period: i.period || "", id, sectionName: NAMES[i.section] || i.section, state: i.severity === "error" ? "FALTA" : "ATENCIÓN", fallback: fallbackImage(`${i.spectacle} ${i.title}`) });
   };
 
   // 1. Lo que debería existir esta semana frente a lo programado (misma lógica que la sección Status)
@@ -63,7 +66,7 @@ export async function collectIssues(opts: { origin: string; today?: string; sect
   for (const sec of week.sections) for (const it of sec.items) {
     if (it.state !== "falta") continue;
     const section = it.module || sec.key;
-    add({ section, severity: "error", title: it.title, issue: it.issue || "Falta", detail: it.detail, spectacle: it.spectacle || "", date: it.date || "", time: it.time || "", thumbnail: it.img || null, sourceId: it.sourceId || `${sec.key}:${it.title}`, link: it.link || `#${sec.key}` });
+    add({ section, severity: "error", title: it.sourceId === "none" ? (NAMES[section] || sec.name) : it.title, period: it.date ? "" : section === "revistas" ? "" : week.label, issue: it.issue || "Falta", detail: it.detail, spectacle: it.spectacle || "", date: it.date || "", time: it.time || "", thumbnail: it.img || null, sourceId: it.sourceId || `${sec.key}:${it.title}`, link: it.link || `#${sec.key}` });
   }
 
   // 2. Material con fecha de entrega: fuera de plazo (FALTA) o vence hoy/mañana (ATENCIÓN)

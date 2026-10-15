@@ -22,6 +22,6 @@ export default async (req: Request) => {
   try { await mod.default(new Request(new URL("/?force=1", req.url).toString())); } finally { console.log = orig; }
   let result: any = {}; try { result = JSON.parse(logs.filter((l) => l.startsWith("{")).pop() || "{}"); } catch {}
   await appendAudit({ actor: auth.actor!, module: "avisos", elementId: "test-email", action: result.sent ? "email_sent" : "email_pending", note: "Correo de prueba" });
-  return Response.json({ ...info, sent: !!result.sent, reason: result.sent ? "" : (result.reason === "nothing_new" ? "Ya se envió el resumen de hoy" : "Revisa la clave de Resend y el remitente"), detail: result });
+  return Response.json({ ...info, sent: !!result.sent, reason: result.sent ? "" : (result.reason === "no_issues" ? "No hay incidencias: el correo diario solo sale cuando hay algo por resolver" : result.reason === "nothing_new" ? "Ya se envió el resumen de hoy" : "Revisa la clave de Resend y el remitente"), detail: result });
 };
 export const config: Config = { path: "/api/test-email" };

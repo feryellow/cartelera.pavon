@@ -63,7 +63,7 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
       const unit = u === "impresiones" ? "impresiones" : "cuñas";
       // Las impresiones digitales no se programan por semana: solo se informa
       if (unit === "impresiones") { rItems.push({ state: "info", title: `${short(c.venue)} · ${c.brand} digital`, detail: `${fmtN(cap)} impresiones esta semana${used >= 0.5 ? ` · asignadas ${fmtN(used)}` : ""}` }); continue; }
-      rItems.push({ state: left > 0 ? "falta" : "ok", title: `${short(c.venue)} · ${c.brand}`, issue: left > 0 ? `Faltan ${fmtN(left)} ${unit}` : undefined, sourceId: `${c.id}:${u}`, module: "radio", link: "#radio", spectacle: [...by.keys()].join(", "), date: first,
+      rItems.push({ state: left > 0 ? "falta" : "ok", title: `${short(c.venue)} · ${c.brand}`, issue: left > 0 ? `Faltan ${fmtN(left)} ${unit}` : undefined, sourceId: `${c.id}:${u}`, module: "radio", link: "#radio", spectacle: [...by.keys()].join(", "),
         detail: left > 0 ? `Faltan ${fmtN(left)} de ${fmtN(cap)} ${unit}${used >= 0.5 ? ` · asignadas ${fmtN(used)}: ${who}` : " · no hay nada asignado"}` : `${fmtN(used)} de ${fmtN(cap)} ${unit} asignadas · ${who}` });
     }
   }
@@ -80,7 +80,7 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     });
     // Soporte activo con campaña asignada pero sin material
     for (const r of rows.filter((r) => !hasMaterial(r))) items.push({ state: "falta", title: [r.spectacle || r.campaignName || "Campaña", r.location || r.support].filter(Boolean).join(" · "), detail: [short(r.venue), range(r.startDate, r.endDate), "sin material"].filter(Boolean).join(" · "), issue: "Falta material", sourceId: `${r.id}:material`, module: m, link: `#${m}?edit=${r.id}`, spectacle: r.spectacle || "", date: r.startDate || "" });
-    if (!rows.length) items.push({ state: "falta", title: `Sin campaña de ${name.toLowerCase()}`, detail: "No hay nada programado esta semana", issue: "Sin campaña", sourceId: `none`, module: m, link: `#${m}`, date: first });
+    if (!rows.length) items.push({ state: "falta", title: `Sin campaña de ${name.toLowerCase()}`, detail: "No hay nada programado esta semana", issue: "Sin campaña", sourceId: `none`, module: m, link: `#${m}` });
     const f = items.filter((x) => x.state === "falta").length;
     sections.push({ key: m, name, state: f ? "falta" : "ok", summary: !rows.length ? "Falta programar" : f ? `${rows.length} activas · ${f} terminan antes del domingo` : `${rows.length} ${rows.length === 1 ? "campaña activa" : "campañas activas"}`, items });
   }
@@ -94,9 +94,9 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     const pieces = mine.map((r: any) => `${NAME[r.position] || r.position}: ${r.spectacle || "sin espectáculo"}`).join(" · ");
     const missing = pos.has("XL") ? [] : ["Superior", "Inferior"].filter((p) => !pos.has(p));
     return { state: missing.length ? "falta" : "ok", title: short(v), detail: missing.length ? `Falta ${missing.join(" e ")}${pieces ? " · hay " + pieces : ""}` : pieces,
-      issue: missing.length ? `Falta ${missing.join(" e ")}` : undefined, sourceId: v, module: "hometicket", link: "#hometicket", spectacle: mine.map((r: any) => r.spectacle).filter(Boolean).join(", "), date: first, img: mine[0] ? imgOf(mine[0], "hometicket") : null };
+      issue: missing.length ? `Falta ${missing.join(" e ")}` : undefined, sourceId: v, module: "hometicket", link: "#hometicket", spectacle: mine.map((r: any) => r.spectacle).filter(Boolean).join(", "), img: mine[0] ? imgOf(mine[0], "hometicket") : null };
   });
-  for (const r of ht.filter((r: any) => !hasMaterial(r))) hItems.push({ state: "falta", title: `${short(r.venue)} · ${NAME[r.position] || r.position || "posición"}`, detail: `${r.spectacle || "sin espectáculo"} · sin pieza subida`, issue: "Falta material", sourceId: `${r.id}:material`, module: "hometicket", link: `#hometicket?edit=${r.id}`, spectacle: r.spectacle || "", date: r.startDate || first });
+  for (const r of ht.filter((r: any) => !hasMaterial(r))) hItems.push({ state: "falta", title: `${short(r.venue)} · ${NAME[r.position] || r.position || "posición"}`, detail: `${r.spectacle || "sin espectáculo"} · sin pieza subida`, issue: "Falta material", sourceId: `${r.id}:material`, module: "hometicket", link: `#hometicket?edit=${r.id}`, spectacle: r.spectacle || "", date: r.startDate && r.startDate >= first ? r.startDate : "" });
   const hF = hItems.filter((x) => x.state === "falta").length;
   sections.push({ key: "hometicket", name: "Home Ticket", state: hF ? "falta" : "ok", summary: hF ? `${hF} ${hF === 1 ? "teatro incompleto" : "teatros incompletos"}` : "Completo en todos los teatros", items: hItems });
 
@@ -109,7 +109,7 @@ export async function weekStatus(weekInput: string, origin: string): Promise<Wee
     const ml = D(`${m}-15`).toLocaleDateString("es-ES", { month: "long", timeZone: "UTC" });
     const undecided = !r || !r.spectacle;
     vItems.push({ state: undecided ? "falta" : "ok", title: `${nm} · ${ml}`, detail: r ? `${r.spectacle || "sin espectáculo"} · ${short(r.venue)}${r.materialStatus === "pendiente" ? " · material pendiente" : ""}` : "Falta decidir la página",
-      issue: undecided ? "Falta decidir página" : undefined, sourceId: r ? r.id : `${k}:${m}`, module: "revistas", link: r ? `#revistas?edit=${r.id}` : "#revistas", spectacle: r?.spectacle || "", date: `${m}-01`, img: r ? imgOf(r, "revistas") : null });
+      issue: undecided ? "Falta decidir página" : undefined, sourceId: r ? r.id : `${k}:${m}`, module: "revistas", link: r ? `#revistas?edit=${r.id}` : "#revistas", spectacle: r?.spectacle || "", img: r ? imgOf(r, "revistas") : null });
   }
   rev.filter((x) => x.deal === "intercambio" || !AGREED.some(([k]) => k === x.magazine)).forEach((r) => vItems.push({ state: "info", title: `${r.magazine} · intercambio`, detail: `${r.spectacle || ""} · ${short(r.venue)}` }));
   const vF = vItems.filter((x) => x.state === "falta").length;
