@@ -71,3 +71,18 @@ export async function requireAccess(req: Request, moduleName: string, write = fa
   if (!can(actor, moduleName, write)) return { actor, response: Response.json({ error: "Forbidden" }, { status: 403 }) };
   return { actor, response: null };
 }
+
+// ---- Matriz única de permisos. Acciones: read · create · update · delete (archivar) · admin.
+// create/update/delete dependen del permiso de escritura del módulo; admin, del rol de administración.
+export type Action = "read" | "create" | "update" | "delete" | "admin";
+export function canDo(actor: Actor | null, moduleName: string, action: Action) {
+  if (!actor) return false;
+  if (action === "admin") return actor.roles.includes("admin");
+  return can(actor, moduleName, action !== "read");
+}
+/** Lo que puede ver y cambiar este usuario, para que el navegador use la misma matriz que el servidor. */
+export function accessOf(actor: Actor | null) {
+  const read = new Set<string>(), write = new Set<string>();
+  for (const role of actor?.roles || []) { const a = ROLE_ACCESS[role]; if (!a) continue; a.read.forEach((m) => read.add(m)); a.write.forEach((m) => write.add(m)); }
+  return { read: [...read], write: [...write], admin: !!actor?.roles.includes("admin") };
+}

@@ -1,6 +1,6 @@
 import type { Config, Context } from "@netlify/functions";
 import { refreshSession } from "@netlify/identity";
-import { resolveActor } from "./_lib/auth.ts";
+import { resolveActor, accessOf } from "./_lib/auth.ts";
 import { budgetAccess } from "./_lib/budget.ts";
 
 // Sesión recordada: el acceso de Netlify caduca a la hora y sus cookies se borran al cerrar el navegador
@@ -22,6 +22,6 @@ export default async (req: Request, context: Context) => {
   if (!actor) return Response.json({ authenticated: false }, { status: 401 });
   keepCookies(context);
   const budget = (await budgetAccess(req).catch(() => ({ status: "login" }))).status === "ok";
-  return Response.json({ authenticated: true, actor, budget });
+  return Response.json({ authenticated: true, actor, budget, access: accessOf(actor) });
 };
 export const config: Config = { path: "/api/me" };

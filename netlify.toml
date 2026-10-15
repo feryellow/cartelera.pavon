@@ -1,5 +1,7 @@
 [build]
   publish = "site"
+  # Si la comprobación falla, no se publica (la versión anterior sigue en línea)
+  command = "node scripts/check.mjs"
 
 [functions]
   directory = "netlify/functions"

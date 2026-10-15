@@ -56,7 +56,7 @@ function ycNavSheet(k){const g=NAV_GROUPS[k];const el=document.createElement("di
  if(k==="mas"){$("#ycNavTheme").onclick=()=>{close();$("#themeToggle")&&$("#themeToggle").click()};$("#ycNavOut").onclick=()=>{close();$("#logoutBtn").click()}}}
 function applyNav(){try{ycTabbar()}catch{};document.body.dataset.route=state.route;document.body.dataset.roleMode=isProveedor()?"proveedor":isCarteleriaRole()?"carteleria":"";$$("#mainNav [data-route]").forEach(a=>{const r=a.dataset.route,locked=!canRoute(r);a.classList.toggle("active",r===state.route);a.classList.toggle("locked",locked);a.setAttribute("aria-disabled",locked?"true":"false");if(locked){a.removeAttribute("href");a.tabIndex=-1}else{a.setAttribute("href",a.dataset.href||("#"+r));a.removeAttribute("tabindex")}});$("#accountName").textContent=state.actor?.email||"";const na=$("#navAccountName");if(na){na.textContent=state.actor?.email||"—";const av=$(".account-avatar");if(av)av.textContent=(state.actor?.email||"Y").charAt(0).toUpperCase()}const act=$("#mainNav a.active");if(act&&matchMedia("(max-width:980px)").matches)act.scrollIntoView({inline:"center",block:"nearest"})}
 async function authenticate(){
- try{const d=await api("/api/me",{cache:"no-store"});state.actor=d.actor;state.budget=!!d.budget;const bn=$('#mainNav [data-route="presupuesto"]');if(bn)bn.hidden=!state.budget;const an=$('#mainNav [data-route="avisos"]');if(an)an.hidden=!state.budget;gate.classList.add("hidden");applyNav();return true}
+ try{const d=await api("/api/me",{cache:"no-store"});state.actor=d.actor;YCPerm.set(d.access);state.budget=!!d.budget;const bn=$('#mainNav [data-route="presupuesto"]');if(bn)bn.hidden=!state.budget;const an=$('#mainNav [data-route="avisos"]');if(an)an.hidden=!state.budget;gate.classList.add("hidden");applyNav();return true}
  catch{gate.classList.remove("hidden");return false}
 }
 // Entrada: correo sin espacios ni mayúsculas (el móvil pone la primera en mayúscula), botón bloqueado mientras entra,
@@ -1755,7 +1755,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v131";
+const YC_VERSION="yellow-control-v132";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}
