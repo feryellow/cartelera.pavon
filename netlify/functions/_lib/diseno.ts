@@ -6,7 +6,7 @@ export const OPEN = ["pendiente", "en_proceso", "en_revision", "parado"];
 export const PIECE_TYPES = ["Cartel", "Lona / gran formato", "Flyer / folleto / díptico", "Redes sociales", "Adaptaciones de formatos", "Newsletter / email", "Banner web", "Pantallas", "Señalética / vinilo", "Logo / identidad", "Photocall", "Otro"];
 const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt", "cancelReason"];
 
-export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
+export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; campaigns: { id: string; month: number; dates: string; creative: string; company: string }[]; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
 const DEFAULTS: DisenoSettings = {
   // Personas y colores de la hoja (pestaña CONFIG). Los correos sirven para el aviso del día antes en el móvil.
   people: [
@@ -19,6 +19,17 @@ const DEFAULTS: DisenoSettings = {
   companies: [
     { name: "ABONOTEATRO", color: "#BC2C4F" }, { name: "LA ESTACION", color: "#0095DA" }, { name: "PAVON", color: "#C9A227" },
     { name: "CASTILLO", color: "#7B1E2B" }, { name: "SERRANO", color: "#003438" }, { name: "EL GURÚ", color: "#6A4C93" }, { name: "SOHO CITY", color: "#E8590C" },
+  ],
+  // Campañas del año (pestaña «CALENDARIO CAMPAÑAS» de la hoja), tal cual están escritas allí
+  campaigns: [
+    { id: "c01", month: 1, dates: "Reyes", creative: "Cambio a creatividad general a final de la Navidad", company: "ABONOTEATRO" },
+    { id: "c02", month: 2, dates: "14 San Valentín", creative: "", company: "ABONOTEATRO" },
+    { id: "c03", month: 3, dates: "19 Día del Padre / 27 Día del Teatro", creative: "", company: "ABONOTEATRO" },
+    { id: "c05", month: 5, dates: "Día de la Madre", creative: "", company: "ABONOTEATRO" },
+    { id: "c06", month: 6, dates: "", creative: "Creatividad de verano", company: "ABONOTEATRO" },
+    { id: "c09", month: 9, dates: "Vuelta al cole", creative: "Creatividad nueva temporada", company: "ABONOTEATRO" },
+    { id: "c11", month: 11, dates: "Black Friday", creative: "", company: "ABONOTEATRO" },
+    { id: "c12", month: 12, dates: "Navidad", creative: "Creatividad de Navidad", company: "ABONOTEATRO" },
   ],
   // Avisos por correo de la diseñadora: hasta que Fer o Celia los activen, van solo a fernando@yellowmedia.es
   mailLive: false,
@@ -36,6 +47,7 @@ export async function saveSettings(s: any) {
     people: (Array.isArray(s.people) ? s.people : []).map((p: any) => ({ name: String(p.name || "").trim().toUpperCase().slice(0, 40), email: String(p.email || "").trim().toLowerCase().slice(0, 120), color: color(p.color) })).filter((p: any) => p.name).slice(0, 40),
     companies: (Array.isArray(s.companies) ? s.companies : []).map((c: any) => ({ name: String(c.name || "").trim().toUpperCase().slice(0, 40), color: color(c.color) })).filter((c: any) => c.name).slice(0, 40),
     mailLive: s.mailLive === true,
+    campaigns: (Array.isArray(s.campaigns) ? s.campaigns : DEFAULTS.campaigns).map((c: any, i: number) => ({ id: String(c.id || "c" + Date.now().toString(36) + i).slice(0, 40), month: n(c.month, 1, 1, 12), dates: String(c.dates || "").trim().slice(0, 200), creative: String(c.creative || "").trim().slice(0, 300), company: String(c.company || "ABONOTEATRO").trim().toUpperCase().slice(0, 40) })).filter((c: any) => c.dates || c.creative).slice(0, 80),
     wipLimit: n(s.wipLimit, 8, 1, 50), urgentQuota: n(s.urgentQuota, 3, 0, 50), stallDays: n(s.stallDays, 10, 2, 90), peakPerWeek: n(s.peakPerWeek, 4, 1, 50), soonDays: n(s.soonDays, 3, 1, 14),
   };
   await controlStore().setJSON("diseno_settings", clean);
