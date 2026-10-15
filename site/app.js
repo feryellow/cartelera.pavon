@@ -1205,7 +1205,9 @@ const dsView={tab:"peticiones",who:"",company:"",state:"abiertas",q:"",alert:"",
 let DS=null;
 const dsDays=(a,b)=>Math.round((new Date(b+"T12:00:00Z")-new Date(a+"T12:00:00Z"))/864e5);
 const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
-const dsColor=(list,name)=>(list.find(x=>x.name===name)||{}).color||"#888";
+// Las empresas que son espacios del calendario llevan su mismo color; el resto (personas, otras empresas), el de Ajustes
+const DS_VENUE={"ABONOTEATRO":"Abono Teatro","ABONO TEATRO":"Abono Teatro","LA ESTACION":"Gran Teatro CaixaBank Príncipe Pío","LA ESTACIÓN":"Gran Teatro CaixaBank Príncipe Pío","PRINCIPE PIO":"Gran Teatro CaixaBank Príncipe Pío","PAVON":"Gran Teatro Pavón","PAVÓN":"Gran Teatro Pavón","CASTILLO":"Gran Castillo de Pedraza","PEDRAZA":"Gran Castillo de Pedraza","SERRANO":"Teatro Serrano","SOHO CITY":"Soho City Madrid","SOHO":"Soho City Madrid","ARLEQUIN":"Teatro Arlequín","ARLEQUÍN":"Teatro Arlequín"};
+const dsColor=(list,name)=>{const v=DS_VENUE[String(name||"").toUpperCase()],vs=v&&VENUE_STYLE[v];if(vs)return document.documentElement.dataset.theme==="light"?vs.bg:vs.dark;return (list.find(x=>x.name===name)||{}).color||"#888"};
 function dsWeek(iso){const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10)}
 function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN.includes(r.status)),per={},glob=[];
  const add=(r,k)=>{(per[r.id]=per[r.id]||[]).push(k)};
@@ -1221,7 +1223,11 @@ function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN
  const urg=open.filter(r=>r.urgent).length;if(urg>st.urgentQuota)glob.push({k:"urgentes",txt:urg+" urgentes abiertas (el cupo es "+st.urgentQuota+"). Si todo es urgente, nada lo es."});
  return {per,glob}}
 const DS_ALERT={vencida:["Vencida","late"],pronto:["Vence pronto","warn"],sinfecha:["Sin fecha",""],estancada:["Sin cambios",""],parada:["Parada",""],antigua:["Más de 60 días",""],sintipo:["Sin tipo de pieza",""]};
-async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});dsRender()}
+async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});
+ // Desde el calendario principal: #diseno?edit=<id> abre la petición; #diseno?tab=campanas abre las campañas del año
+ const q=new URLSearchParams(location.hash.split("?")[1]||""),edit=q.get("edit"),tab=q.get("tab");if(edit||tab){history.replaceState(null,"",location.hash.split("?")[0]);dsView.picked=1}
+ if(tab)dsView.tab=tab;else if(edit)dsView.tab="peticiones";dsRender();
+ const row=edit&&DS.rows.find(r=>r.id===edit);if(row)dsForm(row);else if(edit)say("No se ha encontrado la petición (puede estar quitada)")}
 function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
  if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
  const tabs=[["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
@@ -1313,7 +1319,7 @@ function dsIndicators(){const d=DS,t=d.today,rows=d.rows,open=rows.filter(r=>DS_
   '<div class="tv-grid">'+table("Peticiones por persona",group("requester"))+table("Creatividades por empresa",group("company"))+table("Por tipo de pieza",group("pieceType"))+'</div>'}
 function dsSettings(){const d=DS,st=JSON.parse(JSON.stringify(d.settings));
  const rowP=(p,i)=>'<div class="ds-set"><input value="'+esc(p.name)+'" data-pn="'+i+'" placeholder="NOMBRE"><input value="'+esc(p.email)+'" data-pe="'+i+'" type="email" placeholder="correo para el aviso"><input type="color" value="'+esc(p.color)+'" data-pc="'+i+'"><button type="button" class="ghost" data-prm="'+i+'">Quitar</button></div>';
- const rowC=(c,i)=>'<div class="ds-set"><input value="'+esc(c.name)+'" data-cn="'+i+'"><input type="color" value="'+esc(c.color)+'" data-cc="'+i+'"><button type="button" class="ghost" data-crm="'+i+'">Quitar</button></div>';
+ const rowC=(c,i)=>'<div class="ds-set"><input value="'+esc(c.name)+'" data-cn="'+i+'">'+(DS_VENUE[c.name]?'<span class="ds-vcol" style="--c:'+dsColor([],c.name)+'">Color del calendario</span>':'<input type="color" value="'+esc(c.color)+'" data-cc="'+i+'">')+'<button type="button" class="ghost" data-crm="'+i+'">Quitar</button></div>';
  const num=(k,l)=>'<label>'+l+'<input type="number" min="1" data-num="'+k+'" value="'+st[k]+'"></label>';
  const draw=()=>{$("#dsBody").innerHTML='<div class="tv-grid"><section class="card"><div class="section-title"><div><small class="section-kicker">Quién pide</small><h2>Personas</h2></div></div>'+st.people.map(rowP).join("")+'<button type="button" id="dsAddP">Añadir persona</button><p class="muted">El correo tiene que ser el de su usuario de Yellow Control para que le llegue el aviso del día antes.</p></section>'+
   '<section class="card"><div class="section-title"><div><small class="section-kicker">Para quién</small><h2>Empresas y espacios</h2></div></div>'+st.companies.map(rowC).join("")+'<button type="button" id="dsAddC">Añadir empresa</button></section>'+
@@ -1749,7 +1755,7 @@ async function importar(){
 // ===================== CALENDARIO =====================
 const HITO_TYPES=["Estreno","Nota de prensa","Newsletter","Rueda de prensa","Pase gráfico","Entrevista / medios","Reunión","Cierre de edición","Evento","Solicitud de proveedor","Otro"];
 const HITO_REMINDERS=[["","Por defecto"],["none","Sin aviso"],["15m","15 minutos antes"],["1h","1 hora antes"],["1d","1 día antes"],["2d","2 días antes"]];
-const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito"};
+const KIND_LABEL={montaje:"Montaje",retirada:"Retirada",inicio:"Inicio",fin:"Fin",entrega:"Entrega",hito:"Hito",campana:"Campaña"};
 // Identidad por recinto: color de franja (claro / oscuro) y etiqueta con siglas en sus colores de marca
 const VENUE_STYLE={
  "Gran Teatro Pavón":{tag:"PAVÓN",bg:"#4A2C1A",fg:"#FFD968",line:"#4A2C1A",dark:"#D9A066"},
@@ -1769,7 +1775,7 @@ const nlPlatform=e=>{if(!e||!/newsletter/i.test(e.action||""))return null;const 
 const venueChip=(e,cls="vchip")=>{const v=venueStyle(e),nl=nlPlatform(e);return '<i class="'+cls+'" style="background:'+v.bg+';color:'+v.fg+'">'+esc(v.tag)+'</i>'+(nl?'<i class="'+cls+' nl" style="background:'+nl.bg+';color:'+nl.fg+'">'+nl.tag+'</i>':'')};
 const venueLegend=list=>{const seen=[...new Set(list.map(e=>VENUE_STYLE[venueOf(e)]?venueOf(e):""))];return seen.map(v=>[v||"Yellow / otros",VENUE_STYLE[v]||VENUE_NONE])};
 const KIND_COLOR={montaje:"#FFD400",retirada:"#ff8a65",inicio:"#8fd18f",fin:"#aaa296",entrega:"#ff6b5e",hito:"#7fb8ff"};
-const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
+const CAL_MODS=[["carteleria","Cartelería"],["hitos","Hitos"],["diseno","Diseño"],["radio","Radio"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas"]];
 const calLS={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
 let calCursor=new Date(),calEvents=[],calWeekOffset=0,calView=calLS.get("yc-cal-view","semana"),calMods=new Set(),calVenue="";
 const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -1852,12 +1858,13 @@ function calDetail(e){
   '<span class="badge '+(e.auto?"":"ok")+' cal-origin">'+(e.auto?"Automático · se edita en "+esc(e.module):"Hito manual · editable aquí")+'</span>'+
   (e.assetKey?'<div class="media-preview hito-thumb" data-asset="'+esc(e.assetKey)+'" data-module="hitos" data-kind="image"></div>':'')+
   '<dl class="cal-dl">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl>'+
-  ((canOpen||(/^https?:\/\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\/\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">Ver newsletter / informe</a>':'')+'</div>':''));
+  ((canOpen||(/^https?:\/\//i.test(String(e.link||""))))?'<div class="actions-row">'+(canOpen?'<button type="button" class="primary" id="dtOpen">'+(e.moduleKey==="diseno"?"Abrir en Diseño":e.kind==="hito"&&calCanHito()?"Editar hito":"Abrir ficha")+'</button>':'')+((/^https?:\/\//i.test(String(e.link||"")))?'<a class="btn" href="'+esc(e.link)+'" target="_blank" rel="noopener">'+(e.moduleKey==="diseno"?'Abrir el material':'Ver newsletter / informe')+'</a>':'')+'</div>':''));
  $("#dtClose").onclick=()=>calPanel("");
  if(canOpen)$("#dtOpen").onclick=()=>calOpen(e);
  if(e.assetKey)hydrateMedia("hitos");
 }
 function calOpen(e){
+ if(e.moduleKey==="diseno"){location.hash="#diseno?"+(String(e.recordId).startsWith("camp:")?"tab=campanas":"edit="+encodeURIComponent(e.recordId||""));return}
  if(e.kind==="hito"){api("/api/control?module=hitos").then(d=>{const r=(d.rows||[]).find(x=>x.id===e.recordId);calHitoForm(r||{})}).catch(x=>say(x.message));return}
  if(e.moduleKey==="carteleria"){location.hash="#carteleria?soporte="+encodeURIComponent(e.slotKey||"");return}
  location.hash="#"+e.moduleKey+"?edit="+encodeURIComponent(e.recordId||"");
@@ -2073,7 +2080,7 @@ async function admin(){
  let ok=await authenticate();if(!ok&&/(?:^|;\s*)nf_refresh=/.test(document.cookie)){await new Promise(r=>setTimeout(r,300));ok=await authenticate()}if(ok)route();if("serviceWorker"in navigator)ycServiceWorker()})();
 // Avisa cuando hay una versión nueva publicada, para no seguir trabajando con la antigua.
 // Versión de esta copia de la app. Debe coincidir con CACHE en sw.js (se cambian juntas en cada publicación).
-const YC_VERSION="yellow-control-v123";
+const YC_VERSION="yellow-control-v124";
 function ycShowUpdate(){if($("#ycUpdate"))return;const b=document.createElement("div");b.id="ycUpdate";b.className="yc-update";b.setAttribute("role","status");
  b.innerHTML='<span>Hay una versión nueva de Yellow Control.</span><button type="button" class="primary">Actualizar</button>';
  b.querySelector("button").onclick=()=>{if(typeof cart!=="undefined"&&cart.dirty&&cart.dirty.size&&!confirm("Hay cambios sin guardar en Cartelería. ¿Actualizar igualmente?"))return;location.reload()};document.body.appendChild(b)}

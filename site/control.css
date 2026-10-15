@@ -1291,3 +1291,4 @@ body[data-route="diseno"] .page-banner::before{background:linear-gradient(to rig
 .ds-campnote{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;width:100%;padding:12px 16px;margin-bottom:12px;border-radius:14px;background:rgba(255,212,0,.1);border:1px solid rgba(255,212,0,.4);font-size:13px;color:var(--cream)}
 .ds-campnote b{color:var(--yellow)}.ds-campnote span{margin-left:auto;font-weight:800;text-decoration:underline}
 :root[data-theme="light"] .ds-campnote b{color:#7a5f00}
+.ds-vcol{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}.ds-vcol::before{content:"";width:22px;height:22px;border-radius:6px;background:var(--c)}

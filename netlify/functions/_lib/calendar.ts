@@ -2,6 +2,7 @@ import { can, type Actor } from "./auth.ts";
 import { carteleriaStore } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { normalizeDate } from "./dates.ts";
+import { listDiseno, getSettings as disenoSettings } from "./diseno.ts";
 
 export type EventRow = { id: string; date: string; time?: string; module: string; moduleKey: string; title: string; location: string; action: string; status: string; recordId?: string; slotKey?: string; kind: string; notes?: string; link?: string; assetKey?: string; assetName?: string; auto: boolean; venue: string; responsable?: string; reminder?: string };
 
@@ -16,6 +17,9 @@ export const SLOT_NAMES: Record<string, string> = {
 export const slotVenue = (key: string) => key.startsWith("arlequin__") ? "Teatro Arlequín" : "Gran Teatro Pavón";
 const LABEL: Record<string, string> = { radio: "Radio", taxis: "Taxis", intercambiadores: "Intercambiadores", hometicket: "Home Ticket", revistas: "Revistas de Teatros" };
 
+// Empresa de Diseño → espacio del calendario (para que lleve el mismo color)
+export const COMPANY_VENUE: Record<string, string> = { "ABONOTEATRO": "Abono Teatro", "ABONO TEATRO": "Abono Teatro", "LA ESTACION": "Gran Teatro CaixaBank Príncipe Pío", "LA ESTACIÓN": "Gran Teatro CaixaBank Príncipe Pío", "PRINCIPE PIO": "Gran Teatro CaixaBank Príncipe Pío", "PAVON": "Gran Teatro Pavón", "PAVÓN": "Gran Teatro Pavón", "CASTILLO": "Gran Castillo de Pedraza", "PEDRAZA": "Gran Castillo de Pedraza", "SERRANO": "Teatro Serrano", "SOHO CITY": "Soho City Madrid", "SOHO": "Soho City Madrid", "ARLEQUIN": "Teatro Arlequín", "ARLEQUÍN": "Teatro Arlequín" };
+const companyVenue = (c: string) => COMPANY_VENUE[String(c || "").toUpperCase().trim()] || "";
 // Todas las fechas de la app en una lista. kind: montaje | retirada | inicio | fin | entrega | hito
 export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
   const events: EventRow[] = [];
@@ -51,6 +55,23 @@ export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
       events.push({ id: `hitos-${r.id}`, date, time: r.time || "", module: "Hito", moduleKey: "hitos", title: r.title || r.spectacle || "Hito",
         location: [r.venue, r.place].filter(Boolean).join(" · "), action: r.type || "Hito", status: r.status || "", recordId: r.id, kind: "hito", notes: r.notes || "", auto: false, venue: r.venue || "",
         responsable: r.responsable || "", reminder: r.reminder || "", link: r.link || "", assetKey: r.assetKey || "", assetName: r.assetName || "" });
+    }
+  }
+  // Diseño: cada petición con fecha límite y las campañas del año van al calendario principal con el color de su espacio
+  if (can(actor, "diseno", false)) {
+    const ST: Record<string, string> = { pendiente: "pendiente", en_proceso: "en proceso", en_revision: "en revisión", parado: "parado", entregado: "entregado" };
+    for (const r of await listDiseno()) {
+      if (!r.deadline || r.status === "cancelado") continue;
+      events.push({ id: `diseno-${r.id}`, date: r.deadline, module: "Diseño", moduleKey: "diseno", title: r.title, location: [r.company, r.requester ? "pide " + r.requester.charAt(0) + r.requester.slice(1).toLowerCase() : ""].filter(Boolean).join(" · "),
+        action: r.status === "entregado" ? "Diseño entregado" : "Fecha límite de diseño", status: ST[r.status] || r.status, recordId: r.id, kind: "entrega", auto: true, venue: companyVenue(r.company), notes: r.designerNotes || "", link: r.link || "" });
+    }
+    const st = await disenoSettings(), y0 = new Date().getFullYear();
+    for (const y of [y0 - 1, y0, y0 + 1]) for (const c of st.campaigns || []) {
+      const mm = String(c.month).padStart(2, "0"), parts = String(c.dates || "").split("/").map((x) => x.trim()).filter(Boolean);
+      const dated = parts.map((x) => { const m = /^(\d{1,2})\s+(.+)$/.exec(x); return m && +m[1] >= 1 && +m[1] <= 31 ? { day: +m[1], name: m[2] } : null; });
+      const base = { module: "Diseño", moduleKey: "diseno", location: c.company, status: "", recordId: "camp:" + c.id, kind: "campana", auto: true, venue: companyVenue(c.company), notes: c.creative || "" };
+      if (parts.length && dated.every(Boolean)) dated.forEach((d, i) => events.push({ ...base, id: `dscamp-${c.id}-${y}-${i}`, date: `${y}-${mm}-${String(d!.day).padStart(2, "0")}`, title: d!.name + (c.creative ? " · " + c.creative : ""), action: "Campaña" }));
+      else events.push({ ...base, id: `dscamp-${c.id}-${y}`, date: `${y}-${mm}-01`, title: (c.dates || c.creative) + (c.dates && c.creative ? " · " + c.creative : ""), action: "Campaña del mes" });
     }
   }
   events.sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || "") || a.module.localeCompare(b.module));
