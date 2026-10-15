@@ -4,6 +4,8 @@ import { budgetAccess } from "./_lib/budget.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { envVar } from "./_lib/mailer.ts";
+import { controlStore } from "./_lib/store.ts";
+import { SEED, SEED_VERSION } from "./_lib/diseno-seed.ts";
 import { clean, listDiseno, getDiseno, putDiseno, getSettings, saveSettings, OPEN, PIECE_TYPES } from "./_lib/diseno.ts";
 
 // /api/diseno · peticiones de diseño
@@ -98,6 +100,21 @@ async function notify(body: any, actor: any) {
   }
   return { results: out, live: settings.mailLive };
 }
+
+// La primera vez que se abre Diseño se vuelca la hoja entera (diseno-seed.ts). Solo una vez: queda apuntado en
+// diseno_seed. No duplica lo que ya esté (mismo título, quién pide, fecha de solicitud y fecha límite).
+async function loadSeed(actor: any) {
+  const st = controlStore();
+  if ((await st.get("diseno_seed", { type: "json" }) as any)?.version === SEED_VERSION) return;
+  await st.setJSON("diseno_seed", { version: SEED_VERSION, at: new Date().toISOString(), by: actor.email });
+  const k = (r: any) => [r.title, r.requester, r.requestDate, r.deadline].map((x) => String(x || "").toLowerCase().replace(/\s+/g, " ").trim()).join("|");
+  const existing = new Set((await listDiseno(true)).map(k)), now = new Date().toISOString();
+  const todo = SEED.map((b) => clean(b)).filter((r: any) => r.title && !existing.has(k(r)));
+  let i = 0, added = 0;
+  await Promise.all(Array.from({ length: 12 }, async () => { while (i < todo.length) { const r = todo[i++], id = crypto.randomUUID();
+    await putDiseno(id, { id, status: "pendiente", progress: 0, ...r, imported: true, statusChangedAt: now, createdAt: now, updatedAt: now, createdBy: "hoja", updatedBy: "hoja", deletedAt: null }); added++; } }));
+  await appendAudit({ actor, module: "diseno", elementId: "importacion", action: "create", note: `Volcado de la hoja: ${added} peticiones` }).catch(() => null);
+}
 const key = (r: any) => [r.title, r.requester, r.requestDate].map((x) => String(x || "").toLowerCase().replace(/\s+/g, " ").trim()).join("|");
 
 export default async (req: Request) => {
@@ -107,6 +124,7 @@ export default async (req: Request) => {
   const isBoss = (await budgetAccess(req).catch(() => ({ status: "forbidden" }))).status === "ok";
 
   if (req.method === "GET") {
+    await loadSeed(actor);
     const [rows, settings] = await Promise.all([listDiseno(), getSettings()]);
     const me = settings.people.find((p) => p.email && p.email === actor.email.toLowerCase())?.name || "";
     return json({ rows, settings, pieceTypes: PIECE_TYPES, me, canSettings: isBoss, today });
