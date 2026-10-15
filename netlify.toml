@@ -5,3 +5,9 @@
 
 [functions]
   directory = "netlify/functions"
+
+# Entrada directa para proveedores: abre su portal (y nada más)
+[[redirects]]
+  from = "/proveedores"
+  to = "/#proveedor"
+  status = 302

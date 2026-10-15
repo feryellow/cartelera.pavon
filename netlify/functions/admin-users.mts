@@ -3,7 +3,7 @@ import { admin, requestPasswordRecovery } from "@netlify/identity";
 import { requireAccess } from "./_lib/auth.ts";
 import { controlStore } from "./_lib/store.ts";
 import { appendAudit } from "./_lib/audit.ts";
-import { providerUsers, setProviderUser, providerById } from "./_lib/providers.ts";
+import { providerUsers, setProviderUser, providerById, displayNames } from "./_lib/providers.ts";
 
 const allowedRoles=["admin","gestion","carteleria","consulta","proveedor","diseno"];
 
@@ -15,8 +15,8 @@ export default async(req:Request)=>{
 
   if(req.method==="GET"){
     try{
-      const users=await admin.listUsers(), pu=await providerUsers();
-      return Response.json({users:users.map((u:any)=>({id:u.id,email:u.email,name:u.name||u.userMetadata?.full_name||"",roles:Array.isArray(u.appMetadata?.roles)?u.appMetadata.roles:(u.roles||[]),provider:pu[String(u.email||"").toLowerCase()]||"",disabled:disabled!.includes(u.id)}))});
+      const users=await admin.listUsers(), pu=await providerUsers(), dn=await displayNames();
+      return Response.json({users:users.map((u:any)=>({id:u.id,email:u.email,name:u.name||u.userMetadata?.full_name||"",roles:Array.isArray(u.appMetadata?.roles)?u.appMetadata.roles:(u.roles||[]),provider:pu[String(u.email||"").toLowerCase()]||"",displayName:dn[String(u.email||"").toLowerCase()]||"",disabled:disabled!.includes(u.id)}))});
     }catch(e:any){return Response.json({error:e?.message||"Identity no está habilitado"},{status:503});}
   }
 

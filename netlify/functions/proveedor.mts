@@ -5,7 +5,7 @@ import { appendAudit } from "./_lib/audit.ts";
 import { putRecord, getRecord, type RecordModule } from "./_lib/records.ts";
 import { notifyEmail } from "./_lib/notify.ts";
 import { madridToday } from "./_lib/dates.ts";
-import { PROVIDERS, providerById, providerUsers, providerItems, saveRequest, listRequests, type Provider } from "./_lib/providers.ts";
+import { PROVIDERS, providerById, providerUsers, providerItems, saveRequest, listRequests, displayNames, setDisplayName, type Provider } from "./_lib/providers.ts";
 
 // Portal de proveedores.
 // GET            → el proveedor ve sus piezas (o un admin/gestión con ?p=<id> ve lo mismo que vería el proveedor)
@@ -42,7 +42,22 @@ export default async (req: Request) => {
     if (!p) return Response.json({ error: "Tu cuenta todavía no tiene un proveedor asignado. Escribe a fernando@yellowmedia.es." }, { status: 403 });
     const { months, items } = await providerItems(p, origin, today);
     const mine = (await listRequests()).filter((r) => r.provider === p!.id).map(({ itemId, createdAt }) => ({ itemId, createdAt }));
-    return Response.json({ provider: { id: p.id, name: p.name, kind: p.kind }, today, months, items, requests: mine, preview: !isProv }, { headers: { "cache-control": "no-store" } });
+    // Saludo: el nombre que ha puesto administración; si no hay, el de la cuenta. En vista previa, el de la primera cuenta del proveedor.
+    const names = await displayNames(), pu = await providerUsers();
+    const helloEmail = isProv ? actor.email.toLowerCase() : Object.keys(pu).find((e) => pu[e] === p!.id) || "";
+    const hello = names[helloEmail] || (isProv ? String((actor as any).name || "").trim().split(/\s+/)[0] : "");
+    return Response.json({ provider: { id: p.id, name: p.name, kind: p.kind }, today, months, items, requests: mine, preview: !isProv, hello, helloEmail }, { headers: { "cache-control": "no-store" } });
+  }
+
+  // Administración cambia el nombre del saludo de una cuenta: PUT {email, name}
+  if (req.method === "PUT") {
+    if (!actor.roles.includes("admin")) return Response.json({ error: "Solo administración" }, { status: 403 });
+    let body: any = {}; try { body = await req.json(); } catch {}
+    const email = String(body?.email || "").trim().toLowerCase();
+    if (!email.includes("@")) return Response.json({ error: "Falta la cuenta" }, { status: 400 });
+    await setDisplayName(email, String(body?.name || ""));
+    await appendAudit({ actor, module: "admin", elementId: email, action: "display_name", note: String(body?.name || "") });
+    return Response.json({ ok: true });
   }
 
   if (req.method === "POST") {

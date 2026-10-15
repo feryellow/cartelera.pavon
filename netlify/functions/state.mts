@@ -16,8 +16,10 @@ export default async (req: Request, _context: Context) => {
   const store = getPavonStore();
 
   if (req.method === "GET") {
-    const saved = await store.get("state", { type: "json" });
     const actor = await resolveActor(req);
+    // Sin sesión no se enseña nada de la cartelería
+    if (!actor) return json({ state: { slots: {}, schedule: {}, updatedAt: null }, publicEdit: false, authenticated: false, actor: null, requireKey: Boolean(Netlify.env.get("PAVON_EDIT_KEY")) });
+    const saved = await store.get("state", { type: "json" });
     // Un proveedor solo ve su portal: tampoco el estado de la cartelería
     if (actor && actor.roles.includes("proveedor") && !actor.roles.some((r) => r === "admin" || r === "gestion" || r === "carteleria")) return json({ error: "Forbidden" }, 403);
     return json({

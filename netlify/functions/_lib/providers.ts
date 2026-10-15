@@ -27,6 +27,17 @@ export async function setProviderUser(email: string, id: string) {
   await controlStore().setJSON("provider_users", m);
 }
 
+// Nombre con el que se saluda a cada cuenta en el portal («Hola, Marta»). Lo cambia administración.
+export async function displayNames(): Promise<Record<string, string>> {
+  const v = await controlStore().get("display_names", { type: "json" }) as Record<string, string> | null;
+  return v && typeof v === "object" ? v : {};
+}
+export async function setDisplayName(email: string, name: string) {
+  const m = await displayNames(), e = email.trim().toLowerCase(), n = name.trim().slice(0, 40);
+  if (n) m[e] = n; else delete m[e];
+  await controlStore().setJSON("display_names", m);
+}
+
 const D = (s: string) => new Date(s + "T12:00:00Z");
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (s: string, k: number) => { const d = D(s); d.setUTCDate(d.getUTCDate() + k); return iso(d); };

@@ -33,6 +33,7 @@ export async function newsletterImages(issues: Issue[], budgetMs = 9000) {
   const t0 = Date.now(), cids = new Map<string, string>(), attachments: { filename: string; content: string; content_id: string; content_type: string }[] = [];
   for (const i of issues.slice(0, 24)) {
     if (Date.now() - t0 > budgetMs) break;
+    if (i.logo) continue; // el logo del proveedor va como imagen alojada, no incrustada
     const ref: ImgRef | null = i.thumbnail ? { kind: i.thumbnail.kind, key: i.thumbnail.key } : i.fallback ? { kind: "static", key: i.fallback } : null;
     if (!ref) continue;
     const k = ref.kind + ":" + ref.key;
@@ -48,8 +49,10 @@ export async function newsletterImages(issues: Issue[], budgetMs = 9000) {
   return attachments;
 }
 
-function row(i: Issue, appUrl: string, first: boolean) {
-  const img = (i as any).cid ? `<td width="86" valign="top" style="padding:0 14px 0 0;"><img src="cid:${e((i as any).cid)}" width="72" height="96" alt="" style="display:block;width:72px;height:96px;border:0;background:#efede8;"></td>` : "";
+function row(i: Issue, appUrl: string, first: boolean, base = appUrl) {
+  const solid = (bg: string) => bg.startsWith("linear") ? (bg.match(/#[0-9a-f]{6}/i)?.[0] || "#652b96") : bg;
+  if (!i.logo && !(i as any).cid) i = { ...i, logo: { src: "/yellow-app-icon-180.png", bg: "#FFD400" } };
+  const img = i.logo ? `<td width="86" valign="top" style="padding:14px 14px 0 0;"><table role="presentation" width="72" cellpadding="0" cellspacing="0"><tr><td width="72" height="72" align="center" valign="middle" bgcolor="${e(solid(i.logo.bg))}" style="width:72px;height:72px;background:${e(i.logo.bg)};border:1px solid #e4e1d8;"><img src="${e(base + i.logo.src)}" width="56" alt="" style="display:block;width:56px;max-height:56px;height:auto;border:0;"></td></tr></table></td>` : (i as any).cid ? `<td width="86" valign="top" style="padding:0 14px 0 0;"><img src="cid:${e((i as any).cid)}" width="72" height="96" alt="" style="display:block;width:72px;height:96px;border:0;background:#efede8;"></td>` : "";
   const link = appUrl + "/" + (i.link || "");
   return `<tr><td class="ny-pad" style="padding:${first ? "16px" : "0"} 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:${first ? "0" : "1px solid #e4e1d8"};"><tr>
@@ -104,7 +107,7 @@ export function renderNewsletter(r: EngineResult, o: { appUrl: string; assetBase
   ${bySection.map((s) => `<tr><td class="ny-pad" style="padding:26px 32px 0;font-family:${FONT};">
     <div style="font-size:12px;font-weight:800;letter-spacing:.06em;color:#111111;">${e(s.name.toUpperCase())} · ${s.count}</div>
     <div style="height:2px;background:${Y};margin-top:6px;"></div></td></tr>
-    ${s.items.map((i, k) => row(i, app, k === 0)).join("")}`).join("")}
+    ${s.items.map((i, k) => row(i, app, k === 0, base)).join("")}`).join("")}
   <tr><td class="ny-pad" align="center" style="padding:30px 32px 0;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${Y};"><a href="${e(app)}/" style="display:inline-block;padding:12px 26px;font-family:${FONT};font-size:13px;font-weight:800;color:#111111;text-decoration:none;">Abrir Yellow Control</a></td></tr></table>
   </td></tr>
