@@ -3,7 +3,8 @@ import { requireAccess } from "./_lib/auth.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { monthSummary } from "./_lib/monthly.ts";
 import { buildMonthlyMail, warmMonthlyThumbs } from "./_lib/monthly-mail.ts";
-import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
+import {mailRecipients} from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { getContacts } from "./_lib/contacts.ts";
 
@@ -30,7 +31,7 @@ export default async (req: Request) => {
     const real = extra.length > 0;
     const intro = String(body?.intro || "").slice(0, 2000);
     const mail = await buildMonthlyMail(s, { appUrl: origin, test: !real, devRecipient: rcp.live || real ? "" : rcp.to[0], intro });
-    const r: any = await sendPavonMail({ subject: `${real ? "" : "[Prueba] "}Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments, extra });
+    const r: any = await notifyEmail({ kind: "resumen mensual",  subject: `${real ? "" : "[Prueba] "}Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments, extra });
     await appendAudit({ actor: auth.actor!, module: "avisos", elementId: `monthly-${month}`, action: r.sent ? "email_sent" : "email_pending", note: real ? `Resumen mensual enviado también a ${extra.join(", ")}` : "Resumen mensual (prueba)" });
     return Response.json({ sent: !!r.sent, to: r.to || [], bcc: r.bcc || [], reason: r.sent ? "" : r.reason || "" });
   }

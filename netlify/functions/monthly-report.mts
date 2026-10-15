@@ -3,7 +3,8 @@ import { notificationStore } from "./_lib/store.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { monthSummary, previousMonth } from "./_lib/monthly.ts";
 import { buildMonthlyMail, warmMonthlyThumbs } from "./_lib/monthly-mail.ts";
-import { sendPavonMail, mailRecipients } from "./_lib/mailer.ts";
+import {mailRecipients} from "./_lib/mailer.ts";
+import { notifyEmail } from "./_lib/notify.ts";
 import { madridToday, madridHour } from "./_lib/dates.ts";
 
 // Día 1 de cada mes a las 9:00 (hora de Madrid): correo con toda la publicidad del mes anterior.
@@ -19,7 +20,7 @@ export default async () => {
   const s = await monthSummary(month, appUrl), rcp = mailRecipients();
   await warmMonthlyThumbs(s, 15000);
   const mail = await buildMonthlyMail(s, { appUrl, devRecipient: rcp.live ? "" : rcp.to[0] });
-  const r: any = await sendPavonMail({ subject: `Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments });
+  const r: any = await notifyEmail({ kind: "resumen mensual",  subject: `Resumen de publicidad · ${s.label}`, html: mail.html, attachments: mail.attachments });
   await ns.setJSON(key, { sent: !!r.sent, at: new Date().toISOString(), id: r.id || null });
   await appendAudit({ actor: { id: "system", email: "Yellow Control" } as any, module: "avisos", elementId: key, action: r.sent ? "email_sent" : "email_pending", note: "Resumen mensual" });
   console.log(JSON.stringify({ month, sent: !!r.sent }));

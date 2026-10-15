@@ -33,7 +33,7 @@ export default async (req: Request) => {
     else if (sc.type === "record" && typeof sc.key === "string" && typeof sc.store === "string") scope = { type: "record", store: sc.store, key: sc.key };
     else return json({ error: "Indica qué restaurar" }, 400);
     const r = await restore(id, scope, { dryRun: body.confirm !== true, version });
-    if (r.applied) await appendAudit({ actor: auth.actor!, module: "backup", elementId: id, action: "update", note: `Restauración (${scope.type}${scope.type === "module" ? " " + scope.module : scope.type === "record" ? " " + scope.key : ""}): ${r.add} añadidos, ${r.overwrite} sobrescritos. Copia previa ${r.undoSnapshot}` });
+    if (r.applied) await appendAudit({ actor: auth.actor!, module: "backup", elementId: id, action: "update", note: `Restauración (${scope.type}${scope.type === "module" ? " " + scope.module : scope.type === "record" ? " " + scope.key : ""}): ${r.add} añadidos, ${r.overwrite} sobrescritos. Copia previa ${(r as any).undoSnapshot}` });
     return json(r);
   }
   return json({ error: "Acción no válida" }, 400);

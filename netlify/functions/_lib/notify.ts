@@ -25,9 +25,10 @@ export async function adminAlert(reason: string, text: string) {
   await sendPush({ only: [ADMIN] }, { title: "Yellow Control · revisar", body: text.slice(0, 160), url: "/#salud", tag: "salud-" + reason }, "manual").catch(() => null);
 }
 
-export async function notifyEmail(input: { kind: string; subject: string; html: string; attachments?: any[] }) {
+export async function notifyEmail(input: { kind: string; subject: string; html: string; attachments?: any[]; to?: string[]; cc?: string[]; extra?: string[]; replyTo?: string }) {
   try {
-    const r: any = await sendPavonMail({ subject: input.subject, html: input.html, attachments: input.attachments });
+    const { kind, ...mail } = input;
+    const r: any = await sendPavonMail(mail);
     await recordHealth("email", !!r.sent, r.sent ? `${input.kind}: enviado` : `${input.kind}: ${r.reason || "no enviado"}`);
     if (!r.sent) await adminAlert("email", `No se ha podido enviar «${input.subject}». Motivo: ${String(r.reason || "desconocido").slice(0, 80)}`);
     return r;
