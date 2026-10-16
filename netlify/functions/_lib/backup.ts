@@ -19,7 +19,7 @@ export const STORES: StoreDef[] = [
 // Módulos que se pueden restaurar por separado (almacén + prefijos de clave)
 export const MODULES: { id: string; label: string; store: string; prefixes: string[] }[] = [
   { id: "carteleria", label: "Cartelería", store: "carteleria", prefixes: ["state", "image_", "imagemeta_"] },
-  { id: "radio", label: "Radio", store: "control", prefixes: ["record_radio_"] },
+  { id: "radio", label: "Radio", store: "control", prefixes: ["record_radio_", "parte_"] },
   { id: "taxis", label: "Taxis", store: "control", prefixes: ["record_taxis_"] },
   { id: "intercambiadores", label: "Intercambiadores", store: "control", prefixes: ["record_intercambiadores_"] },
   { id: "hometicket", label: "Home Ticket", store: "control", prefixes: ["record_hometicket_"] },

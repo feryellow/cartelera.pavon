@@ -120,3 +120,43 @@ export function renderNewsletter(r: EngineResult, o: { appUrl: string; assetBase
 </td></tr></table>
 </body></html>`;
 }
+
+// Plantilla de correo de Yellow Control (la misma del correo diario): cabecera Somos Yellow + YELLOW CONTROL,
+// línea amarilla, título grande, cuerpo libre, botón amarillo y pie negro.
+export function yellowMail(o: { base: string; kicker: string; title: string; preheader?: string; body: string; cta?: { label: string; url: string }; footer?: string; test?: boolean }) {
+  const base = o.base.replace(/\/$/, "");
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<title>Yellow Control · ${e(o.title)}</title>
+<style>
+  .ny-container{width:600px;max-width:600px}
+  @media only screen and (max-width:640px){.ny-container{width:100%!important;max-width:100%!important}.ny-pad{padding-left:18px!important;padding-right:18px!important}.ny-title{font-size:26px!important;line-height:30px!important}}
+</style></head>
+<body style="margin:0;padding:0;background:#ecebe6;font-family:${FONT};">
+${o.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(o.preheader)}</div>` : ""}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ecebe6;padding:28px 0;"><tr><td align="center">
+<table role="presentation" width="600" class="ny-container" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td class="ny-pad" style="padding:22px 32px 14px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td valign="middle"><img src="${e(base)}/assets/mail/yellow-control.png" width="180" height="32" alt="Yellow Control" style="display:block;border:0;"></td>
+      <td valign="middle" align="right" style="font-family:${FONT};font-size:10px;font-weight:800;letter-spacing:.08em;color:#111111;">${o.test ? "PRUEBA" : ""}</td>
+    </tr></table>
+  </td></tr>
+  <tr><td class="ny-pad" style="padding:0 32px;"><div style="height:4px;background:${Y};"></div></td></tr>
+  <tr><td class="ny-pad" style="padding:20px 32px 0;font-family:${FONT};">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#6b665d;">${e(o.kicker)}</div>
+    <div class="ny-title" style="font-size:32px;line-height:40px;font-weight:800;color:#111111;margin:6px 0 8px;"><span style="border-bottom:6px solid ${Y};padding-bottom:0;">${e(o.title)}</span></div>
+  </td></tr>
+  <tr><td class="ny-pad" style="padding:16px 32px 0;font-family:${FONT};font-size:14px;line-height:22px;color:#111111;">${o.body}</td></tr>
+  ${o.cta ? `<tr><td class="ny-pad" align="center" style="padding:26px 32px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${Y};"><a href="${e(o.cta.url)}" style="display:inline-block;padding:12px 26px;font-family:${FONT};font-size:13px;font-weight:800;color:#111111;text-decoration:none;">${e(o.cta.label)}</a></td></tr></table>
+  </td></tr>` : ""}
+  <tr><td style="padding:30px 0 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111111;"><tr><td class="ny-pad" align="center" style="padding:22px 32px;font-family:${FONT};">
+    <div style="font-size:14px;font-weight:800;color:${Y};">Lo hacemos y ya vemos.</div>
+    ${o.footer ? `<div style="font-size:11px;color:#999999;margin-top:4px;">${e(o.footer)}</div>` : ""}
+  </td></tr></table></td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}

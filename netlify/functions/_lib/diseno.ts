@@ -4,7 +4,7 @@ import { controlStore, getManyJSON } from "./store.ts";
 export const STATUSES = ["pendiente", "en_proceso", "en_revision", "parado", "entregado", "cancelado"] as const;
 export const OPEN = ["pendiente", "en_proceso", "en_revision", "parado"];
 export const PIECE_TYPES = ["Cartel", "Lona / gran formato", "Flyer / folleto / díptico", "Redes sociales", "Adaptaciones de formatos", "Newsletter / email", "Banner web", "Pantallas", "Señalética / vinilo", "Logo / identidad", "Photocall", "Otro"];
-const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt", "cancelReason"];
+const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt", "cancelReason", "channel", "deliveryLink", "previewKey", "previewName"];
 
 export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; campaigns: { id: string; month: number; dates: string; creative: string; company: string }[]; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
 const DEFAULTS: DisenoSettings = {
@@ -54,6 +54,8 @@ export async function saveSettings(s: any) {
   return clean;
 }
 
+// Por dónde llegó la petición: desde la app o por otra vía que la diseñadora apunta después
+export const CHANNELS = ["app", "correo", "whatsapp", "telefono", "persona"];
 export function clean(input: any) {
   const out: Record<string, any> = {};
   for (const k of FIELDS) {
@@ -63,6 +65,9 @@ export function clean(input: any) {
     if (k === "urgent") { out.urgent = v === true || v === "true" || v === 1; continue; }
     if (k === "status") { if ((STATUSES as readonly string[]).includes(v)) out.status = v; continue; }
     if (k === "requestDate" || k === "deadline" || k === "deliveredAt") { out[k] = /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? String(v) : ""; continue; }
+    if (k === "previewKey") { out.previewKey = /^[\w-]{1,160}$/.test(String(v)) ? String(v) : ""; continue; }
+    if (k === "deliveryLink") { const u = String(v).trim(); out.deliveryLink = /^https?:\/\//i.test(u) ? u.slice(0, 1500) : ""; continue; }
+    if (k === "channel") { if (CHANNELS.includes(String(v))) out.channel = String(v); continue; }
     if (typeof v === "string") out[k] = v.trim().slice(0, k === "notes" || k === "designerNotes" || k === "title" ? 3000 : 300);
   }
   if (out.requester) out.requester = String(out.requester).toUpperCase();
@@ -77,3 +82,20 @@ export async function listDiseno(includeDeleted = false) {
 }
 export async function getDiseno(id: string) { return controlStore().get(`diseno_r_${id}`, { type: "json" }) as Promise<any | null>; }
 export async function putDiseno(id: string, row: any) { await controlStore().setJSON(`diseno_r_${id}`, row); }
+
+// Lo que le falta a una petición para que diseño pueda empezar sin preguntar.
+// Se calcula siempre a partir de lo que hay escrito; desaparece en cuanto se completa.
+export function missingInfo(r: any, today: string): { k: string; txt: string }[] {
+  const out: { k: string; txt: string }[] = [], text = `${r.title || ""} ${r.notes || ""}`, notes = String(r.notes || "");
+  if (!r.pieceType) out.push({ k: "tipo", txt: "Tipo de pieza: cartel, redes, newsletter, lona…" });
+  if (!r.link) out.push({ k: "material", txt: "Enlace al material (Dropbox o Drive) con el cartel aprobado, logos y fotos, que abra sin pedir permiso" });
+  if (!/\d+\s*[x×]\s*\d+|\d+\s*(px|cm|mm)\b|\b(1:1|9:16|4:5|16:9|a[3-6]|din\s?a[3-6])\b/i.test(text)) out.push({ k: "medidas", txt: "Medidas y formato (por ejemplo, 1080 × 1920 px o A4)" });
+  if (notes.trim().length < 25) out.push({ k: "textos", txt: "Textos definitivos y referencias, en «Notas»" });
+  if (!/aprueb|aprobar|revis|valid|visto bueno|\bok\b/i.test(notes)) out.push({ k: "aprueba", txt: "Quién aprueba el resultado" });
+  if (r.deadline && r.deadline >= today) {
+    const d0 = new Date(today + "T12:00:00Z"), d1 = new Date(r.deadline + "T12:00:00Z"); let n = 0;
+    for (const d = new Date(d0); d < d1; d.setUTCDate(d.getUTCDate() + 1)) { const w = d.getUTCDay(); if (w !== 0 && w !== 6) n++; }
+    if (n < 2) out.push({ k: "plazo", txt: "El plazo es de menos de dos días laborables: confirma con Cristina que llega" });
+  }
+  return out;
+}

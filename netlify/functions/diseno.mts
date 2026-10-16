@@ -4,9 +4,11 @@ import { budgetAccess } from "./_lib/budget.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { madridToday } from "./_lib/dates.ts";
 import { envVar } from "./_lib/mailer.ts";
+import { mediaUrl } from "./_lib/media.ts";
+import { yellowMail } from "./_lib/newsletter.ts";
 import { controlStore } from "./_lib/store.ts";
 import { SEED, SEED_VERSION } from "./_lib/diseno-seed.ts";
-import { clean, listDiseno, getDiseno, putDiseno, getSettings, saveSettings, OPEN, PIECE_TYPES } from "./_lib/diseno.ts";
+import { missingInfo, clean, listDiseno, getDiseno, putDiseno, getSettings, saveSettings, OPEN, PIECE_TYPES } from "./_lib/diseno.ts";
 
 // /api/diseno · peticiones de diseño
 //   GET                      → peticiones, ajustes y tipos de pieza
@@ -22,7 +24,7 @@ import { clean, listDiseno, getDiseno, putDiseno, getSettings, saveSettings, OPE
 const noStore = { "cache-control": "no-store, private" };
 const json = (d: unknown, status = 200) => Response.json(d, { status, headers: noStore });
 // Campos que quedan en el historial de cada petición (quién, cuándo, de qué a qué). Se guardan los 40 últimos.
-const TRACK = ["title", "requester", "company", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "cancelReason"];
+const TRACK = ["title", "requester", "company", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "cancelReason", "deliveryLink", "previewKey"];
 function applyUpdate(before: any, r: any, actor: any, today: string, reason = "", undo = false) {
   const now = new Date().toISOString();
   const row: any = { ...before, ...r, id: before.id, updatedAt: now, updatedBy: actor.email };
@@ -41,6 +43,39 @@ function applyUpdate(before: any, r: any, actor: any, today: string, reason = ""
 // Remite avisos@ (PAVON_EMAIL_FROM); responder llega a quien avisa (reply-to). Mientras «mailLive» esté
 // apagado en Ajustes, todo va solo a DEV_TO y el asunto lo indica.
 const DEV_TO = "fernando@yellowmedia.es";
+// Vista previa: enlace firmado a la imagen reducida (se ve en la app y en el correo sin iniciar sesión)
+let ORIGIN = "";
+let TODAY = "";
+const withPreview = (r: any) => {
+  if (!r) return r;
+  const o: any = r.previewKey ? { ...r, previewUrl: mediaUrl(ORIGIN, r.previewKey, "diseno") } : { ...r };
+  if (OPEN.includes(r.status) && !r.imported) { const m = missingInfo(r, TODAY || r.requestDate || ""); if (m.length) o.missing = m; }
+  return o;
+};
+// Correo a quien pide cuando a su petición le falta información (solo al crearla desde la app)
+async function mailMissing(row: any, items: { txt: string }[], actor: any) {
+  const settings = await getSettings(), email = settings.people.find((p: any) => p.name === row.requester)?.email || "";
+  if (!email) return { sent: false, reason: "Falta su correo en Ajustes" };
+  const apiKey = envVar("RESEND_API_KEY"), from = envVar("PAVON_EMAIL_FROM");
+  if (!apiKey || !from) return { sent: false, reason: "El correo no está configurado" };
+  const live = settings.mailLive, link = `${ORIGIN}/#diseno?edit=${row.id}`;
+  const F = "'Poppins', Arial, Helvetica, sans-serif";
+  const body = `<p style="margin:0 0 14px;">Hola, ${h(nice(row.requester))}. Tu petición ha entrado en Diseño, pero para que Cristina pueda empezar sin tener que preguntarte, falta esto:</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-left:4px solid #FFD400;background:#f7f6f2;"><tr><td style="padding:14px 16px;font-family:${F};">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#6b665d;text-transform:uppercase;">${h(row.company)}${row.pieceType ? " · " + h(row.pieceType) : ""}</div>
+    <div style="font-size:17px;font-weight:800;color:#111111;margin:4px 0 8px;">${h(row.title)}</div>
+    <span style="display:inline-block;background:#FFD400;color:#111111;font-size:11px;font-weight:800;padding:3px 7px;">PARA EL ${h(esDate(row.deadline))}</span>
+  </td></tr></table>
+  <div style="font-size:12px;font-weight:800;letter-spacing:.06em;color:#111111;margin-top:22px;">FALTA · ${items.length}</div>
+  <div style="height:2px;background:#FFD400;margin:6px 0 4px;"></div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items.map((i) => `<tr><td valign="top" style="padding:10px 10px 10px 0;width:14px;font-family:${F};font-size:14px;font-weight:800;color:#c0392b;">✗</td><td style="padding:10px 0;border-bottom:1px solid #ecebe6;font-family:${F};font-size:14px;line-height:20px;color:#111111;">${h(i.txt)}</td></tr>`).join("")}</table>
+  <p style="margin:16px 0 0;font-size:12px;color:#6b665d;">Se completa en la misma petición, con el botón Editar. No hace falta abrir otra.</p>`;
+  const html = yellowMail({ base: ORIGIN, kicker: "DISEÑO · FALTA INFORMACIÓN", title: "Completa tu petición", preheader: `${String(row.title).slice(0, 60)}: faltan ${items.length} datos para empezar`, body, cta: { label: "Completar la petición", url: link }, footer: "Aviso automático: no respondas a este correo.", test: !live });
+  const subject = `Falta información en tu petición · ${String(row.title).slice(0, 70)}`;
+  const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+    body: JSON.stringify({ from, to: live ? [email] : [DEV_TO], reply_to: actor.email, subject: live ? subject : `[PRUEBA · iría a ${email}] ${subject}`, html }) }).catch(() => null);
+  return { sent: !!r?.ok, live };
+}
 const STATUS_TXT: Record<string, string> = { pendiente: "Pendiente", en_proceso: "En proceso", en_revision: "En revisión", parado: "Parado", entregado: "Entregado", cancelado: "Cancelada" };
 const h = (v: any) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]!));
 const esDate = (iso: string) => iso ? iso.slice(8, 10).replace(/^0/, "") + "/" + iso.slice(5, 7).replace(/^0/, "") + "/" + iso.slice(0, 4) : "";
@@ -58,7 +93,9 @@ function mailHtml(o: { to: string; from: string; fromEmail: string; rows: any[];
       ${!done && !cancel ? `<div style="height:6px;background:#efece5;border-radius:6px;margin-top:8px;overflow:hidden"><div style="height:6px;width:${r.progress || 0}%;background:#FFD400"></div></div>` : ""}
       ${cancel && r.cancelReason ? `<div style="font-size:14px;color:#3a372f;margin-top:6px">Motivo: ${h(r.cancelReason)}</div>` : ""}
       ${r.designerNotes ? `<div style="font-size:14px;color:#3a372f;margin-top:6px">Comentario de diseño: ${h(r.designerNotes)}</div>` : ""}
-      ${r.link ? `<div style="margin-top:8px"><a href="${h(r.link)}" style="color:#161616;font-weight:700">Abrir el material</a></div>` : ""}
+      ${r.previewKey ? `<img src="${h(mediaUrl(ORIGIN, r.previewKey, "diseno"))}" alt="Vista previa" width="526" style="display:block;width:100%;max-width:526px;height:auto;border-radius:8px;margin-top:12px;border:1px solid #e7e3d9">` : ""}
+      ${r.deliveryLink ? `<div style="margin-top:12px"><a href="${h(r.deliveryLink)}" style="display:inline-block;background:#FFD400;color:#161616;font-weight:700;font-size:15px;text-decoration:none;padding:11px 18px;border-radius:8px">Descargar los archivos</a></div><div style="font-size:12px;color:#8a857b;margin-top:6px">Los archivos finales no van adjuntos: se descargan desde este enlace.</div>` : ""}
+      ${r.link ? `<div style="margin-top:8px"><a href="${h(r.link)}" style="color:#161616;font-weight:700">Abrir el material de partida</a></div>` : ""}
     </td></tr><tr><td style="height:10px"></td></tr>`;
   };
   return `<div style="background:#f5f3ee;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif">
@@ -119,6 +156,8 @@ const key = (r: any) => [r.title, r.requester, r.requestDate].map((x) => String(
 
 export default async (req: Request) => {
   const url = new URL(req.url), write = req.method !== "GET";
+  ORIGIN = (Netlify.env.get("URL") || url.origin).replace(/\/$/, "");
+  TODAY = madridToday();
   const auth = await requireAccess(req, "diseno", write); if (auth.response) return auth.response;
   const actor = auth.actor!, today = madridToday();
   const isBoss = (await budgetAccess(req).catch(() => ({ status: "forbidden" }))).status === "ok";
@@ -127,7 +166,7 @@ export default async (req: Request) => {
     await loadSeed(actor);
     const [rows, settings] = await Promise.all([listDiseno(), getSettings()]);
     const me = settings.people.find((p) => p.email && p.email === actor.email.toLowerCase())?.name || "";
-    return json({ rows, settings, pieceTypes: PIECE_TYPES, me, canSettings: isBoss, today });
+    return json({ rows: rows.map(withPreview), settings, pieceTypes: PIECE_TYPES, me, canSettings: isBoss, today });
   }
   let body: any = {}; try { body = await req.json(); } catch { if (req.method === "POST" || req.method === "PUT") return json({ error: "Datos no válidos" }, 400); }
 
@@ -179,7 +218,11 @@ export default async (req: Request) => {
     if (row.status === "entregado" && !row.deliveredAt) row.deliveredAt = today;
     await putDiseno(id, row);
     await appendAudit({ actor, module: "diseno", elementId: id, action: "create", after: row }).catch(() => null);
-    return json({ row }, 201);
+    // Si falta información, se avisa por correo a quien la pide (no cuando la apunta diseño en su nombre)
+    const missing = missingInfo(row, today), byDesigner = actor.roles.includes("diseno") && !actor.roles.some((x: string) => x === "admin" || x === "gestion");
+    let mail: any = null;
+    if (missing.length && !byDesigner && (row.channel || "app") === "app") mail = await mailMissing(row, missing, actor).catch(() => null);
+    return json({ row: withPreview(row), missing, missingMail: mail }, 201);
   }
 
   const id = url.searchParams.get("id") || ""; if (!/^[\w-]{8,60}$/.test(id)) return json({ error: "Falta la petición" }, 400);
@@ -194,7 +237,7 @@ export default async (req: Request) => {
     last.undone = true;
     await putDiseno(id, row);
     await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row, note: "Deshacer" }).catch(() => null);
-    return json({ row });
+    return json({ row: withPreview(row) });
   }
   if (req.method === "PUT") {
     const r = clean(body.row || {});
@@ -202,13 +245,13 @@ export default async (req: Request) => {
     const row = applyUpdate(before, r, actor, today, String(body.reason || ""));
     await putDiseno(id, row);
     await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row }).catch(() => null);
-    return json({ row });
+    return json({ row: withPreview(row) });
   }
   if (req.method === "PATCH") {
     const row = { ...before, deletedAt: null, updatedAt: new Date().toISOString(), updatedBy: actor.email };
     await putDiseno(id, row);
     await appendAudit({ actor, module: "diseno", elementId: id, action: "update", before, after: row, note: "Recuperada" }).catch(() => null);
-    return json({ row });
+    return json({ row: withPreview(row) });
   }
   if (req.method === "DELETE") {
     const row = { ...before, deletedAt: new Date().toISOString(), updatedBy: actor.email };

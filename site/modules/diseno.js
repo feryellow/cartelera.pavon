@@ -8,7 +8,9 @@ let api,esc,say,sayUndo,fdate,pageHead,$,$$,roles,state,VENUE_STYLE,loadXLSX,app
 // Los indicadores son del proceso, no de personas.
 const DS_STATUS=[["pendiente","Pendiente"],["en_proceso","En proceso"],["en_revision","En revisión"],["parado","Parado"],["entregado","Entregado"],["cancelado","Cancelado"]];
 const DS_OPEN=["pendiente","en_proceso","en_revision","parado"];
-const dsView={tab:"panel",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
+const DS_CHANNEL=[["app","La ha pedido en Yellow Control"],["correo","Me la han pedido por correo"],["whatsapp","Me la han pedido por WhatsApp"],["telefono","Me la han pedido por teléfono"],["persona","Me la han pedido en persona"]];
+const DS_CH_SHORT={correo:"correo",whatsapp:"WhatsApp",telefono:"teléfono",persona:"en persona"};
+const dsView={tab:"panel",pmode:"mes",pmonth:"",who:"",company:"",state:"abiertas",q:"",alert:"",mine:false};
 let DS=null;
 const dsDays=YCDate.daysBetween;
 const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
@@ -38,7 +40,7 @@ async function diseno(){DS=await api("/api/diseno",{cache:"no-store"});
 function dsRender(){const d=DS,st=d.settings,isDesigner=roles().includes("diseno")&&!roles().some(r=>r==="admin"||r==="gestion");
  if(isDesigner&&!dsView.picked){dsView.picked=1;dsView.tab="avance"}
  const tabs=[["panel","Panel"],["peticiones","Peticiones"],["avance","Actualizar avance"],["campanas","Campañas del año"],["indicadores","Indicadores"]].concat(d.canSettings?[["ajustes","Ajustes e importación"]]:[]);
- app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab==="peticiones"||dsView.tab==="panel"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
+ app.innerHTML=pageHead("Diseño","Peticiones de diseño: qué se pide, para cuándo y en qué punto está",(dsView.tab!=="ajustes"?'<button type="button" class="primary" id="dsNew">+ Nueva petición</button>':''),"/assets/tiles/diseno-banner.webp")+
   '<div class="tv-tabs ds-tabs">'+tabs.map(([k,l])=>'<button type="button" class="tv-tab'+(dsView.tab===k?' on':'')+'" data-dstab="'+k+'">'+l+'</button>').join("")+'</div><div id="dsBody"></div>';
  $$("[data-dstab]").forEach(b=>b.onclick=()=>{dsView.tab=b.dataset.dstab;dsView.picked=1;dsRender()});
  if($("#dsNew"))$("#dsNew").onclick=()=>{if(dsView.tab!=="peticiones"){dsView.tab="peticiones";dsRender()}dsForm(null)};
@@ -65,13 +67,13 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
   '</div></section>'+
   '<p class="muted" style="margin:4px 2px 10px">'+rows.length+' peticiones</p>'+
   (rows.length?'<div class="ds-list">'+rows.map(r=>{const al=per[r.id]||[],left=r.deadline?dsDays(t,r.deadline):null;
-   return '<article class="card ds-item'+(al.includes("vencida")?' late':'')+'" data-dsid="'+r.id+'"><div class="ds-top"><span class="ds-who" style="--c:'+dsColor(st.people,r.requester)+'">'+esc(r.requester||"—")+'</span><span class="ds-co" style="--c:'+dsColor(st.companies,r.company)+'">'+esc(r.company||"—")+'</span>'+(r.pieceType?'<span class="badge">'+esc(r.pieceType)+'</span>':'')+(r.urgent?'<span class="badge late">Urgente</span>':'')+al.filter(k=>k!=="sintipo").map(k=>'<span class="badge '+DS_ALERT[k][1]+'">'+DS_ALERT[k][0]+'</span>').join("")+'</div>'+
-    '<h3>'+esc(r.title)+'</h3>'+
-    '<div class="ds-meta"><button type="button" class="ds-date sm" data-dsdate="requestDate" title="Corregir fecha de solicitud">Pedida '+(r.requestDate?fdate(r.requestDate):"—")+'</button><button type="button" class="ds-date" data-dsdate="deadline" title="Cambiar fecha límite">'+(r.deadline?'Para el '+fdate(r.deadline):'Poner fecha límite')+'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>'+(r.deadline&&DS_OPEN.includes(r.status)?'<span>'+(left<0?'vencida hace '+(-left)+' d':left===0?'vence hoy':'faltan '+left+' d')+'</span>':'')+(r.deliveredAt?'<span>Entregada '+fdate(r.deliveredAt)+'</span>':'')+(r.reopenCount?'<span>Reabierta '+r.reopenCount+'</span>':'')+'</div>'+
+   return '<article class="card ds-item'+(al.includes("vencida")?' late':'')+'" data-dsid="'+r.id+'"><div class="ds-top"><span class="ds-who" style="--c:'+dsColor(st.people,r.requester)+'">'+esc(r.requester||"—")+'</span><span class="ds-co" style="--c:'+dsColor(st.companies,r.company)+'">'+esc(r.company||"—")+'</span>'+(r.pieceType?'<span class="badge">'+esc(r.pieceType)+'</span>':'')+(r.urgent?'<span class="badge late">Urgente</span>':'')+((r.missing||[]).length?'<span class="badge warn" title="'+esc(r.missing.map(m=>m.txt).join(" · "))+'">Falta información ('+r.missing.length+')</span>':'')+al.filter(k=>k!=="sintipo").map(k=>'<span class="badge '+DS_ALERT[k][1]+'">'+DS_ALERT[k][0]+'</span>').join("")+'</div>'+
+    (r.previewUrl?'<a class="ds-thumb" href="'+esc(r.previewUrl)+'" target="_blank" rel="noopener"><img src="'+esc(r.previewUrl)+'" alt="Vista previa" loading="lazy"></a>':'')+    '<h3>'+esc(r.title)+'</h3>'+
+    '<div class="ds-meta"><button type="button" class="ds-date sm" data-dsdate="requestDate" title="Corregir fecha de solicitud">Pedida '+(r.requestDate?fdate(r.requestDate):"—")+'</button><button type="button" class="ds-date" data-dsdate="deadline" title="Cambiar fecha límite">'+(r.deadline?'Para el '+fdate(r.deadline):'Poner fecha límite')+'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>'+(r.deadline&&DS_OPEN.includes(r.status)?'<span>'+(left<0?'vencida hace '+(-left)+' d':left===0?'vence hoy':'faltan '+left+' d')+'</span>':'')+(r.deliveredAt?'<span>Entregada '+fdate(r.deliveredAt)+'</span>':'')+(DS_CH_SHORT[r.channel]?'<span>Llegó por '+DS_CH_SHORT[r.channel]+'</span>':'')+(r.reopenCount?'<span>Reabierta '+r.reopenCount+'</span>':'')+'</div>'+
     (r.status==="cancelado"&&r.cancelReason?'<p class="ds-notes"><b>Cancelada:</b> '+esc(r.cancelReason)+'</p>':'')+(r.designerNotes?'<p class="ds-notes"><b>Comentarios de diseño:</b> '+esc(r.designerNotes)+'</p>':'')+
     '<div class="ds-actions"><select data-dsst="'+r.id+'">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select>'+
     '<select data-dspr="'+r.id+'">'+[0,25,50,75,100].map(p=>'<option value="'+p+'"'+(Number(r.progress||0)===p?' selected':'')+'>'+p+' %</option>').join("")+'</select>'+
-    '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" class="ghost" data-dsnot>Avisar</button><button type="button" class="ghost" data-dscan>'+(DS_OPEN.includes(r.status)?'Cancelar o borrar':'Borrar')+'</button><button type="button" class="ghost" data-dshist>Historial'+((r.history||[]).length?' ('+r.history.length+')':'')+'</button><button type="button" data-dsed="'+r.id+'">Editar</button></div><div class="ds-edit"></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
+    '<div class="ds-bar"><i style="width:'+(r.progress||0)+'%"></i></div>'+(r.deliveryLink?'<a class="btn primary" href="'+esc(r.deliveryLink)+'" target="_blank" rel="noopener">Descargar</a>':'')+(r.link?'<a class="btn" href="'+esc(r.link)+'" target="_blank" rel="noopener">Abrir</a>':'')+'<button type="button" class="ghost" data-dsnot>Avisar</button><button type="button" class="ghost" data-dscan>'+(DS_OPEN.includes(r.status)?'Cancelar o borrar':'Borrar')+'</button><button type="button" class="ghost" data-dshist>Historial'+((r.history||[]).length?' ('+r.history.length+')':'')+'</button><button type="button" data-dsed="'+r.id+'">Editar</button></div><div class="ds-edit"></div></article>'}).join("")+'</div>':'<p class="muted">No hay peticiones con estos filtros.</p>');
  if($("#dsCampGo"))$("#dsCampGo").onclick=()=>{dsView.tab="campanas";dsRender()};
  $$("[data-dsalert]").forEach(b=>b.onclick=()=>{dsView.alert=b.dataset.dsalert;if(dsView.alert)dsView.state="abiertas";dsList(isDesigner)});
  $("#dsState").onchange=e=>{dsView.state=e.target.value;dsList(isDesigner)};$("#dsWho").onchange=e=>{dsView.who=e.target.value;dsList(isDesigner)};$("#dsCo").onchange=e=>{dsView.company=e.target.value;dsList(isDesigner)};
@@ -85,13 +87,19 @@ function dsList(isDesigner){const d=DS,st=d.settings,t=d.today,{per,glob}=dsAler
  $$("[data-dshist]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsHistory(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
  $$("[data-dscan]").forEach(b=>b.onclick=()=>{const c=b.closest("[data-dsid]");dsCancel(c,DS.rows.find(r=>r.id===c.dataset.dsid),isDesigner)});
  $$("[data-dsnot]").forEach(b=>b.onclick=()=>dsNotify([b.closest("[data-dsid]").dataset.dsid]))}
-function dsForm(r,preset){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me||"",status:"pendiente",progress:0,...(preset||{})};
+// Vista previa: se reduce en el navegador a 1600 px de lado (JPG). Nunca se sube el archivo original.
+async function dsShrink(file){const url=URL.createObjectURL(file);try{const img=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ko(new Error("La imagen no es válida."));i.src=url});
+ const k=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+ const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+ return await new Promise(ok=>c.toBlob(ok,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
+function dsForm(r,preset){const d=DS,st=d.settings,isNew=!r,designer=roles().includes("diseno")&&!roles().some(x=>x==="admin"||x==="gestion");r=r||{requester:designer?"":(d.me||""),channel:designer?"correo":"app",status:"pendiente",progress:0,...(preset||{})};
  const people=[...new Set([...st.people.map(p=>p.name),r.requester].filter(Boolean))],companies=[...new Set([...st.companies.map(c=>c.name),r.company].filter(Boolean))];
  const opt=(list,val)=>list.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join("");
  $("#dsBody").innerHTML='<section class="card"><div class="section-title"><div><small class="section-kicker">'+(isNew?"Nueva":"Editar")+'</small><h2>Petición de diseño</h2></div></div><form id="dsF" class="form-grid">'+
-  '<label class="wide">Qué hay que diseñar<textarea name="title" rows="2" required>'+esc(r.title||"")+'</textarea></label>'+
+  ((r.missing||[]).length?'<div class="wide ds-miss"><b>Falta información</b><ul>'+r.missing.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>':'')+'<label class="wide">Qué hay que diseñar<textarea name="title" rows="2" required>'+esc(r.title||"")+'</textarea></label>'+
   '<label>Quién lo pide<select name="requester" required><option value="">Elige…</option>'+opt(people,r.requester)+'</select></label>'+
   '<label>Empresa o espacio<select name="company" required><option value="">Elige…</option>'+opt(companies,r.company)+'</select></label>'+
+  '<label>Cómo llegó<select name="channel">'+DS_CHANNEL.map(([v,l])=>'<option value="'+v+'"'+((r.channel||"app")===v?' selected':'')+'>'+l+'</option>').join("")+'</select></label>'+
   '<label>Tipo de pieza<select name="pieceType"><option value="">Elige…</option>'+opt(d.pieceTypes,r.pieceType)+'</select></label>'+
   '<label>Fecha límite<input type="date" name="deadline" value="'+esc(r.deadline||"")+'" required></label>'+
   '<label>Situación<select name="status">'+DS_STATUS.map(([v,l])=>'<option value="'+v+'"'+(r.status===v?' selected':'')+'>'+l+'</option>').join("")+'</select></label>'+
@@ -99,15 +107,27 @@ function dsForm(r,preset){const d=DS,st=d.settings,isNew=!r;r=r||{requester:d.me
   '<label class="ds-urg"><input type="checkbox" name="urgent"'+(r.urgent?' checked':'')+'> Urgente</label>'+
   '<label class="wide">Enlace al material (Dropbox, Drive…)<input name="link" type="url" value="'+esc(r.link||"")+'" placeholder="https://"></label>'+
   '<label class="wide">Comentarios de diseño<textarea name="designerNotes" rows="2">'+esc(r.designerNotes||"")+'</textarea></label>'+
+  '<fieldset class="wide ds-deliv"><legend>Entrega · la rellena diseño</legend><p class="muted">Los archivos finales pesan mucho: no se suben a la app. Aquí van solo una imagen de vista previa y el enlace para descargarlos.</p><div class="form-grid">'+
+  '<label class="wide">Enlace de descarga (WeTransfer, Dropbox, Drive…)<input name="deliveryLink" type="url" value="'+esc(r.deliveryLink||"")+'" placeholder="https://"></label>'+
+  '<label class="wide">Vista previa (una imagen JPG o PNG; se reduce sola)<input name="preview" type="file" accept="image/*"></label>'+
+  (r.previewUrl?'<div class="wide ds-prev-now"><img src="'+esc(r.previewUrl)+'" alt=""><label><input type="checkbox" name="previewDel"> Quitar la vista previa</label></div>':'')+
+  '</div></fieldset>'+
   '<label class="wide">Notas de quien pide (medidas, textos, referencias)<textarea name="notes" rows="3">'+esc(r.notes||"")+'</textarea></label>'+
   '<div class="wide actions-row"><button type="submit" class="primary">'+(isNew?"Enviar petición":"Guardar")+'</button><button type="button" id="dsBack">Volver</button>'+(isNew?'':'<button type="button" class="danger" id="dsDel">Quitar</button>')+'</div></form>'+
   '<p class="muted" style="margin-top:10px">Sin fecha límite no entra: así se puede avisar y priorizar. El aviso al móvil llega a quien la pide el día laborable antes.</p></section>';
  $("#dsBack").onclick=()=>dsRender();
  if($("#dsDel"))$("#dsDel").onclick=async()=>{if(!confirm("¿Quitar esta petición?"))return;try{await api("/api/diseno?id="+r.id,{method:"DELETE"});DS.rows=DS.rows.filter(x=>x.id!==r.id);say("Petición quitada");dsRender()}catch(e){say(e.message)}};
- $("#dsF").onsubmit=async e=>{e.preventDefault();const f=e.target,row={title:f.title.value,requester:f.requester.value,company:f.company.value,pieceType:f.pieceType.value,deadline:f.deadline.value,status:f.status.value,progress:+f.progress.value,urgent:f.urgent.checked,link:f.link.value,designerNotes:f.designerNotes.value,notes:f.notes.value};
+ $("#dsF").onsubmit=async e=>{e.preventDefault();const f=e.target,row={title:f.title.value,requester:f.requester.value,company:f.company.value,pieceType:f.pieceType.value,deadline:f.deadline.value,status:f.status.value,progress:+f.progress.value,urgent:f.urgent.checked,link:f.link.value,designerNotes:f.designerNotes.value,notes:f.notes.value,channel:f.channel.value};
+  const pf=f.preview.files[0];
+  try{if(pf){say("Preparando la vista previa…");const blob=await dsShrink(pf),key="dsprev-"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    await api("/api/asset?module=diseno&key="+key,{method:"PUT",headers:{"content-type":"image/jpeg"},body:blob});row.previewKey=key;row.previewName=pf.name}
+   else if(f.previewDel&&f.previewDel.checked){row.previewKey="";row.previewName=""}
+   row.deliveryLink=f.deliveryLink.value.trim()}catch(err){say("No se ha podido subir la vista previa: "+err.message);return}
   const send=async(force)=>api(isNew?"/api/diseno":"/api/diseno?id="+r.id,{method:isNew?"POST":"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({row,forceUrgent:force})});
   try{let res;try{res=await send(false)}catch(err){if(/cupo/.test(err.message)&&confirm(err.message+"\n\n¿La marcas urgente igualmente?"))res=await send(true);else throw err}
-   if(isNew)DS.rows.push(res.row);else DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say(isNew?"Petición enviada":"Guardado");dsRender()}catch(err){say(err.message)}}}
+   if(isNew)DS.rows.push(res.row);else DS.rows[DS.rows.findIndex(x=>x.id===r.id)]=res.row;say(isNew?"Petición enviada":"Guardado");dsRender();
+   const miss=isNew?(res.missing||[]):[];if(miss.length&&$("#dsBody"))$("#dsBody").insertAdjacentHTML("afterbegin",'<div class="ds-miss card"><b>Petición enviada, pero le falta información.</b><p>Para que Cristina pueda empezar sin preguntarte:</p><ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul>'+(res.missingMail&&res.missingMail.sent?'<p class="muted">Te lo hemos enviado también por correo.</p>':'')+'<div class="actions-row"><button type="button" class="primary" id="dsMissGo">Completar ahora</button><button type="button" class="ghost" id="dsMissNo">Luego</button></div></div>');
+   if($("#dsMissGo")){$("#dsMissGo").onclick=()=>{dsView.tab="peticiones";dsRender();dsForm(DS.rows.find(x=>x.id===res.row.id))};$("#dsMissNo").onclick=()=>$(".ds-miss").remove()}}catch(err){say(err.message)}}}
 function dsIndicators(){const d=DS,t=d.today,rows=d.rows,open=rows.filter(r=>DS_OPEN.includes(r.status)),since=n=>{const x=new Date(t+"T12:00:00Z");x.setUTCDate(x.getUTCDate()-n);return x.toISOString().slice(0,10)};
  const done=rows.filter(r=>r.status==="entregado"&&r.deliveredAt&&r.requestDate),lead=done.map(r=>dsDays(r.requestDate,r.deliveredAt)).filter(n=>n>=0).sort((a,b)=>a-b);
  const med=lead.length?lead[Math.floor(lead.length/2)]:null,avg=lead.length?Math.round(lead.reduce((a,b)=>a+b,0)/lead.length):null;
@@ -343,7 +363,7 @@ function dsCampEdit(){const st=JSON.parse(JSON.stringify(DS.settings)),list=st.c
  draw()}
 // ---- Panel: lo mismo que la pestaña PANEL de la hoja, lo primero que se ve al entrar en Diseño
 const dsInk=hex=>{const h=String(hex||"#888").replace("#",""),n=parseInt(h.length===3?h.split("").map(x=>x+x).join(""):h,16),r=n>>16&255,g=n>>8&255,b=n&255;return (r*299+g*587+b*114)/1000>150?"#161616":"#ffffff"};
-function dsPanel(){const d=DS,st=d.settings,t=d.today,rows=d.rows,open=rows.filter(r=>DS_OPEN.includes(r.status)),late=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline<t,soon=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline>=t&&dsDays(t,r.deadline)<=st.soonDays;
+function dsPanelAll(){const d=DS,st=d.settings,t=d.today,rows=d.rows,open=rows.filter(r=>DS_OPEN.includes(r.status)),late=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline<t,soon=r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline>=t&&dsDays(t,r.deadline)<=st.soonDays;
  const avg=list=>list.length?Math.round(list.reduce((a,r)=>a+Number(r.progress||0),0)/list.length):null;
  if(!rows.length){$("#dsBody").innerHTML='<section class="dsp-empty"><h2>Aquí va la información de la hoja</h2><p>Todavía no se ha subido la hoja «ABONOTEATRO Y LA ESTACION». Cuando se suba, este panel muestra lo mismo que la pestaña PANEL: peticiones totales, abiertas, vencidas, por persona y por espacio, y todas las tareas pendientes y hechas.</p>'+(d.canSettings?'<div class="actions-row"><button type="button" class="primary" id="dspPick">Subir el Excel de la hoja</button><input type="file" id="dspFile" accept=".xlsx" hidden></div><p class="muted">En la hoja: Archivo › Descargar › Microsoft Excel (.xlsx). Lo que ya esté no se duplica.</p><div id="dsImp"></div>':'<p class="muted">Tienen que subirla Fernando o Celia.</p>')+'</section>'+dsCampTable();
   if($("#dspPick")){$("#dspPick").onclick=()=>$("#dspFile").click();$("#dspFile").onchange=async e=>{await dsImportFile(e.target.files[0]);const go=$("#dsImpGo");if(go){const prev=go.onclick;go.onclick=async()=>{await prev();dsRender()}}}}
@@ -367,6 +387,53 @@ function dsPanel(){const d=DS,st=d.settings,t=d.today,rows=d.rows,open=rows.filt
    '<tr class="tot"><th>Total</th><td>'+sum(coRows,1)+'</td><td>'+sum(coRows,2)+'</td><td>'+sum(coRows,3)+'</td><td></td></tr></tbody></table></div></div></div>'+
   '<div class="dsp-links"><button type="button" class="primary" data-dspgo="state" data-v="abiertas">Ver las '+open.length+' tareas pendientes</button><button type="button" data-dspgo="state" data-v="entregado">Ver las tareas hechas</button></div></section>'+dsCampTable();
  $$("[data-dspgo]").forEach(b=>b.onclick=()=>{const k=b.dataset.dspgo,v=b.dataset.v;Object.assign(dsView,{who:"",company:"",alert:"",q:"",state:"abiertas"});if(k==="who")dsView.who=v;else if(k==="company")dsView.company=v;else dsView.state=v;if(k!=="state")dsView.state="todas";dsView.tab="peticiones";dsRender();window.scrollTo({top:0,behavior:"smooth"})});
+ if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()}}
+// ---- Panel: por defecto, el mes (lo que hay que entregar este mes, semana a semana); «Histórico» abre el panel de siempre
+const DS_MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const dsMonthAdd=(m,k)=>{const [y,mo]=m.split("-").map(Number);return new Date(Date.UTC(y,mo-1+k,1)).toISOString().slice(0,7)};
+const dsMonthName=m=>{const [y,mo]=m.split("-").map(Number);return DS_MESES[mo-1]+" "+y};
+function dsPanelBar(){return '<div class="dsm-bar"><div class="seg-tabs" role="tablist"><button type="button" class="'+(dsView.pmode==="mes"?"on":"")+'" data-pmode="mes">Este mes</button><button type="button" class="'+(dsView.pmode!=="mes"?"on":"")+'" data-pmode="todo">Histórico</button></div>'+
+ (dsView.pmode==="mes"?'<div class="dsm-nav"><button type="button" aria-label="Mes anterior" data-pm="-1">‹</button><b>'+esc(dsMonthName(dsView.pmonth))+'</b><button type="button" aria-label="Mes siguiente" data-pm="1">›</button>'+(dsView.pmonth!==DS.today.slice(0,7)?'<button type="button" class="dsm-today" data-pm="0">Hoy</button>':'')+'</div>':'')+'</div>'}
+function dsPanelBind(){$$("[data-pmode]").forEach(b=>b.onclick=()=>{dsView.pmode=b.dataset.pmode;dsPanel()});
+ $$("[data-pm]").forEach(b=>b.onclick=()=>{const k=+b.dataset.pm;dsView.pmonth=k?dsMonthAdd(dsView.pmonth,k):DS.today.slice(0,7);dsPanel()})}
+function dsPanel(){if(!dsView.pmonth)dsView.pmonth=DS.today.slice(0,7);
+ if(!DS.rows.length||dsView.pmode!=="mes"){dsPanelAll();if(DS.rows.length){$("#dsBody").insertAdjacentHTML("afterbegin",dsPanelBar());dsPanelBind()}return}
+ dsMonthPanel()}
+function dsMonthPanel(){const d=DS,st=d.settings,t=d.today,cur=t.slice(0,7),m=dsView.pmonth,mStart=m+"-01",mEnd=YCDate.addDays(dsMonthAdd(m,1)+"-01",-1);
+ const rows=d.rows.filter(r=>r.status!=="cancelado"),inM=v=>!!v&&v.slice(0,7)===m;
+ const due=r=>r.deadline||(r.status==="entregado"?r.deliveredAt:""),plan=rows.filter(r=>inM(due(r))),donePlan=plan.filter(r=>r.status==="entregado"),pend=plan.filter(r=>DS_OPEN.includes(r.status)),late=pend.filter(r=>r.deadline<t);
+ const extra=rows.filter(r=>r.status==="entregado"&&inM(r.deliveredAt)&&!inM(due(r))).length,entered=rows.filter(r=>!r.imported&&inM(r.requestDate)).length;
+ const carry=m===cur?rows.filter(r=>DS_OPEN.includes(r.status)&&r.deadline&&r.deadline<mStart).sort((a,b)=>a.deadline.localeCompare(b.deadline)):[];
+ const nodate=m===cur?rows.filter(r=>DS_OPEN.includes(r.status)&&!r.deadline):[];
+ const onTime=donePlan.filter(r=>r.deliveredAt&&r.deadline&&r.deliveredAt<=r.deadline).length,pct=plan.length?Math.round(100*donePlan.length/plan.length):0;
+ const past=m<cur,future=m>cur;
+ const kpi=(v,l,c,sub)=>'<div class="dsp-kpi'+(c?' '+c:'')+'"><span>'+l+'</span><b>'+v+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+ const day=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",timeZone:"UTC"});
+ const card=r=>{const open=DS_OPEN.includes(r.status),lt=open&&r.deadline&&r.deadline<t,c=dsColor(st.people,r.requester);
+  return '<button type="button" class="dsm-card'+(open?'':' done')+(lt?' late':'')+'" data-dsmopen="'+esc(r.id)+'"><span class="dsm-top"><span class="dsm-who" style="background:'+c+';color:'+dsInk(c)+'">'+esc(r.requester||"—")+'</span>'+(r.urgent&&open?'<span class="dsm-urg">Urgente</span>':'')+'<span class="dsm-day">'+(r.deadline?esc(day(r.deadline)):'sin fecha')+'</span></span>'+
+   (r.previewUrl?'<img class="dsm-thumb" src="'+esc(r.previewUrl)+'" alt="" loading="lazy">':'')+'<b>'+esc(r.title||"Sin título")+'</b><span class="dsm-co">'+esc([r.company,r.pieceType].filter(Boolean).join(" · "))+'</span>'+
+   (open?'<span class="dsm-st"><em>'+esc(dsLabel(r.status))+'</em><i><s style="width:'+Number(r.progress||0)+'%"></s></i><em>'+Number(r.progress||0)+' %</em></span>':'<span class="dsm-st ok"><em>✓ Entregada'+(r.deliveredAt?' el '+esc(fdate(r.deliveredAt)):'')+'</em></span>')+'</button>'};
+ // Semanas (lunes a domingo) que tocan el mes
+ const weeks=[];for(let w=YCDate.week(mStart).first;w<=mEnd;w=YCDate.addDays(w,7))weeks.push(w);
+ const thisWeek=YCDate.week(t).first;
+ const wk=weeks.filter(w=>!(m===cur&&YCDate.addDays(w,6)<t&&!plan.some(r=>due(r)>=w&&due(r)<=YCDate.addDays(w,6)))).map(w=>{const we=YCDate.addDays(w,6),a=w<mStart?mStart:w,b=we>mEnd?mEnd:we,list=plan.filter(r=>due(r)>=a&&due(r)<=b).sort((x,y)=>(DS_OPEN.includes(y.status)-DS_OPEN.includes(x.status))||due(x).localeCompare(due(y))),o=list.filter(r=>DS_OPEN.includes(r.status)).length;
+  return '<div class="dsm-week'+(w===thisWeek?' now':'')+'"><div class="dsm-wh"><b>'+(w===thisWeek?'Esta semana':'Semana del '+new Date(a+"T12:00:00Z").getUTCDate()+' al '+new Date(b+"T12:00:00Z").getUTCDate())+'</b><span>'+(list.length?(o?o+' pendiente'+(o>1?'s':''):'todo entregado')+' · '+list.length:'nada')+'</span></div>'+(o>=st.peakPerWeek?'<p class="dsm-peak">Pico de carga: conviene adelantar o repartir.</p>':'')+(list.length?list.map(card).join(""):'<p class="dsm-empty">Sin entregas</p>')+'</div>'}).join("");
+ const per=[...new Set(plan.map(r=>r.requester||""))].map(n=>{const l=plan.filter(r=>(r.requester||"")===n);return [n,l.length,l.filter(r=>r.status==="entregado").length,l.filter(r=>DS_OPEN.includes(r.status)).length,l.filter(r=>DS_OPEN.includes(r.status)&&r.deadline<t).length]}).sort((a,b)=>b[1]-a[1]);
+ const co=[...new Set(plan.map(r=>r.company||""))].map(n=>{const l=plan.filter(r=>(r.company||"")===n);return [n,l.length,l.filter(r=>r.status==="entregado").length,l.filter(r=>DS_OPEN.includes(r.status)).length]}).sort((a,b)=>b[1]-a[1]);
+ const tag=(list,n)=>{const c=dsColor(list,n);return n?'<span class="dsp-tag" style="background:'+c+';color:'+dsInk(c)+';cursor:default">'+esc(n)+'</span>':'<span class="muted">Sin indicar</span>'};
+ $("#dsBody").innerHTML=dsPanelBar()+'<section class="dsp dsm">'+
+  '<div class="dsp-title"><h2>'+esc(dsMonthName(m))+'</h2><small>'+(past?'Mes cerrado':future?'Lo que ya está pedido para este mes':'Hoy es '+esc(fdate(t)))+'</small></div>'+
+  '<div class="dsp-kpis dsm-kpis">'+kpi(plan.length,"Para entregar este mes","",entered+" pedidas este mes")+kpi(donePlan.length,"Entregadas","",[donePlan.length?onTime+" a tiempo":"",extra?"+"+extra+" de otros meses":""].filter(Boolean).join(" · "))+kpi(pend.length,"Pendientes",pend.length&&!future?"warm":"")+kpi(late.length,"Vencidas",late.length?"hot":"")+(m===cur?kpi(carry.length,"Vienen de meses anteriores",carry.length?"hot":""):"")+'</div>'+
+  '<div class="dsm-prog"><div><b>'+donePlan.length+' de '+plan.length+'</b> entregadas · '+pct+' %</div><i><s style="width:'+pct+'%"></s></i></div>'+
+  (carry.length?'<div class="dsm-carry"><h3>Vienen de meses anteriores · '+carry.length+'</h3><p class="muted">Siguen abiertas y su fecha ya pasó. Lo primero: entregarlas o ponerles una fecha nueva.</p><div class="dsm-grid">'+carry.map(card).join("")+'</div></div>':'')+
+  '<h3 class="dsm-h">Semana a semana</h3><div class="dsm-weeks">'+wk+'</div>'+
+  (nodate.length?'<p class="dsm-nodate">'+nodate.length+' petición'+(nodate.length>1?'es':'')+' abierta'+(nodate.length>1?'s':'')+' sin fecha límite: no cuentan en ningún mes. <button type="button" class="linkish" data-dsmnodate>Verlas</button></p>':'')+
+  (plan.length?'<div class="dsp-grid" style="margin-top:18px"><div><h3>Este mes, por persona</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Persona</th><th>Para el mes</th><th>Entregadas</th><th>Pendientes</th><th>Vencidas</th></tr></thead><tbody>'+per.map(r=>'<tr><th>'+tag(st.people,r[0])+'</th>'+r.slice(1).map((v,i)=>'<td'+(i===3&&v?' class="hot"':'')+'>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table></div></div>'+
+   '<div><h3>Este mes, por espacio</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Espacio / empresa</th><th>Para el mes</th><th>Entregadas</th><th>Pendientes</th></tr></thead><tbody>'+co.map(r=>'<tr><th>'+tag(st.companies,r[0])+'</th>'+r.slice(1).map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table></div></div></div>':'')+
+  '</section>'+dsCampTable();
+ dsPanelBind();
+ $$("[data-dsmopen]").forEach(b=>b.onclick=()=>{const r=DS.rows.find(x=>x.id===b.dataset.dsmopen);if(r){window.scrollTo({top:0,behavior:"smooth"});dsForm(r)}});
+ const nd=$("[data-dsmnodate]");if(nd)nd.onclick=()=>{Object.assign(dsView,{who:"",company:"",q:"",state:"abiertas",alert:"sinfecha",tab:"peticiones"});dsRender()};
  if($("#dstEdit"))$("#dstEdit").onclick=()=>{dsView.tab="campanas";dsRender();dsCampEdit()}}
 window.YCModules.diseno={render:async ctx=>{({api,esc,say,sayUndo,fdate,pageHead,$,$$,roles,state,VENUE_STYLE,loadXLSX,app}=ctx);await diseno()}};
 })();

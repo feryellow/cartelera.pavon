@@ -3,6 +3,8 @@ import { listRecords } from "./records.ts";
 import { listDiseno, OPEN as DISENO_OPEN } from "./diseno.ts";
 import { madridToday, daysBetween } from "./dates.ts";
 import { listPatrocinios, OPEN_STAGES as PATRO_OPEN } from "./patrocinios.ts";
+import { listPartes, expectedMonths } from "./partes.ts";
+import { PROVIDERS } from "./providers.ts";
 
 // STATUS ENGINE · única fuente de verdad de «qué debería existir, qué existe y qué falta».
 // Lo usan la Home («Necesita atención»), el correo diario, el aviso al móvil y la sección Status.
@@ -140,6 +142,18 @@ export async function collectIssues(opts: { origin: string; today?: string; sect
         }
         if (r.endDate) { const d = daysBetween(today, r.endDate); if (d >= 0 && d <= 60) add({ ...base, id: `patrocinios:${r.id}:fin`, severity: "warning", title: r.brand, issue: `El contrato vence en ${d} ${d === 1 ? "día" : "días"}`, detail: ["¿Renovación?", who].filter(Boolean).join(" · "), date: r.endDate }); }
       }
+    }
+  }
+
+  // 5. Partes de emisión: a partir del día 6, el del mes anterior si la emisora tenía cuñas y aún no lo ha subido (ATENCIÓN)
+  if (allow("radio") && Number(today.slice(8, 10)) >= 6) {
+    const [y, mo] = today.slice(0, 7).split("-").map(Number), prev = new Date(Date.UTC(y, mo - 2, 1)).toISOString().slice(0, 7);
+    const mname = new Date(prev + "-15T12:00:00Z").toLocaleDateString("es-ES", { month: "long", timeZone: "UTC" });
+    const got = new Set((await listPartes()).map((x) => `${x.provider}:${x.month}`));
+    for (const p of PROVIDERS.filter((x) => x.kind === "radio")) {
+      if (got.has(`${p.id}:${prev}`) || !(await expectedMonths(p, today)).includes(prev)) continue;
+      add({ id: `radio:parte:${p.id}:${prev}`, section: "radio", severity: "warning", title: `Radio · ${p.name.replace(/\s*\(.*\)/, "")}`, issue: `Falta el parte de emisión de ${mname}`,
+        detail: "La emisora lo sube desde su portal; también se puede subir en Radio › Partes de emisión", spectacle: "", date: "", time: "", thumbnail: null, sourceId: `parte-${p.id}-${prev}`, link: "#radio" });
     }
   }
 
