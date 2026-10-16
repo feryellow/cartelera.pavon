@@ -18,6 +18,8 @@ const ROLE_ACCESS: Record<string, { read: string[]; write: string[] }> = {
   diseno: { read: ["diseno"], write: ["diseno"] },
   // Proveedores: ninguna sección de la app; solo su portal (/api/proveedor filtra sus datos)
   proveedor: { read: [], write: [] },
+  // Equipo comercial: Patrocinios (y ver Inicio y Calendario con sus fechas)
+  patrocinios: { read: ["patrocinios","dashboard","calendario"], write: ["patrocinios"] },
 };
 
 function keyActor(req: Request): Actor | null {

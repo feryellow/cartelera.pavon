@@ -7,8 +7,8 @@
 window.YCModules=window.YCModules||{};
 let C,DATA=null,DATA_AT=0;
 const D=()=>window.YCDate;
-const NAMES={radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas",carteleria:"Cartelería",material:"Material",diseno:"Diseño"};
-const ICON={radio:"radio",taxis:"taxis",intercambiadores:"intercambiadores",hometicket:"hometicket",revistas:"revistas",carteleria:"carteleria",material:"importar",diseno:"diseno"};
+const NAMES={radio:"Radio",taxis:"Taxis",intercambiadores:"Intercambiadores",hometicket:"Home Ticket",revistas:"Revistas",carteleria:"Cartelería",material:"Material",diseno:"Diseño",patrocinios:"Patrocinios"};
+const ICON={radio:"radio",taxis:"taxis",intercambiadores:"intercambiadores",hometicket:"hometicket",revistas:"revistas",carteleria:"carteleria",material:"importar",diseno:"diseno",patrocinios:"patrocinios"};
 const MEDIA=[["radio","Radio"],["television","Televisión"],["taxis","Taxis"],["intercambiadores","Intercambiadores"],["hometicket","Home Ticket"],["revistas","Revistas de Teatros"],["carteleria","Cartelería"],["meta","Digital"]];
 const greet=()=>{const h=Number(new Intl.DateTimeFormat("es-ES",{hour:"numeric",hour12:false,timeZone:"Europe/Madrid"}).format(new Date()));return h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches"};
 const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):"";

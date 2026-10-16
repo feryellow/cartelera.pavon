@@ -4,5 +4,3 @@ self.addEventListener("push",e=>{let d={};try{d=e.data?e.data.json():{}}catch{d=
  e.waitUntil(self.registration.showNotification(d.title||"Yellow Control",{body:d.body||"",icon:"/yellow-app-icon-180.png?v=3",badge:"/favicon-32.png?v=3",tag:d.tag||undefined,data:{url:d.url||"/#dashboard"}}))});
 self.addEventListener("notificationclick",e=>{e.notification.close();const url=new URL(e.notification.data?.url||"/#dashboard",self.location.origin).href;
  e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{for(const c of list){if(c.url.startsWith(self.location.origin)){c.navigate?c.navigate(url).catch(()=>{}):0;return c.focus()}}return self.clients.openWindow(url)}))});
-
-// deploy trigger 2026-10-16

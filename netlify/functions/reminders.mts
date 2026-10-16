@@ -60,7 +60,7 @@ export default async(req?:Request)=>{
   const origin=req?new URL(req.url).origin:appUrl;
   // Una sola fuente de verdad: el Status Engine decide qué está mal; el móvil y el correo solo lo comunican
   let engine:EngineResult;
-  try{engine=await collectIssues({origin:/^https?:\/\/localhost/.test(origin)?origin:appUrl})}catch(err){console.error("engine",String(err));await recordHealth("engine",false,String(err));return;}
+  try{engine=await collectIssues({origin:/^https?:\/\/localhost/.test(origin)?origin:appUrl,sections:(s:string)=>s!=="patrocinios"})}catch(err){console.error("engine",String(err));await recordHealth("engine",false,String(err));return;}
   await recordHealth("engine",true,`${engine.total} incidencias`);
   if(forced||hour===pushHour){try{await dailyPush(now,engine,forced)}catch(e){console.error("push diario",String(e))}}
   if(forced||hour===pushHour){try{await disenoPush(now,forced)}catch(e){console.error("push diseño",String(e))}}

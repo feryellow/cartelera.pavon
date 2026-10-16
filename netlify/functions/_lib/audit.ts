@@ -44,6 +44,7 @@ export const FIELD_LABEL: Record<string, string> = {
   plannedSpots: "cuñas", notes: "notas", title: "título", support: "soporte", location: "ubicación", position: "posición", magazine: "revista", month: "mes",
   assetKey: "archivo", assetName: "archivo", posterKey: "cartel", requester: "quién pide", company: "empresa", designerNotes: "comentario de diseño", deletedAt: "borrado",
   installDate: "fecha de montaje", removeDate: "fecha de retirada", next: "siguiente", type: "tipo", responsable: "responsable", link: "enlace", urgent: "urgente", pieceType: "tipo de pieza",
+  brand: "marca", stage: "etapa", owner: "responsable", amountProposed: "importe propuesto", amountFinal: "importe firmado", nextStep: "próximo paso", nextDate: "fecha del próximo paso", deliverables: "contraprestaciones", docs: "documentos", kind: "tipo", contact: "contacto", lostReason: "motivo",
 };
 function diff(before: any, after: any) {
   if (!before || !after || typeof before !== "object" || typeof after !== "object") return [];
@@ -58,7 +59,7 @@ function diff(before: any, after: any) {
   return out.slice(0, 20);
 }
 const short = (v: unknown) => { const s = String(v ?? ""); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const d = new Date(s + "T12:00:00Z"); return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: "UTC" }).replace(".", ""); } return s.length > 40 ? s.slice(0, 38) + "…" : s || "vacío"; };
-function titleOf(r: any) { return r && typeof r === "object" ? String(r.spectacle || r.title || r.campaignName || r.name || r.email || "").slice(0, 120) : ""; }
+function titleOf(r: any) { return r && typeof r === "object" ? String(r.spectacle || r.title || r.campaignName || r.brand || r.name || r.email || "").slice(0, 120) : ""; }
 function summarize(action: string, changes: { f: string; from: unknown; to: unknown }[], row: any, note: string) {
   const t = titleOf(row);
   if (action === "create") return `creó ${t ? "«" + t + "»" : "un registro"}`;

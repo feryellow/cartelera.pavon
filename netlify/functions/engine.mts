@@ -18,7 +18,7 @@ export default async (req: Request) => {
   if (url.searchParams.get("only") === "issues") return Response.json(engine, { headers: { "cache-control": "no-store" } });
   const [events, activity] = await Promise.all([
     collectEvents(actor).catch(() => [] as any[]),
-    can(actor, "archivo", false) ? latestAudit(8).catch(() => [] as any[]) : Promise.resolve([] as any[]),
+    can(actor, "archivo", false) ? latestAudit(8).then((l: any[]) => l.filter((r: any) => r.module !== "patrocinios" || can(actor, "patrocinios", false))).catch(() => [] as any[]) : Promise.resolve([] as any[]),
   ]);
   const near = events.filter((e: any) => e.date >= today && e.date <= until && e.kind !== "fin" && e.kind !== "campana")
     .map((e: any) => ({ id: e.id, date: e.date, time: e.time || "", title: e.title, module: e.module, moduleKey: e.moduleKey, action: e.action, location: e.location, venue: e.venue || "", recordId: e.recordId || "", slotKey: e.slotKey || "" }));

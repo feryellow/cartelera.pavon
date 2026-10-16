@@ -5,7 +5,7 @@ import { controlStore } from "./_lib/store.ts";
 import { appendAudit } from "./_lib/audit.ts";
 import { providerUsers, setProviderUser, providerById, displayNames } from "./_lib/providers.ts";
 
-const allowedRoles=["admin","gestion","carteleria","consulta","proveedor","diseno"];
+const allowedRoles=["admin","gestion","carteleria","consulta","proveedor","diseno","patrocinios"];
 
 export default async(req:Request)=>{
   const auth=await requireAccess(req,"admin",true); if(auth.response)return auth.response;

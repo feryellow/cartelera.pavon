@@ -28,6 +28,7 @@ export const MODULES: { id: string; label: string; store: string; prefixes: stri
   { id: "diseno", label: "Diseño", store: "control", prefixes: ["diseno_"] },
   { id: "digital", label: "Digital", store: "control", prefixes: ["meta", "gads"] },
   { id: "avisos", label: "Avisos y contactos", store: "control", prefixes: ["push_", "mail_", "montaje"] },
+  { id: "patrocinios", label: "Patrocinios", store: "control", prefixes: ["patro_"] },
   { id: "presupuesto", label: "Presupuesto", store: "budget", prefixes: [""] },
 ];
 

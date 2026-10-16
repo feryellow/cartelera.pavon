@@ -15,7 +15,7 @@ export default async (req: Request) => {
   if (req.method === "GET") {
     if (moduleName === "audit") {
       const auth = await requireAccess(req,"archivo",false); if(auth.response) return auth.response;
-      return json({ rows: await listAudit(Number(url.searchParams.get("limit") || 100)) });
+      return json({ rows: (await listAudit(Number(url.searchParams.get("limit") || 100))).filter((r:any)=>r.module!=="patrocinios"||can(auth.actor,"patrocinios",false)) });
     }
     if (moduleName === "history") {
       // Historial de un registro: quién lo creó, quién lo cambió, qué campo, valor anterior y nuevo
@@ -26,7 +26,7 @@ export default async (req: Request) => {
     }
     if (moduleName === "dashboard") {
       const auth = await requireAccess(req,"dashboard",false); if(auth.response) return auth.response;
-      const [stateRaw, latest] = await Promise.all([carteleriaStore().get("state",{type:"json"}), latestAudit(8)]);
+      const [stateRaw, latest] = await Promise.all([carteleriaStore().get("state",{type:"json"}), latestAudit(8).then((l:any[])=>l.filter((r:any)=>r.module!=="patrocinios"||can(auth.actor,"patrocinios",false)))]);
       const state = stateRaw as any || {schedule:{},updatedAt:null};
       const schedule = state.schedule || {};
       const today = madridToday();

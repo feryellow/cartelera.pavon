@@ -2,6 +2,7 @@ import { weekStatus } from "./status.ts";
 import { listRecords } from "./records.ts";
 import { listDiseno, OPEN as DISENO_OPEN } from "./diseno.ts";
 import { madridToday, daysBetween } from "./dates.ts";
+import { listPatrocinios, OPEN_STAGES as PATRO_OPEN } from "./patrocinios.ts";
 
 // STATUS ENGINE · única fuente de verdad de «qué debería existir, qué existe y qué falta».
 // Lo usan la Home («Necesita atención»), el correo diario, el aviso al móvil y la sección Status.
@@ -31,8 +32,8 @@ export type Issue = {
 };
 export type EngineResult = { today: string; week: { first: string; last: string; label: string }; total: number; errors: number; warnings: number; issues: Issue[]; sections: { key: string; name: string; count: number }[] };
 
-const NAMES: Record<string, string> = { radio: "Radio", taxis: "Taxis", intercambiadores: "Intercambiadores", hometicket: "Home Ticket", revistas: "Revistas", carteleria: "Cartelería", material: "Material", diseno: "Diseño" };
-const ORDER = ["carteleria", "radio", "intercambiadores", "taxis", "hometicket", "revistas", "material", "diseno"];
+const NAMES: Record<string, string> = { radio: "Radio", taxis: "Taxis", intercambiadores: "Intercambiadores", hometicket: "Home Ticket", revistas: "Revistas", carteleria: "Cartelería", material: "Material", diseno: "Diseño", patrocinios: "Patrocinios" };
+const ORDER = ["carteleria", "radio", "intercambiadores", "taxis", "hometicket", "revistas", "material", "diseno", "patrocinios"];
 const RECEIVED = ["recibido", "entregado", "listo"];
 const MATERIAL_MODULES = [["radio", "Radio"], ["taxis", "Taxis"], ["intercambiadores", "Intercambiadores"], ["hometicket", "Home Ticket"], ["revistas", "Revistas"]] as const;
 
@@ -118,6 +119,27 @@ export async function collectIssues(opts: { origin: string; today?: string; sect
       add({ section: "diseno", severity: d < 0 ? "error" : "warning", title: `${r.company || "Diseño"} · ${r.title}`.slice(0, 120),
         issue: d < 0 ? `Vencida hace ${-d} ${d === -1 ? "día" : "días"}` : "Vence hoy", detail: [r.requester ? "pide " + r.requester.charAt(0) + r.requester.slice(1).toLowerCase() : "", `avance ${r.progress || 0} %`, r.designerNotes || ""].filter(Boolean).join(" · "),
         spectacle: "", date: r.deadline, time: "", thumbnail: null, sourceId: r.id, link: `#diseno?edit=${r.id}` });
+    }
+  }
+
+  // 4. Patrocinios: próximo paso vencido, contraprestación sin cumplir y contrato que vence en 60 días.
+  //    Nunca lleva importes: la incidencia solo dice qué hay que hacer.
+  if (allow("patrocinios")) {
+    for (const r of await listPatrocinios()) {
+      const base = { section: "patrocinios", spectacle: "", time: "", thumbnail: null, sourceId: r.id, link: `#patrocinios?edit=${r.id}` };
+      const who = [r.venue, r.owner].filter(Boolean).join(" · ");
+      if (PATRO_OPEN.includes(r.stage) && r.nextDate) {
+        const d = daysBetween(today, r.nextDate);
+        if (d <= 1) add({ ...base, id: `patrocinios:${r.id}:paso`, severity: d < 0 ? "error" : "warning", title: r.brand, issue: d < 0 ? `Próximo paso vencido (${-d} ${d === -1 ? "día" : "días"})` : d === 0 ? "Próximo paso: hoy" : "Próximo paso: mañana", detail: [r.nextStep, who].filter(Boolean).join(" · "), date: r.nextDate });
+      }
+      if (r.stage === "cerrado") {
+        for (const c of r.deliverables || []) {
+          if (c.done || !c.date) continue;
+          const d = daysBetween(today, c.date);
+          if (d <= 1) add({ ...base, id: `patrocinios:${r.id}:${c.id}`, severity: d < 0 ? "error" : "warning", title: r.brand, issue: d < 0 ? "Contraprestación sin cumplir" : "Contraprestación: vence " + (d === 0 ? "hoy" : "mañana"), detail: [c.text, who].filter(Boolean).join(" · "), date: c.date });
+        }
+        if (r.endDate) { const d = daysBetween(today, r.endDate); if (d >= 0 && d <= 60) add({ ...base, id: `patrocinios:${r.id}:fin`, severity: "warning", title: r.brand, issue: `El contrato vence en ${d} ${d === 1 ? "día" : "días"}`, detail: ["¿Renovación?", who].filter(Boolean).join(" · "), date: r.endDate }); }
+      }
     }
   }
 

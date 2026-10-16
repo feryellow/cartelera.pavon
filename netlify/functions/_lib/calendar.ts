@@ -3,6 +3,7 @@ import { carteleriaStore } from "./store.ts";
 import { listRecords } from "./records.ts";
 import { normalizeDate } from "./dates.ts";
 import { listDiseno, getSettings as disenoSettings } from "./diseno.ts";
+import { listPatrocinios, OPEN_STAGES as PATRO_OPEN } from "./patrocinios.ts";
 
 export type EventRow = { id: string; date: string; time?: string; module: string; moduleKey: string; title: string; location: string; action: string; status: string; recordId?: string; slotKey?: string; kind: string; notes?: string; link?: string; assetKey?: string; assetName?: string; auto: boolean; venue: string; responsable?: string; reminder?: string };
 
@@ -75,5 +76,16 @@ export async function collectEvents(actor: Actor | null): Promise<EventRow[]> {
     }
   }
   events.sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || "") || a.module.localeCompare(b.module));
+  // Patrocinios: próximos pasos, contraprestaciones y fin de contrato (solo para quien ve Patrocinios)
+  if (can(actor, "patrocinios", false)) {
+    for (const r of await listPatrocinios()) {
+      const base = { module: "Patrocinios", moduleKey: "patrocinios", location: [r.venue, r.owner].filter(Boolean).join(" · "), recordId: r.id, auto: true, venue: r.venue || "" };
+      if (PATRO_OPEN.includes(r.stage) && r.nextDate) events.push({ ...base, id: `patro-p-${r.id}`, date: r.nextDate, title: r.brand, action: r.nextStep || "Próximo paso", status: r.stage, kind: "hito" });
+      if (r.stage === "cerrado") {
+        for (const c of r.deliverables || []) if (c.date) events.push({ ...base, id: `patro-c-${r.id}-${c.id}`, date: c.date, title: r.brand, action: c.text, status: c.done ? "cumplido" : "pendiente", kind: "hito" });
+        if (r.endDate) events.push({ ...base, id: `patro-f-${r.id}`, date: r.endDate, title: r.brand, action: "Fin del contrato", status: "", kind: "fin" });
+      }
+    }
+  }
   return events;
 }
