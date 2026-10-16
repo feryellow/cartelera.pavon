@@ -16,8 +16,12 @@ const dsDays=YCDate.daysBetween;
 const dsLabel=s=>(DS_STATUS.find(x=>x[0]===s)||[s,s])[1];
 // Las empresas que son espacios del calendario llevan su mismo color; el resto (personas, otras empresas), el de Ajustes
 const DS_VENUE={"ABONOTEATRO":"Abono Teatro","ABONO TEATRO":"Abono Teatro","LA ESTACION":"Gran Teatro CaixaBank Príncipe Pío","LA ESTACIÓN":"Gran Teatro CaixaBank Príncipe Pío","PRINCIPE PIO":"Gran Teatro CaixaBank Príncipe Pío","PAVON":"Gran Teatro Pavón","PAVÓN":"Gran Teatro Pavón","CASTILLO":"Gran Castillo de Pedraza","PEDRAZA":"Gran Castillo de Pedraza","SERRANO":"Teatro Serrano","SOHO CITY":"Soho City Madrid","SOHO":"Soho City Madrid","ARLEQUIN":"Teatro Arlequín","ARLEQUÍN":"Teatro Arlequín"};
-const dsColor=(list,name)=>{const v=DS_VENUE[String(name||"").toUpperCase()],vs=v&&VENUE_STYLE[v];if(vs)return document.documentElement.dataset.theme==="light"?vs.bg:vs.dark;return (list.find(x=>x.name===name)||{}).color||"#888"};
+const DS_OWN=["ABONOTEATRO","ABONO TEATRO","SERRANO","TEATRO SERRANO"];
+const dsColor=(list,name)=>{const up=String(name||"").toUpperCase(),own=DS_OWN.includes(up)&&(list.find(x=>x.name===up)||{}).color;if(own)return own;const v=DS_VENUE[up],vs=v&&VENUE_STYLE[v];if(vs)return document.documentElement.dataset.theme==="light"?vs.bg:vs.dark;return (list.find(x=>x.name===name)||{}).color||"#888"};
 const dsWeek=iso=>YCDate.week(iso).first;
+// Logo de la empresa o espacio de la petición; si no hay logo propio, el de Yellow
+const DS_LOGO={"ABONOTEATRO":"abonoteatro","ABONO TEATRO":"abonoteatro","LA ESTACION":"principe-pio","LA ESTACIÓN":"principe-pio","PRINCIPE PIO":"principe-pio","PRÍNCIPE PÍO":"principe-pio","PAVON":"pavon","PAVÓN":"pavon","SERRANO":"serrano","TEATRO SERRANO":"serrano","CASTILLO":"pedraza","PEDRAZA":"pedraza","ARLEQUIN":"arlequin","ARLEQUÍN":"arlequin"};
+const dsLogo=(co,cls="ds-logo")=>{const k=DS_LOGO[String(co||"").toUpperCase().trim()];return '<img class="'+cls+(k?'':' yellow')+'" src="'+(k?'/assets/venues/logo-'+k+'.png':'/yellow-app-icon-180.png')+'" alt="'+esc(co||"Yellow")+'" title="'+esc(co||"")+'" loading="lazy">'};
 function dsAlerts(d){const t=d.today,st=d.settings,open=d.rows.filter(r=>DS_OPEN.includes(r.status)),per={},glob=[];
  const add=(r,k)=>{(per[r.id]=per[r.id]||[]).push(k)};
  for(const r of open){
@@ -409,15 +413,20 @@ function dsMonthPanel(){const d=DS,st=d.settings,t=d.today,cur=t.slice(0,7),m=ds
  const past=m<cur,future=m>cur;
  const kpi=(v,l,c,sub)=>'<div class="dsp-kpi'+(c?' '+c:'')+'"><span>'+l+'</span><b>'+v+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
  const day=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",timeZone:"UTC"});
- const card=r=>{const open=DS_OPEN.includes(r.status),lt=open&&r.deadline&&r.deadline<t,c=dsColor(st.people,r.requester);
-  return '<button type="button" class="dsm-card'+(open?'':' done')+(lt?' late':'')+'" data-dsmopen="'+esc(r.id)+'"><span class="dsm-top"><span class="dsm-who" style="background:'+c+';color:'+dsInk(c)+'">'+esc(r.requester||"—")+'</span>'+(r.urgent&&open?'<span class="dsm-urg">Urgente</span>':'')+'<span class="dsm-day">'+(r.deadline?esc(day(r.deadline)):'sin fecha')+'</span></span>'+
-   (r.previewUrl?'<img class="dsm-thumb" src="'+esc(r.previewUrl)+'" alt="" loading="lazy">':'')+'<b>'+esc(r.title||"Sin título")+'</b><span class="dsm-co">'+esc([r.company,r.pieceType].filter(Boolean).join(" · "))+'</span>'+
-   (open?'<span class="dsm-st"><em>'+esc(dsLabel(r.status))+'</em><i><s style="width:'+Number(r.progress||0)+'%"></s></i><em>'+Number(r.progress||0)+' %</em></span>':'<span class="dsm-st ok"><em>✓ Entregada'+(r.deliveredAt?' el '+esc(fdate(r.deliveredAt)):'')+'</em></span>')+'</button>'};
+ const card=r=>{const open=DS_OPEN.includes(r.status),lt=open&&r.deadline&&r.deadline<t,c=dsColor(st.people,r.requester),dd=due(r),dt=dd?new Date(dd+"T12:00:00Z"):null;
+  return '<button type="button" class="dsm-row'+(open?'':' done')+(lt?' late':'')+'" data-dsmopen="'+esc(r.id)+'">'+
+   '<span class="dsm-date">'+(dt?'<small>'+dt.toLocaleDateString("es-ES",{weekday:"short",timeZone:"UTC"}).replace(".","")+'</small><b>'+dt.getUTCDate()+'</b>':'<small>sin</small><b>—</b>')+'</span>'+
+   dsLogo(r.company,"dsm-logo")+
+   '<span class="dsm-main"><b>'+esc(r.title||"Sin título")+'</b><span>'+esc([r.company,r.pieceType].filter(Boolean).join(" · "))+(r.urgent&&open?' · <em class="dsm-urg">Urgente</em>':'')+'</span></span>'+
+   '<span class="dsm-who" style="background:'+c+';color:'+dsInk(c)+'">'+esc(r.requester||"—")+'</span>'+
+   (open?'<span class="dsm-st"><em>'+esc(dsLabel(r.status))+'</em><i><s style="width:'+Number(r.progress||0)+'%"></s></i><em>'+Number(r.progress||0)+' %</em></span>':'<span class="dsm-st ok"><em>✓ Entregada'+(r.deliveredAt?' '+esc(fdate(r.deliveredAt)):'')+'</em></span>')+
+   (r.previewUrl?'<img class="dsm-prev" src="'+esc(r.previewUrl)+'" alt="" loading="lazy">':'<span class="dsm-prev none"></span>')+'</button>'};
  // Semanas (lunes a domingo) que tocan el mes
  const weeks=[];for(let w=YCDate.week(mStart).first;w<=mEnd;w=YCDate.addDays(w,7))weeks.push(w);
  const thisWeek=YCDate.week(t).first;
- const wk=weeks.filter(w=>!(m===cur&&YCDate.addDays(w,6)<t&&!plan.some(r=>due(r)>=w&&due(r)<=YCDate.addDays(w,6)))).map(w=>{const we=YCDate.addDays(w,6),a=w<mStart?mStart:w,b=we>mEnd?mEnd:we,list=plan.filter(r=>due(r)>=a&&due(r)<=b).sort((x,y)=>(DS_OPEN.includes(y.status)-DS_OPEN.includes(x.status))||due(x).localeCompare(due(y))),o=list.filter(r=>DS_OPEN.includes(r.status)).length;
-  return '<div class="dsm-week'+(w===thisWeek?' now':'')+'"><div class="dsm-wh"><b>'+(w===thisWeek?'Esta semana':'Semana del '+new Date(a+"T12:00:00Z").getUTCDate()+' al '+new Date(b+"T12:00:00Z").getUTCDate())+'</b><span>'+(list.length?(o?o+' pendiente'+(o>1?'s':''):'todo entregado')+' · '+list.length:'nada')+'</span></div>'+(o>=st.peakPerWeek?'<p class="dsm-peak">Pico de carga: conviene adelantar o repartir.</p>':'')+(list.length?list.map(card).join(""):'<p class="dsm-empty">Sin entregas</p>')+'</div>'}).join("");
+ const wk=weeks.filter(w=>!(m===cur&&YCDate.addDays(w,6)<t&&!plan.some(r=>due(r)>=w&&due(r)<=YCDate.addDays(w,6)))).map(w=>{const we=YCDate.addDays(w,6),a=w<mStart?mStart:w,b=we>mEnd?mEnd:we,list=plan.filter(r=>due(r)>=a&&due(r)<=b).sort((x,y)=>due(x).localeCompare(due(y))||(DS_OPEN.includes(y.status)-DS_OPEN.includes(x.status))),o=list.filter(r=>DS_OPEN.includes(r.status)).length,dn=list.length-o;
+  const lab=(w===thisWeek?'Esta semana · ':'')+'del '+new Date(a+"T12:00:00Z").getUTCDate()+' al '+new Date(b+"T12:00:00Z").getUTCDate();
+  return '<section class="dsm-week'+(w===thisWeek?' now':'')+(list.length?'':' empty')+'"><header><b>'+esc(lab.charAt(0).toUpperCase()+lab.slice(1))+'</b><span>'+(list.length?[o?o+' pendiente'+(o>1?'s':''):'',dn?dn+' entregada'+(dn>1?'s':''):''].filter(Boolean).join(' · '):'Sin entregas')+'</span>'+(o>=st.peakPerWeek?'<em class="dsm-peak">Pico de carga: conviene adelantar o repartir</em>':'')+'</header>'+(list.length?'<div class="dsm-rows">'+list.map(card).join("")+'</div>':'')+'</section>'}).join("");
  const per=[...new Set(plan.map(r=>r.requester||""))].map(n=>{const l=plan.filter(r=>(r.requester||"")===n);return [n,l.length,l.filter(r=>r.status==="entregado").length,l.filter(r=>DS_OPEN.includes(r.status)).length,l.filter(r=>DS_OPEN.includes(r.status)&&r.deadline<t).length]}).sort((a,b)=>b[1]-a[1]);
  const co=[...new Set(plan.map(r=>r.company||""))].map(n=>{const l=plan.filter(r=>(r.company||"")===n);return [n,l.length,l.filter(r=>r.status==="entregado").length,l.filter(r=>DS_OPEN.includes(r.status)).length]}).sort((a,b)=>b[1]-a[1]);
  const tag=(list,n)=>{const c=dsColor(list,n);return n?'<span class="dsp-tag" style="background:'+c+';color:'+dsInk(c)+';cursor:default">'+esc(n)+'</span>':'<span class="muted">Sin indicar</span>'};
@@ -425,11 +434,11 @@ function dsMonthPanel(){const d=DS,st=d.settings,t=d.today,cur=t.slice(0,7),m=ds
   '<div class="dsp-title"><h2>'+esc(dsMonthName(m))+'</h2><small>'+(past?'Mes cerrado':future?'Lo que ya está pedido para este mes':'Hoy es '+esc(fdate(t)))+'</small></div>'+
   '<div class="dsp-kpis dsm-kpis">'+kpi(plan.length,"Para entregar este mes","",entered+" pedidas este mes")+kpi(donePlan.length,"Entregadas","",[donePlan.length?onTime+" a tiempo":"",extra?"+"+extra+" de otros meses":""].filter(Boolean).join(" · "))+kpi(pend.length,"Pendientes",pend.length&&!future?"warm":"")+kpi(late.length,"Vencidas",late.length?"hot":"")+(m===cur?kpi(carry.length,"Vienen de meses anteriores",carry.length?"hot":""):"")+'</div>'+
   '<div class="dsm-prog"><div><b>'+donePlan.length+' de '+plan.length+'</b> entregadas · '+pct+' %</div><i><s style="width:'+pct+'%"></s></i></div>'+
-  (carry.length?'<div class="dsm-carry"><h3>Vienen de meses anteriores · '+carry.length+'</h3><p class="muted">Siguen abiertas y su fecha ya pasó. Lo primero: entregarlas o ponerles una fecha nueva.</p><div class="dsm-grid">'+carry.map(card).join("")+'</div></div>':'')+
-  '<h3 class="dsm-h">Semana a semana</h3><div class="dsm-weeks">'+wk+'</div>'+
+  (carry.length?'<div class="dsm-carry"><h3>Vienen de meses anteriores · '+carry.length+'</h3><p class="muted">Siguen abiertas y su fecha ya pasó. Lo primero: entregarlas o ponerles una fecha nueva.</p><div class="dsm-rows">'+carry.map(card).join("")+'</div></div>':'')+
+  '<h3 class="dsm-h">Agenda del mes</h3><div class="dsm-weeks">'+wk+'</div>'+
   (nodate.length?'<p class="dsm-nodate">'+nodate.length+' petición'+(nodate.length>1?'es':'')+' abierta'+(nodate.length>1?'s':'')+' sin fecha límite: no cuentan en ningún mes. <button type="button" class="linkish" data-dsmnodate>Verlas</button></p>':'')+
   (plan.length?'<div class="dsp-grid" style="margin-top:18px"><div><h3>Este mes, por persona</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Persona</th><th>Para el mes</th><th>Entregadas</th><th>Pendientes</th><th>Vencidas</th></tr></thead><tbody>'+per.map(r=>'<tr><th>'+tag(st.people,r[0])+'</th>'+r.slice(1).map((v,i)=>'<td'+(i===3&&v?' class="hot"':'')+'>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table></div></div>'+
-   '<div><h3>Este mes, por espacio</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Espacio / empresa</th><th>Para el mes</th><th>Entregadas</th><th>Pendientes</th></tr></thead><tbody>'+co.map(r=>'<tr><th>'+tag(st.companies,r[0])+'</th>'+r.slice(1).map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table></div></div></div>':'')+
+   '<div><h3>Este mes, por espacio</h3><div class="dsp-wrap"><table class="dsp-t"><thead><tr><th>Espacio / empresa</th><th>Para el mes</th><th>Entregadas</th><th>Pendientes</th></tr></thead><tbody>'+co.map(r=>'<tr><th><span class="dsm-cotag">'+dsLogo(r[0],"dsm-logo sm")+tag(st.companies,r[0])+'</span></th>'+r.slice(1).map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table></div></div></div>':'')+
   '</section>'+dsCampTable();
  dsPanelBind();
  $$("[data-dsmopen]").forEach(b=>b.onclick=()=>{const r=DS.rows.find(x=>x.id===b.dataset.dsmopen);if(r){window.scrollTo({top:0,behavior:"smooth"});dsForm(r)}});

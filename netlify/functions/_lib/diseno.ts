@@ -6,19 +6,19 @@ export const OPEN = ["pendiente", "en_proceso", "en_revision", "parado"];
 export const PIECE_TYPES = ["Cartel", "Lona / gran formato", "Flyer / folleto / díptico", "Redes sociales", "Adaptaciones de formatos", "Newsletter / email", "Banner web", "Pantallas", "Señalética / vinilo", "Logo / identidad", "Photocall", "Otro"];
 const FIELDS = ["requester", "company", "title", "pieceType", "requestDate", "deadline", "status", "progress", "urgent", "designerNotes", "link", "notes", "deliveredAt", "cancelReason", "channel", "deliveryLink", "previewKey", "previewName"];
 
-export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; campaigns: { id: string; month: number; dates: string; creative: string; company: string }[]; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number };
+export type DisenoSettings = { people: { name: string; email: string; color: string }[]; companies: { name: string; color: string }[]; mailLive: boolean; campaigns: { id: string; month: number; dates: string; creative: string; company: string }[]; wipLimit: number; urgentQuota: number; stallDays: number; peakPerWeek: number; soonDays: number; colorsV?: number };
 const DEFAULTS: DisenoSettings = {
   // Personas y colores de la hoja (pestaña CONFIG). Los correos sirven para el aviso del día antes en el móvil.
   people: [
-    { name: "FERNANDO", email: "fernando@yellowmedia.es", color: "#FFD966" },
-    { name: "CELIA", email: "celia@yellowmedia.es", color: "#F4A6C0" },
+    { name: "FERNANDO", email: "fernando@yellowmedia.es", color: "#FFD400" },
+    { name: "CELIA", email: "celia@yellowmedia.es", color: "#FFD400" },
     { name: "ANA", email: "", color: "#9FC5E8" },
-    { name: "NOELIA", email: "", color: "#B6D7A8" },
+    { name: "NOELIA", email: "", color: "#B4A7D6" },
     { name: "ESTRELLA", email: "", color: "#C27BA0" },
   ],
   companies: [
-    { name: "ABONOTEATRO", color: "#BC2C4F" }, { name: "LA ESTACION", color: "#0095DA" }, { name: "PAVON", color: "#C9A227" },
-    { name: "CASTILLO", color: "#7B1E2B" }, { name: "SERRANO", color: "#003438" }, { name: "EL GURÚ", color: "#6A4C93" }, { name: "SOHO CITY", color: "#E8590C" },
+    { name: "ABONOTEATRO", color: "#B7CF2E" }, { name: "LA ESTACION", color: "#0095DA" }, { name: "PAVON", color: "#C9A227" },
+    { name: "CASTILLO", color: "#7B1E2B" }, { name: "SERRANO", color: "#1B5E3F" }, { name: "EL GURÚ", color: "#6A4C93" }, { name: "SOHO CITY", color: "#E8590C" },
   ],
   // Campañas del año (pestaña «CALENDARIO CAMPAÑAS» de la hoja), tal cual están escritas allí
   campaigns: [
@@ -38,7 +38,17 @@ const DEFAULTS: DisenoSettings = {
 };
 export async function getSettings(): Promise<DisenoSettings> {
   const s = await controlStore().get("diseno_settings", { type: "json" }) as Partial<DisenoSettings> | null;
-  return { ...DEFAULTS, ...(s || {}) } as DisenoSettings;
+  const out = { ...DEFAULTS, ...(s || {}) } as DisenoSettings;
+  // Colores fijados por Fer (oct 2026): Fernando y Celia en amarillo Yellow, Noelia en lila (el verde es de Abonoteatro),
+  // Abonoteatro en el verde de su logo y Serrano en verde oscuro. Se aplica una vez; después mandan los Ajustes.
+  if (s && (s.colorsV || 0) < 2) {
+    const P: Record<string, string> = { FERNANDO: "#FFD400", CELIA: "#FFD400", NOELIA: "#B4A7D6" }, C: Record<string, string> = { ABONOTEATRO: "#B7CF2E", SERRANO: "#1B5E3F" };
+    out.people = out.people.map((p) => P[p.name] ? { ...p, color: P[p.name] } : p);
+    out.companies = out.companies.map((c) => C[c.name] ? { ...c, color: C[c.name] } : c);
+    out.colorsV = 2;
+    await controlStore().setJSON("diseno_settings", out).catch(() => null);
+  }
+  return out;
 }
 export async function saveSettings(s: any) {
   const n = (v: any, d: number, lo: number, hi: number) => { const x = Math.round(Number(v)); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : d; };
@@ -48,7 +58,7 @@ export async function saveSettings(s: any) {
     companies: (Array.isArray(s.companies) ? s.companies : []).map((c: any) => ({ name: String(c.name || "").trim().toUpperCase().slice(0, 40), color: color(c.color) })).filter((c: any) => c.name).slice(0, 40),
     mailLive: s.mailLive === true,
     campaigns: (Array.isArray(s.campaigns) ? s.campaigns : DEFAULTS.campaigns).map((c: any, i: number) => ({ id: String(c.id || "c" + Date.now().toString(36) + i).slice(0, 40), month: n(c.month, 1, 1, 12), dates: String(c.dates || "").trim().slice(0, 200), creative: String(c.creative || "").trim().slice(0, 300), company: String(c.company || "ABONOTEATRO").trim().toUpperCase().slice(0, 40) })).filter((c: any) => c.dates || c.creative).slice(0, 80),
-    wipLimit: n(s.wipLimit, 8, 1, 50), urgentQuota: n(s.urgentQuota, 3, 0, 50), stallDays: n(s.stallDays, 10, 2, 90), peakPerWeek: n(s.peakPerWeek, 4, 1, 50), soonDays: n(s.soonDays, 3, 1, 14),
+    colorsV: 2, wipLimit: n(s.wipLimit, 8, 1, 50), urgentQuota: n(s.urgentQuota, 3, 0, 50), stallDays: n(s.stallDays, 10, 2, 90), peakPerWeek: n(s.peakPerWeek, 4, 1, 50), soonDays: n(s.soonDays, 3, 1, 14),
   };
   await controlStore().setJSON("diseno_settings", clean);
   return clean;
